@@ -1162,8 +1162,8 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             end
             
             if isa(u,"PhasorArray")
-                sys.setB(sys.B*u);
-                sys.setD(sys.D*u);
+                sys = sys.setB(sys.B*diag(u));
+                sys = sys.setD(sys.D*diag(u));
                 u = ones(size(u,1),numel(t));
             end
 
