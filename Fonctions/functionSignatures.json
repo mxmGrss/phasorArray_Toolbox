@@ -1,0 +1,37 @@
+{
+  "_schemaVersion": "1.0.0",
+  "Lyap_Harmonique":
+  {
+     "inputs":
+     [
+        {"name":"Ahm",  "kind":"required", "type":["numeric"], "purpose":"Dynamic Matrix Phasors (Lyapunov)"},
+        {"name":"Qhm",  "kind":"required", "type":["numeric"], "purpose":"Q Matrix Phasors (Lyapunov)"},
+        {"name":"h",  "kind":"required", "type":["numeric"], "purpose":"Order of truncature for the cumputation (Lyapunov A'X+XA = -Q)"},
+        {"name":"omeg",  "kind":"ordered", "type":["numeric"], "purpose":"pulsation (Lyapunov A'X+XA = -Q)"}
+     ]
+  },
+  "Lyap_Harmonique":
+  {
+     "inputs":
+     [
+        {"name":"Ahm",  "kind":"required", "type":["numeric"], "purpose":"A Matrix Phasors (Sylvester)"},
+        {"name":"Bhm",  "kind":"required", "type":["numeric"], "purpose":"B Matrix Phasors (Sylvester)"},
+        {"name":"Chm",  "kind":"required", "type":["numeric"], "purpose":"C Matrix Phasors (Sylvester)"},
+        {"name":"h",  "kind":"ordered", "type":["numeric"], "purpose":"Order of truncature for the cumputation (Sylvester AX + XB = -C)"},
+        {"name":"omeg",  "kind":"ordered", "type":["numeric"], "purpose":"pulsation (Sylvester AX + XB = -C)"}
+     ]
+  },
+  "Lyap_Harmonique":
+  {
+     "inputs":
+     [
+        {"name":"Ahm",  "kind":"required", "type":["numeric"], "purpose":"A Matrix Phasors (Riccati)"},
+        {"name":"Bhm",  "kind":"required", "type":["numeric"], "purpose":"B Matrix Phasors (Riccati)"},
+        {"name":"Qhm",  "kind":"required", "type":["numeric"], "purpose":"Q Matrix Phasors (Riccati)"},
+        {"name":"Rhm",  "kind":"ordered", "type":["numeric"], "purpose":"R Matrix Phasors (Riccati)"},
+        {"name":"h",  "kind":"ordered", "type":["numeric"], "purpose":"Order of truncature for the cumputation (Riccati (A-Nh)'*X + X*(A-Nh) + X*B*R^-1*B'*X + Q = 0)"},
+        {"name":"omeg",  "kind":"ordered", "type":["numeric"], "purpose":"pulsation (Riccati (A-Nh)'*X + X*(A-Nh) + X*B*R^-1*B'*X + Q = 0)"}
+     ]
+  }
+}
+

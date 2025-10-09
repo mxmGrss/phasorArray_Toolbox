@@ -1,0 +1,152 @@
+\documentclass[journal,onecolumn]{IEEEtran}
+% \usepackage[subpreambles=true]{standalone}
+\usepackage{import}
+\usepackage{blindtext}
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts,}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{dsfont}
+\usepackage{bbm}
+\usepackage{xcolor}
+\usepackage{Mycustommath}
+\usepackage{mathalpha}
+\usepackage{relsize}
+\usepackage{graphicx}
+\usepackage[center]{caption}
+\usepackage{hyperref}
+\usepackage{color} 
+\usepackage{fancyvrb} 
+
+
+\begin{document}
+\title{Toolbox harmonique : V0.1}
+\maketitle
+\today 
+
+\section{Notations et convention}
+
+\subsection{Représentation harmonique, phaseurs et évaluation temporelle d'une matrice temps périodique}
+
+Soit $T \, \in \, \R^{*+}$, $ M(t) \in \C^{n_1 \times n_2}$ $T$-périodique
+
+On définit la \emph{short time fourier transform} de $M(\cdot)$ par la séquence :
+\begin{equation}
+\F M  = (\hm M_{k})_{k\in \Z} \, ; \,\hm  M_{k} \in \C^{m,n}
+\end{equation}
+où $\hm M_{k}$ est donné par la formule : 
+\begin{equation}
+\hm M_{k} = \frac{1}{T} \int_{0}^{T} M(\tau) e^{-j k \frac{2\pi}{T} \tau }\mathrm{d}\tau 
+\end{equation}
+
+On note $\left((\hm M |_{m})_{k}\right)_{k\in [-m,m]}$ la troncature à l'ordre $m$ de la séquence $(\hm M_{k})$. 
+
+
+On représente alors par un tableau à trois entrée (formellement un tenseur) $\hm M|_{m}$ : $\mathfrak{M}$, dont la troisieme dimension stocke les phaseurs de $M|m$.
+
+\begin{equation}
+\begin{cases}
+\mathfrak{M}(i,j,m+1+k) = \frac{1}{T} \int_{0}^{T} M_{i,j}(\tau) e^{-j k \frac{2\pi}{T} \tau }\mathrm{d}\tau \\ 
+(i,j) \in [1:n_1] \times[ 1:n_2], k \in [-m:m]
+\end{cases}
+\end{equation}
+
+Ainsi sous \textsc{Matlab}, on utilisera les 3D-array pour le stockage des phaseurs d'une matrice périodique. 
+
+L'évaluation temporelle de la matrice $M(t)$ se calcule alors grace au produit contracté mode-3 
+
+\begin{equation}
+\begin{cases}
+(e_{i}(t))_{i\in [1 : 2m+1]} \in \C^{2m+1} \Leftrightarrow e_{m+1+k}(t) = e^{j k \frac{2 \pi }{T}}t \\
+M(t) = \mathfrak{M} \cpmoden3 e =\sum_{l =1}^{2m+1} \mathfrak{M}(:,:,l) e_l(t)
+\end{cases}
+\end{equation}
+
+
+sous \textsc{Matlab} la fonction \href{ https://fr.mathworks.com/help/matlab/ref/tensorprod.html }{\texttt{tensorprod}, disponible depuis la 2022ra} permet d'exprimer le produit de 2 tenseur et à fortiori le produit contracté en précisant les dimensions à faire coincider. 
+\input{testoutputfile.tex}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.45\textwidth]{demoMt.png}
+\caption{Coeeficients de M évalués grace à matlab et au calcul tensoriel contracté}
+\end{figure}
+
+A noter la convention suivantes : quelque soit la dimention qui stocke les phaseurs d'un signal (dim 1 pour la fourier d'un scalaire, ou la base temporelle $e(t)$, dim3 pour les matrices... ), les m premiers coeeficients stockes les phaseurs négatifs. 
+
+\subsection{Produit de deux matrices}
+
+
+Si $A,B$ sont deux matrices $T$-périodiques, $AB$ est $T$ périodique. Alors le phaseurs de $AB$ s'exprime par la convolution matricielle : 
+
+\begin{equation}
+AB_{k} = \sum_{l\in Z} A_{l} B_{k-l} 
+\end{equation}
+
+On suppose désormais que l'on travaille avec des matrices tronquées à l'ordre m, et leur représentation 3D $\mathfrak{A}$ et $\mathfrak{B}$ : 
+
+\begin{align}
+\forall k \in [-m : m]\quad AB_{k} &= \sum_{l\in [-m: m]} A_{l} B_{k-l} \\
+									&= \sum_{\scalemath{0.6}{\begin{cases}-m \leq l \leq m \\ -m \leq k-l \leq m\end{cases}}} \mathfrak{A}(:,:,m+1+l) \mathfrak{B}(:,:,m+1+k-l)\\
+									&= \sum_{\scalemath{0.6}{\begin{cases}-m \leq l \leq m \\ -m \leq k-l \leq m\end{cases}}} \mathrm{flip}\left(\mathfrak{A}\right)(:,:,m+1-l) \mathfrak{B}(:,:,m+1-l+k)\\
+									&= \sum_{\scalemath{0.6}{\begin{cases}1 \leq \sigma \leq 2m+1 \\ 1 \leq k+\sigma \leq 2m+1\end{cases}}} \mathrm{flip}\left(\mathfrak{A}\right)(:,:,\sigma) \mathfrak{B}(:,:,\sigma+k)\\
+									&= \sum_{\scalemath{0.6}{\max (1,1-k) \leq \sigma \leq \min (2m+1,2m+1-k) }} \mathrm{flip}\left(\mathfrak{A}\right)(:,:,\sigma) \mathfrak{B}(:,:,\sigma+k)
+\end{align}
+
+Via matlab et tensorprod on peut aisément définir ce produit, le code suivant produit le produit de 2 3D array de phaseurs de dimensions compatibles, tronqué à des ordres différents, en considérant que tout phaseur au dela de la troncature est nul. 
+
+\include{hmq_times}
+
+
+\subsection{Représentation des matrices Toeplitz}
+
+On différencie 2 types de matrices associés aux phaseurs de $M(t)$ : 
+\begin{itemize}
+\item la matrice \emph{Toeplitz par blocs} (anglais : block Toeplitz matrix), où des blocs sont répétés sur les diagonales
+\item la matrice en \emph{Blocs-Toeplitzs} (anglais Toeplitz blocks matrix), qui est une matrice par bloc dont chacun des blocs est une matrice Toeplitz
+\end{itemize}
+
+\begin{figure}[h!]
+\begin{equation}
+    A = 
+\begin{pmatrix}
+a_{11} & a_{12} & \cdots & a_{1n}\\
+a_{21} & \ddots & & \vdots\\
+\vdots \\
+a_{m1} & & & a_{mn}
+\end{pmatrix} 
+\end{equation}
+\caption*{Matrice A dont les coefficients dépendent du temps }
+\end{figure}
+
+
+\begin{figure}[h!]
+\begin{equation}
+\cToep{A}  = 
+\left[\begin{array}{c|c|c|c}
+\Toep{a_{11}} & \Toep{a_{12}} & \cdots  & \Toep{a_{1n}}\\ \hline
+\Toep{a_{21}} & \ddots  & & \\ \hline
+\vdots &  & & \\ \hline
+\Toep{a_{m1}} & & &  \Toep{a_{mn}}   \\
+\end{array} \right] 
+\end{equation} 
+\caption*{Représentation en blocs Toeplitzs }
+\end{figure}
+
+
+\begin{figure}[h!]
+\begin{align}
+    \mToep{A} = \begin{pmatrix}
+    \ddots & \ddots &  \ddots &  \\
+        \ddots&A_0 & A_{-1} & A_{-2} \\
+        \ddots &A_1 & A_{0} & A_{-1}&\ddots \\
+        &A_2 & A_{1} & A_{0} &\ddots\\
+        &&\ddots &\ddots &\ddots\\       
+        & &  &  
+    \end{pmatrix}
+    \end{align}
+\caption*{Représentation Toeplitz par bloc }
+\end{figure}
+\end{document}

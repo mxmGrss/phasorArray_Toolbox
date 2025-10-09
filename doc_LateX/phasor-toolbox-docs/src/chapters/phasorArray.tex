@@ -1,0 +1,108 @@
+\chapter{PhasorArray Class Documentation}
+
+\section{Introduction}
+The \texttt{PhasorArray} class is designed to handle periodic matrices in the harmonic domain. This class represents periodic matrices via their Fourier decomposition, stored along the third dimension of a 3D array. The third dimension must be odd, with the central slice storing the 0-th harmonic component. This class enables various mathematical operations, conversions, time-domain evaluations, and harmonic domain analysis, while maintaining MATLAB's standard matrix operation compatibility.
+
+\section{Justification for Existence}
+The \texttt{PhasorArray} class is essential for efficiently managing and manipulating periodic matrices, especially in the context of harmonic analysis. Traditional matrix operations in MATLAB do not inherently support the harmonic domain, making it challenging to perform operations on periodic matrices. The \texttt{PhasorArray} class addresses this gap by providing a structured way to represent and operate on these matrices, facilitating advanced analysis and control applications.
+
+\section{Implementation Choices}
+The \texttt{PhasorArray} class is implemented with the following key choices:
+\begin{itemize}
+    \item \textbf{3D Array Representation:} The Fourier decomposition of periodic matrices is stored in a 3D array, with the third dimension representing harmonics.
+    \item \textbf{Odd Third Dimension:} The third dimension must be odd to ensure a central slice for the 0-th harmonic component.
+    \item \textbf{MATLAB Compatibility:} The class is designed to be compatible with MATLAB's standard matrix operations, enabling seamless integration with existing code.
+    \item \textbf{Indexing Overloading:} The class uses \texttt{matlab.mixin.indexing} for overloading indexing operations, allowing intuitive access to matrix elements.
+\end{itemize}
+
+\section{Limitations}
+\begin{itemize}
+    \item \textbf{Odd Third Dimension Requirement:} The third dimension of the input array must be odd, which may require padding or truncation of data.
+    \item \textbf{MATLAB Version Dependency:} The class requires MATLAB R2021b or later due to the use of \texttt{matlab.mixin.indexing}.
+    \item \textbf{Complexity of Operations:} Some operations, such as matrix multiplication in the harmonic domain, can be computationally intensive.
+\end{itemize}
+
+\section{Class Constructor}
+\begin{verbatim}
+obj = PhasorArray(A)
+obj = PhasorArray(A, "reduce", true)
+obj = PhasorArray(n, m, h)
+\end{verbatim}
+The constructor creates a \texttt{PhasorArray} object from a 3D array, with options to reduce zero harmonics or initialize a zero-filled array of specified dimensions.
+
+\section{Properties}
+\begin{itemize}
+    \item \texttt{Phasor3D}: A 3D array representing the harmonics of the \texttt{PhasorArray}.
+\end{itemize}
+
+\section{Methods}
+\subsection{Analysis \& Information Retrieval}
+\begin{itemize}
+    \item \texttt{info}: Retrieve PhasorArray properties, dimensions, and reality.
+    \item \texttt{h}: Number of harmonics.
+    \item \texttt{size}: Size of PhasorArray.
+    \item \texttt{isreal}: Check if PhasorArray is real in the time domain.
+    \item \texttt{dim}: Dimension of PhasorArray in the time domain.
+\end{itemize}
+
+\subsection{Mathematical Operations}
+\begin{itemize}
+    \item \texttt{plus, minus, times, rdivide, power, mldivide, mrdivide, mpower}: Implement time domain operations for PhasorArrays.
+\end{itemize}
+
+\subsection{Harmonic Domain Analysis}
+\begin{itemize}
+    \item \texttt{Toeplitz Formalism}: \texttt{BT, TB, spBT, spTB}
+    \item \texttt{Fourier Formalism}: \texttt{FvTB, TF\_BT, TF\_TB}
+    \item \texttt{Eigenvalue Analysis}: \texttt{HmqEig, HmqNEig}
+\end{itemize}
+
+\subsection{Time-Domain Evaluation}
+\begin{itemize}
+    \item \texttt{evalTime, evalp, initial, lsim, sim}
+\end{itemize}
+
+\subsection{Phasor Manipulation}
+\begin{itemize}
+    \item \texttt{reshape, expandBase, extract, pad, reduce, squishBase, trunc}
+\end{itemize}
+
+\section{Method Examples}
+\subsection{Constructor Example}
+\begin{verbatim}
+% Construct from a random 3D array
+A = rand(4,4,5); 
+pA = PhasorArray(A);
+
+% Construct using zero and positive phasors
+A0 = eye(3); 
+Ap = rand(3,3,2); 
+pA = PhasorArray(A0, Ap, "z_pospart", true);
+
+% Create a zero-initialized PhasorArray
+pA = PhasorArray(5, 5);
+\end{verbatim}
+
+\subsection{Addition Example}
+\begin{verbatim}
+A = PhasorArray(rand(3,3,3));
+B = PhasorArray(rand(3,3,3));
+C = A + B;
+\end{verbatim}
+
+\subsection{Multiplication Example}
+\begin{verbatim}
+A = PhasorArray(rand(3,3,3));
+B = PhasorArray(rand(3,3,3));
+C = A * B;
+\end{verbatim}
+
+\subsection{Time-Domain Evaluation Example}
+\begin{verbatim}
+A = PhasorArray(rand(3,3,3));
+t = linspace(0, 1, 100);
+At = A.evalTime(t);
+\end{verbatim}
+
+\section{Conclusion}
+The \texttt{PhasorArray} class provides a robust framework for handling periodic matrices in the harmonic domain, enabling advanced analysis and control applications. Its compatibility with MATLAB's standard matrix operations and comprehensive set of methods make it a valuable tool for researchers and engineers working with periodic systems.

@@ -1,0 +1,93 @@
+\ProvidesPackage{Mycustommath}
+
+\usepackage{amsmath}
+\usepackage{relsize}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\C}{\mathbb{C}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\Z}{\mathbb{Z}}
+
+\newcommand{\bb}[1]{\mathbb{#1}}
+\newcommand{\hm}[1]{\mathcal{#1}}
+\newcommand{\T}{\mathcal{T}}
+\newcommand{\Sh}{\mathcal{S}}
+\newcommand{\Nh}{\mathcal{N}}
+\newcommand{\NhT}[1][T]{\mathcal{N}_{#1}}
+\newcommand{\NhTd}[1][T]{{}^\mathrm{d}\mathcal{N}_{#1}}
+\newcommand{\NhTb}[1][T]{{}^\mathrm{b}\mathcal{N}_{#1}}
+\newcommand{\NhTv}[1][T]{{}^\mathrm{v}\mathcal{N}_{#1}}
+\newcommand{\NhTc}[1][T]{{}^\mathrm{c}\mathcal{N}_{#1}}
+\newcommand{\NhTm}[1][T]{{}^\mathrm{m}\mathcal{N}_{#1}}
+\newcommand{\dToep}[2][T]{\mathcal{T}_{#1}^\mathrm{d}  \left( #2  \right)}
+\newcommand{\bToep}[2][T]{\mathcal{T}_{#1}^\mathrm{b}  \left( #2  \right)}
+\newcommand{\cToep}[2][T]{\mathcal{T}_{#1}^\mathrm{c}  \left( #2  \right)}
+\newcommand{\vToep}[2][T]{\mathcal{T}_{#1}^\mathrm{v}  \left( #2  \right)}
+\newcommand{\mToep}[2][T]{\mathcal{T}_{#1}^\mathrm{m}  \left( #2  \right)}
+\newcommand{\Toep}[2][T]{\mathcal{T}_{#1} \left( #2  \right)}
+\newcommand{\F}[2][T]{\mathcal{F}_{#1} \left( #2  \right)}
+\newcommand{\Fc}[2][T]{\mathcal{F}_{#1}^\mathrm{c} \left( #2  \right)}
+\newcommand{\Fv}[2][T]{\mathcal{F}_{#1}^\mathrm{v} \left( #2  \right)}
+\newcommand{\Fb}[2][T]{\mathcal{F}_{#1}^\mathrm{b} \left( #2  \right)}
+\newcommand{\Fd}[2][T]{\mathcal{F}_{#1}^\mathrm{d} \left( #2  \right)}
+\newcommand{\Fm}[2][T]{\mathcal{F}_{#1}^\mathrm{m} \left( #2  \right)}
+
+
+
+
+\newcommand{\dc}{\mathrm{dc}}
+
+
+
+\newcommand{\indic}[2]{\scalebox{1.5}{$\chi$}_{#1} \left( #2  \right)}
+
+
+
+\newcommand{\GenBilSys}{\dot x = A(s(t))x +B(s(t)) w}
+\newcommand{\GenBilAffSys}{\begin{cases}
+x \in \R ^n \, , \, w \in \R^m \\
+A_k \in \hm M_{n,n}(\C) \, , \, B_k \in \hm M_{n,m}(\C)\\
+s (t) \in \R^d \\
+\dot x = (A_0 + \sum_{k =1}^{d}s_k (t) A_k)x +(B_0 + \sum_{k =1}^{d}s_k (t) B_k) w
+\end{cases}}
+
+\newcommand{\GenBilAffSysmToep}[0]{ \dot X =( \hm I \otimes A_0 + \sum_{k =1}^{d}\mToep{s_k} \otimes A_k - \NhTm^n) \Fm x +(\hm I \otimes B_0 + \sum_{k =1}^{d} \mToep{s_k} \otimes B_k) \Fm w } 
+
+\newcommand{\GenBilAffSyscToep}[0]{\dot X = (A_0 \otimes \hm I + \sum_{k =1}^{d}  A_k \otimes \cToep {s_k} - \NhTc^n)X +(B_0 + \sum_{k =1}^{d}B_k \otimes \cToep {s_k}) \Fc w}
+
+\newcommand{\ddt}{\frac{\rm d}{\rm{dt}}}
+\newcommand{\ddtf}[1]{\frac{\rm{ d }\left( #1 \right)}{\rm{dt}}}
+\newcommand{\ddvar}[1]{\frac{\rm{ d }}{\rm{d #1}}}
+
+\newcommand{\abc}[1]{\begin{bmatrix}
+    #1_\mathrm a \\ #1_\mathrm b \\ #1_\mathrm c
+    \end{bmatrix}}
+\newcommand{\sabc}[1]{#1_\mathrm{abc}}
+\newcommand{\sdc}[1]{#1_\mathrm{dc}}
+\newcommand{\sdq}[1]{#1_\mathrm{dq}}
+\newcommand{\szdq}[1]{#1_\mathrm{0dq}}
+\newcommand{\salbe}[1]{#1_\mathrm{\alpha \beta}}
+\newcommand{\szalbe}[1]{#1_\mathrm{0\alpha \beta}}
+\newcommand{\sabcf}[1]{#1_\mathrm{abcf}}
+\newcommand{\sdqf}[1]{#1_\mathrm{dqf}}
+\newcommand{\szdqf}[1]{#1_\mathrm{0dqf}}
+\newcommand{\salbef}[1]{#1_\mathrm{\alpha \beta f}}
+\newcommand{\szalbef}[1]{#1_\mathrm{0\alpha \beta f}}
+
+    \newcommand{\dq}[1]{\begin{bmatrix}
+    #1_\mathrm d \\ #1_\mathrm q 
+    \end{bmatrix}}
+    \newcommand{\zdq}[1]{\begin{bmatrix}
+     #1_\mathrm 0 \\ #1_\mathrm d \\ #1_\mathrm q 
+    \end{bmatrix}}
+\newcommand{\albe}[1]{\begin{bmatrix}
+   #1_\mathrm \alpha \\ #1_\mathrm \beta  
+    \end{bmatrix}}
+\newcommand{\zalbe}[1]{\begin{bmatrix}
+    #1_\mathrm 0 \\ #1_\mathrm \alpha \\ #1_\mathrm \beta 
+    \end{bmatrix}}
+
+\newcommand{\cpmoden}[1]{\, \overline{\mathsmaller{\mathsmaller{\mathsmaller{\times}}}_{#1}} \, }
+\newcommand{\pmoden}[1]{\, {{\mathsmaller{\mathsmaller{\times}}}_{#1}} \, }
+
+    \newcommand{\Conv}{\mathop{\scalebox{1.5}{\raisebox{-0.2ex}{$\circledast$}}}}
