@@ -433,9 +433,6 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %   and total energy E.
             %   If elementwise is true, returns element-wise energy. Default is false.
             %
-            %   formula E(i,j) = sum |o1(i,j,k)|^2
-            %           E = sum E(i,j)
-            %
             %   Inputs:
             %       o1 - The PhasorArray object.
             %       elementwise - (Optional, for single output) Logical flag indicating whether to return element-wise energy.
@@ -4490,7 +4487,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 optarg.T = 2*pi
                 optarg.h = []
                 optarg.thresholdResidual = 1e-6
-                optarg.autoUpdateh = false
+                opt
             end
             if isempty(o3)
                 %lyap(A,Q,"h",h,"T",T)
@@ -4511,7 +4508,6 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 end
                 if isempty(h)
                     h = max(o1.h,o2.h);
-                    optarg.autoUpdateh = true;
                 end
 
                 %convert to sylvester form
@@ -4547,30 +4543,15 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 
                 if isempty(h)
                     h = max([o1.h,o2.h,o3.h]);
-                    optarg.autoUpdateh = true;
                 end
             end
-            
-
             %call sylv_harmonique
             res = PhasorArray(Sylv_harmonique(o1,o2,o3,h,2*pi/T));
-
-            residual.phasor = res.d(T) + o1*res + res*o2 + o3;
-            residual.resnorm = norm(residual.phasor.value,'fro');
-            if optarg.autoUpdateh 
-                while residual.resnorm > optarg.thresholdResidual
-                    h = h+1 ;
-                    res = PhasorArray(Sylv_harmonique(o1,o2,o3,h,2*pi/T));
-                    residual.phasor = res.d(T) + o1*res + res*o2 + o3;
-                    residual.resnorm = norm(residual.phasor.value,'fro');
-                end
-                    fprintf('lyap : solved for h = %d, with residual %e\n',h,residual.resnorm)
-            else
+                residual.phasor = res.d(T) + o1*res + res*o2 + o3;
+                residual.resnorm = norm(residual.phasor.value,'fro');
                 if residual.resnorm > optarg.thresholdResidual
                     warning('phasorArray:lyap:residual',"lyap : the residual norm of the lyapunov equation is %d, consider increasing h",residual.resnorm)
                 end
-            end
-            residual.resPsym =norm(value(res-res'),'fro');
 
         end
     end

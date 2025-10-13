@@ -43,6 +43,23 @@ arguments
     n2=1
 end
 
+if size(colX,2)>1
+    if n2 == 1
+        n2 = size(colX,2);
+    elseif n2 ~= size(colX,2)
+        error("n2 should be equal to second dim of colX when colX is matricial")
+    end
+
+    for iterCol_i = 1:size(colX,2)
+        XCol_i = colX(:,iterCol_i);
+        outX(:,iterCol_i,:) = TFTB_2_array(XCol_i,n1,1);
+    end
+    Xph = outX;
+    return
+end
+
+
+
 if isrow(colX)
     colX=colX.';
 end

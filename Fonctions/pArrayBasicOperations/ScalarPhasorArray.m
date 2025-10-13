@@ -8,10 +8,10 @@ function obj= ScalarPhasorArray(varargin,varg)
     %           - 1 argument: A vector, which will be converted into 3D array.
     %           - 2 arguments: The first input is a scalar (DC component of phasor array),
     %             and the second is a vector, the positive phasors of the signal. 
-    %               The optional argument `z_pospart` is set to `true` by default if not provided.
+    %               The optional argument `isreal` is set to `true` by default if not provided.
     %       varg:
     %           - reduce: Boolean flag indicating whether to reduce the array (default: false).
-    %           - z_pospart: Boolean flag to enforce positive parts of the phasor (default: false).
+    %           - isreal: Boolean flag to enforce positive parts of the phasor (default: false).
     %
     %   Outputs:
     %       obj: A PhasorArray object containing the scalar phasor data.
@@ -19,7 +19,7 @@ function obj= ScalarPhasorArray(varargin,varg)
     %   Notes:
     %       - For a single argument, it must be a vector.
     %       - For two arguments, the first should be a scalar and the second a vector.
-    %       - The function defaults to `z_pospart = true` if only two arguments are provided.
+    %       - The function defaults to `isreal = true` if only two arguments are provided.
     %
     %   Example usage:
     %       obj = ScalarPhasorArray(5, rand(1, 10))  % Creates a phasor array with 5 phasors.
@@ -30,7 +30,7 @@ arguments (Repeating)
 end
 arguments
     varg.reduce=false
-    varg.z_pospart=false
+    varg.isreal=false
 end
 switch numel(varargin)
     case 1
@@ -46,9 +46,9 @@ switch numel(varargin)
             varargin{2}=varargin{2}.';
         end
         varargin{2}=permute(varargin{2},[2 3 1]);
-        if ~varg.z_pospart
+        if ~varg.isreal
             warning('two argument provided, switching to z_pos_part=true')
-            varg.z_pospart=true;
+            varg.isreal=true;
         end
     otherwise
         error("error check size of input")

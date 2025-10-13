@@ -94,7 +94,8 @@ function [Xph,M,M1,M2,colQ,colX] = Sylv_harmonique(Ahm,Bhm,Chm,h,omeg,varargin)
     %colQ 
        hQ=(size(Q,3)-1)/2; %troncature order of provided Q
        if hQ < h 
-           dQ=padarray(Q,[0 0 h-hQ],0,'both'); %pad Q with 0 phasor to match h truncatur
+            dQ = cat(3,zeros(nxa,nxB,h-hQ),Q,zeros(nxa,nxB,h-hQ));
+           %           dQ=padarray(Q,[0 0 h-hQ],0,'both'); %pad Q with 0 phasor to match h truncatur
        elseif hQ > h 
            dQ= Q(:,:,hQ+1+(-h:h));
        else

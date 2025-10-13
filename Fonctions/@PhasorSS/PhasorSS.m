@@ -88,7 +88,7 @@
 %
 % Example:
 %   % Create a PhasorSS object with specified matrices
-%   A = PhasorArray(cat(3,[0 1; -2 -3],[1/2 0; 0 0]),"z_pospart",true);
+%   A = PhasorArray(cat(3,[0 1; -2 -3],[1/2 0; 0 0]),"isreal",true);
 %   B = [0; 1];
 %   C = [1 0];
 %   D = 0;
@@ -174,7 +174,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             %
             % Example:
             %   % Create a PhasorSS object with specified matrices
-            %   A = PhasorArray(cat(3,[0 1; -2 -3],[1/2 0; 0 0]),"z_pospart",true);
+            %   A = PhasorArray(cat(3,[0 1; -2 -3],[1/2 0; 0 0]),"isreal",true);
             %   B = [0; 1];
             %   C = [1 0];
             %   D = 0;
