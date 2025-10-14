@@ -18,7 +18,19 @@ function [summedPhasors, paddedPhasors] = PhasorArrayAdd(inputPhasors)
     end
 
     % Sum all arrays along the fourth dimension to form the output array
+    try
     summedPhasors=sum(cat(4,paddedPhasors{:}),4);
+    catch e
+        warning('PhasorArrayAdd : error in sum 4, robust basic sum')
+        
+        isPhasorArray=cellfun(@(x) isa(x,'PhasorArray'),paddedPhasors);
+        paddedPhasors(isPhasorArray)=cellfun(@(x) x.value,paddedPhasors(isPhasorArray),'UniformOutput',false);
+        
+        summedPhasors = paddedPhasors{1};
+        for ii = 2:numel(paddedPhasors)
+            summedPhasors = summedPhasors + paddedPhasors{2};
+        end
+    end
 end
 
 function r = range(X)

@@ -630,6 +630,9 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 o2=ones(size(o1,1),size(o1,2))*o2;
             end
             r = PhasorArray(PhasorArrayAdd(o1,o2));
+            if ~isspecial(r)
+                r = r.neglect(0,"exclude0Phasor",false,"reduceMethod","absolute");
+            end
         end
         function r = pageplus(o1,o2)
             %PAGEPLUS(A,B) : A+B = A(t)+B(t)
@@ -643,7 +646,8 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %MINUS overloading for PhasorArray
             %MINUS(A,B) : A-B = A(t)-B(t) 
             %MINUS can accept scalar or scalar PhasorArray as second argument
-            r = o1 +(-o2);
+            o2 = -o2;
+            r = o1 + o2;
         end
         function r = uminus(o1)
             %UMINUS overloading for PhasorArray
@@ -1549,6 +1553,13 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %pad(A, [h1 h2 h3]) pad A in each direction
             r=PhasorArrayPad(o1,delta_h);
         end
+        function r = padh(o1,delta_h)
+            %PAD the PhasorArray with delta_h phasor 
+            %   - r = pad(o1,delta_h) : pad the PhasorArray o1 with delta_h 0 phasor
+            o1v = o1.value;
+            o1v = cat(3,zeros(size(o1v,1),size(o1v,2),delta_h),o1v,zeros(size(o1v,1),size(o1v,2),delta_h));
+            r=PhasorArray(o1v);
+        end
 
         function r = ctranspose(o1)
             %CTRANSPOSE overloading for PhasorArray
@@ -2093,7 +2104,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                     return
                 end
 
-                if isa(o1.value,"ndsdpvar") || isa(o1.value,"sym")
+                if isspecial(o1)
                     for ii = 1:size(o1,3)
                         r{ii}  = PhasorArray(diag(o1(:,:,ii)));
                     end
@@ -3267,7 +3278,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 arg.explosed = false;
             end
 
-            if (isa(o1.value,"sym") || isa(o1.value,"ndsdpvar") || isa(o1.value,"sdpvar"))
+            if isspecial(o1)
                 o1 = PhasorArray(value(o1.value));
             end
             if ishold
@@ -3934,7 +3945,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             end
             o1_r = mreal(o1);
             %if o1.value is not sym, sdpvar nor ndsdpvar
-            if ~(isa(o1.value,"sym") || isa(o1.value,"ndsdpvar") || isa(o1.value,"sdpvar"))
+            if ~isspecial(o1)
                 if isempty(tol)
                     r1 = ismembertol(real(o1.value),real(o1_r.value));
                     r2 = ismembertol(imag(o1.value),imag(o1_r.value));
@@ -4077,7 +4088,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             end
             o1_i = mimag(o1);
             %if o1.value is not sym, sdpvar nor ndsdpvar
-            if ~(isa(o1.value,"sym") || isa(o1.value,"ndsdpvar") || isa(o1.value,"sdpvar"))
+            if ~isspecial(o1)
                 if isempty(tol)
                     r1 = ismembertol(real(o1.value),real(o1_i.value));
                     r2 = ismembertol(imag(o1.value),imag(o1_i.value));
@@ -4147,12 +4158,15 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %   See also: pagenorm, isreal, iscomplex
             arguments
                 o1
-                tol =0
+                tol = 0
             end
             R = pagenorm(o1.value,"inf")<=tol;
             r = ((nnz(R))==(2*o1.h+1));
         end
-
+        
+        function r = isspecial(o1)
+            r = (isa(o1.value,"sym") || isa(o1.value,"ndsdpvar") || isa(o1.value,"sdpvar"));
+        end
 
         function r = ImagRealForm(o1)
             % IMAGREALFORM Convert PhasorArray to Imaginary-Real form.
@@ -4592,11 +4606,12 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 header = sprintf('%dD Array of %dx%dx%d <a href="matlab:helpPopup PhasorArray">PhasorArray</a> of %s',nn-3,size(obj,1),size(obj,2),size(obj,3),classStr);
             end
         end
-        
-        if isreal(obj)
-        endHeader = sprintf(' representing a %dx%d real-valued periodic matrix with %d harmonics',size(obj,1),size(obj,2),obj.h);
+        if isa(obj.value,'double') && iszero(obj)
+            endHeader = sprintf(' representing a %dx%d <strong>zero-valued matrix</strong>',size(obj,1),size(obj,2));
+        elseif isreal(obj)
+            endHeader = sprintf(' representing a %dx%d <strong>real-valued</strong> periodic matrix with %d harmonics',size(obj,1),size(obj,2),obj.h);
         else
-        endHeader = sprintf(' representing a %dx%d complex-valued periodic matrix with %d harmonics',size(obj,1),size(obj,2),obj.h);
+            endHeader = sprintf(' representing a %dx%d <strong>complex-valued</strong> periodic matrix with %d harmonics',size(obj,1),size(obj,2),obj.h);
         end
 
         header = sprintf('%s%s\n',header,endHeader);   
@@ -4817,7 +4832,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %
             %    r = sdpval(o1) extract the numerical value of o1 a phasorArray with NDSDPVAR 3DArray.
             %    Basically perform PhasorArray(value(value(o1)))
-            if  isa(o1.value,'ndsdpvar')||isa(o1.value,'sdpvar')||isa(o1.value,'sym')
+            if  isspecial(o1)
                 o1=o1.value;
             end
             r=PhasorArray(value(o1));
@@ -4901,7 +4916,13 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             obj = PhasorArray(pA);
         end
 
-        function obj = fromTFTB(TF_TB, n1, n2)
+        function obj = fromTFTB(TF_TB, n1, n2,optarg)
+            arguments
+                TF_TB 
+                n1 =[]
+                n2 =[]
+                optarg.h =[]
+            end
             % FROMTFTB Create a PhasorArray from a Fourier Transform (TB format).
             %   obj = FROMTFTB(TF_TB, n1, n2) converts a vector representing the Fourier
             %   decomposition in a Toeplitz block (TB) format into a PhasorArray.
@@ -4909,16 +4930,32 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %   Inputs:
             %     TF_TB - (vector) A vector containing the Fourier coefficients in TB format.
             %     n1    - (scalar) The first dimension of the matrix.
-            %     n2    - (scalar) The second dimension of the matrix.
+            %     n2    - (scalar,option) The second dimension of the
+            %     matrix, argument n2 is to be used to convert
+            %     TF_TB(col(M)) back to phasor array M, otherwise 
             %
             %   Outputs:
             %     obj - (PhasorArray) The converted PhasorArray.
             %
             %   Example:
-            %     TF_TB = rand(27, 1); % Example Fourier coefficients in TB format
-            %     phasorArray = PhasorArray.fromTFTB(TF_TB, 3, 3);
+            %     M = PhasorArray.random(3,4, 8); 
+            %    TF_M = TF_TB(M,5)% is a 4*(2*5+1) times 4 matrix
+            %      M_r = PhasorArray.fromTFTB(TF_M,3) or PhasorArray.fromTFTB(TF_M,"h",5) 
+            % 
+            %   TF_colM = TF_TB(M{:},12) is a (4*3*(2*12+1)) times 1 col matrix
+            %      M_r_fromCol = PhasorArray.fromTFTB(TF_colM,3,4)
             %
             %   See also: TF_TB_2_PhasorArray,TF_TB
+            if isempty(n2)
+                n2 = size(TF_TB,2);
+            end
+
+            if ~isempty(optarg.h) 
+                n1h = size(TF_TB,1)/(2*optarg.h+1);
+                if ~isempty(n1) && (n1~=n1h || (n1*n2)~=n1h)
+                    error('PhasorArray:fromTFTB','n1, n2, and h argument are not compatible with input')
+                end
+            end
             PA = TF_TB_2_PhasorArray(TF_TB, n1, n2);
             obj = PhasorArray(PA);
         end

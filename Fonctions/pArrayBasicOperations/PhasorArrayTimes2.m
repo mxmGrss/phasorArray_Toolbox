@@ -11,7 +11,8 @@ function D = PhasorArrayTimes2(A,B,m)
 % A is a 3D array of size m x n x mA
 % B is a 3D array of size n x p x mB
 %
-% This function can be used with ndsdpvar arrays
+% This function can be used with ndsdpvar and sym arrays, avoiding non
+% compatible (but more efficient) tensorprod in legacy PhasorArrayTimes
 
 arguments
     A
@@ -91,8 +92,30 @@ end
     if isempty(m)
         m=mA+mB ;
     end
+try
+    if isa(B,'double') %if B is double (hence A sdp or sym), slightly more efficient to use transposed pb
+        At = permute(A,[2 1 3]);
+        Bt = permute(B,[2 1  3]);
+        A_tb = sparray2TBlocks(Bt,2*m);
+        size(A_tb)
+        B_ftb = array2TFTB(At,m);
+        size(B_ftb)
+        C_ftb = (A_tb * B_ftb);
+        C = TF_TB_2_PhasorArray(C_ftb,size(A,1),size(B,2));
+        C = permute(C,[2 1  3]);
+        D = C;
+    else 
+        A_tb = sparray2TBlocks(A,2*m);
+        size(A_tb)
+        B_ftb = array2TFTB(B,m);
+        size(B_ftb)
+        C_ftb = A_tb * B_ftb;
+        C = TF_TB_2_PhasorArray(C_ftb,size(A,1),size(B,2));
+        D = C;
+    end
+    return
 
-    
+catch
 % % D=sdpvar(size(A,1),size(B,2),2*m+1);;
 Dd=[];
     %Convolution
@@ -107,7 +130,7 @@ Dd=[];
 %         D(:,:,m+1+k)=DD;
         Dd=[Dd, DD];
     end
-
+end
     D=reshape(Dd,size(V,1),size(U,2),[]);
 %     D=ReduceArray(D);
 

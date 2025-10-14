@@ -52,9 +52,10 @@ if size(colX,2)>1
 
     for iterCol_i = 1:size(colX,2)
         XCol_i = colX(:,iterCol_i);
-        outX(:,iterCol_i,:) = TFTB_2_array(XCol_i,n1,1);
+        % outX(:,iterCol_i,:) = TFTB_2_array(XCol_i,n1,1);
+        outX{iterCol_i} = TFTB_2_array(XCol_i,n1,1);
     end
-    Xph = outX;
+    Xph = cat(2,outX{:});
     return
 end
 

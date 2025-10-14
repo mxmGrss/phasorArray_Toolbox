@@ -26,17 +26,31 @@ if isphasor(o1)
 else
     output_phas=0;
 end
-switch class(o1)
-    case "double"
-        o2=zeros(n1+2*n1p,n2+2*n2p,(2*(h_old+hp)+1));
-    case {"ndsdpvar","sdpvar"}
-        o2=ndsdpvar(n1+2*n1p,n2+2*n2p,(2*(h_old+hp)+1),'full');
-    case "sym"
-        o2=sym(zeros(n1+2*n1p,n2+2*n2p,(2*(h_old+hp)+1)));
+
+if n1p >0
+o1 = cat(1,zeros(n1p,n2,pre_h_old),o1,zeros(n1p,n2,pre_h_old));
 end
-o2(:,:,(1:hp))=0;
-o2(n1p+1:n1+n1p,n2p+1:n2+n2p,(hp+1):(end-hp))=o1;
-o2(:,:,(end-hp+1):end)=0;
+
+if n2p >0
+o1 = cat(2,zeros(n1+n1p,n2p,pre_h_old),o1,zeros(n1+n1p,n2p,pre_h_old));
+end
+
+if hp >0
+o1 = cat(3,zeros(n1+n1p,n2+n2p,hp),o1,zeros(n1+n1p,n2+n2p,hp));
+end
+
+o2 = o1;
+% switch class(o1)
+%     case "double"
+%         o2=zeros(n1+2*n1p,n2+2*n2p,(2*(h_old+hp)+1));
+%     case {"ndsdpvar","sdpvar"}
+%         o2=ndsdpvar(n1+2*n1p,n2+2*n2p,(2*(h_old+hp)+1),'full');
+%     case "sym"
+%         o2=sym(zeros(n1+2*n1p,n2+2*n2p,(2*(h_old+hp)+1)));
+% end
+% o2(:,:,(1:hp))=0;
+% o2(n1p+1:n1+n1p,n2p+1:n2+n2p,(hp+1):(end-hp))=o1;
+% o2(:,:,(end-hp+1):end)=0;
 
 if output_phas
     o2=PhasorArray(o2,reduce=false);
