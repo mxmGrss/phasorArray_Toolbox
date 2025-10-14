@@ -97,9 +97,7 @@ try
         At = permute(A,[2 1 3]);
         Bt = permute(B,[2 1  3]);
         A_tb = sparray2TBlocks(Bt,2*m);
-        size(A_tb)
         B_ftb = array2TFTB(At,m);
-        size(B_ftb)
         C_ftb = (A_tb * B_ftb);
         C = TF_TB_2_PhasorArray(C_ftb,size(A,1),size(B,2));
         C = permute(C,[2 1  3]);

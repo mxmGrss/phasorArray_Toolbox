@@ -630,7 +630,9 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 o2=ones(size(o1,1),size(o1,2))*o2;
             end
             r = PhasorArray(PhasorArrayAdd(o1,o2));
-            r = r.neglect(0,"exclude0Phasor",false,"reduceMethod","absolute");
+            if ~isspecial(r) 
+                r = r.neglect(0,"exclude0Phasor",false,"reduceMethod","absolute");
+            end
         end
         function r = pageplus(o1,o2)
             %PAGEPLUS(A,B) : A+B = A(t)+B(t)
@@ -682,7 +684,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             end
             r = PhasorArray(r);
             try 
-                if ~isreal(r) && isreal(o1) && isreal(o2) 
+                if ~isreal(r) && isreal(o1) && isreal(o2) %warning very costly for big phasorArray
                     r = mreal(r);
                 end
             catch
@@ -695,11 +697,9 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             try
             r = PhasorArray(PhasorArrayTimes(o1,o2));
             try 
-                t1 = tic();
                 if ~isreal(r) && isreal(PhasorArray(o1)) && isreal(PhasorArray(o2)) 
                     r = mreal(r);
                 end
-                toc(t1)
             catch
             end
             catch e
@@ -2104,7 +2104,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                     return
                 end
 
-                if isa(o1.value,"ndsdpvar") || isa(o1.value,"sym")
+                if isspecial(o1)
                     for ii = 1:size(o1,3)
                         r{ii}  = PhasorArray(diag(o1(:,:,ii)));
                     end
@@ -3278,7 +3278,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 arg.explosed = false;
             end
 
-            if (isa(o1.value,"sym") || isa(o1.value,"ndsdpvar") || isa(o1.value,"sdpvar"))
+            if isspecial(o1)
                 o1 = PhasorArray(value(o1.value));
             end
             if ishold
@@ -3943,9 +3943,12 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 o1
                 tol=[]
             end
+            t1= tic();
             o1_r = mreal(o1);
+            toc(t1)
+            disp("gege")
             %if o1.value is not sym, sdpvar nor ndsdpvar
-            if ~(isa(o1.value,"sym") || isa(o1.value,"ndsdpvar") || isa(o1.value,"sdpvar"))
+            if ~isspecial(o1)
                 if isempty(tol)
                     r1 = ismembertol(real(o1.value),real(o1_r.value));
                     r2 = ismembertol(imag(o1.value),imag(o1_r.value));
@@ -3955,12 +3958,11 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 end
             else %in this case ismembertol doesn't accept ym and sdpvr input, use manuel difference instead
                 if isempty(tol)
-                    r1 = abs(real(o1.value)-real(o1_r.value))<eps;
-                    r2 = abs(imag(o1.value)-imag(o1_r.value))<eps;
-                else
+                    tol = eps;
+                end
                     r1 = abs(real(o1.value)-real(o1_r.value))<tol;
                     r2 = abs(imag(o1.value)-imag(o1_r.value))<tol;
-                end
+                
                 if isa(r1,'sym')
                     try
                     r1 = logical(r1);
@@ -3975,12 +3977,16 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                     %evaluate the assumptions
                 end
             end
+
+            toc(t1)
                 R = zeros(size(o1.value),'logical');
                 R((r1 + r2)==2)= true;
                 r = all(R,'all');	
                 if nargout>2
                     tolmin = tolReal(o1);
                 end
+
+            toc(t1)
         end
         function tol = tolZero(o1, tolstart, tolTol)
             % TOLZERO Determines the lowest tolerance for which the input is considered zero.
@@ -4088,7 +4094,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             end
             o1_i = mimag(o1);
             %if o1.value is not sym, sdpvar nor ndsdpvar
-            if ~(isa(o1.value,"sym") || isa(o1.value,"ndsdpvar") || isa(o1.value,"sdpvar"))
+            if ~isspecial(o1)
                 if isempty(tol)
                     r1 = ismembertol(real(o1.value),real(o1_i.value));
                     r2 = ismembertol(imag(o1.value),imag(o1_i.value));
@@ -4164,6 +4170,9 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             r = ((nnz(R))==(2*o1.h+1));
         end
         
+        function r = isspecial(o1)
+            r = (isa(o1.value,"sym") || isa(o1.value,"ndsdpvar") || isa(o1.value,"sdpvar"));
+        end
 
         function r = ImagRealForm(o1)
             % IMAGREALFORM Convert PhasorArray to Imaginary-Real form.
@@ -4829,7 +4838,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %
             %    r = sdpval(o1) extract the numerical value of o1 a phasorArray with NDSDPVAR 3DArray.
             %    Basically perform PhasorArray(value(value(o1)))
-            if  isa(o1.value,'ndsdpvar')||isa(o1.value,'sdpvar')||isa(o1.value,'sym')
+            if  isspecial(o1)
                 o1=o1.value;
             end
             r=PhasorArray(value(o1));

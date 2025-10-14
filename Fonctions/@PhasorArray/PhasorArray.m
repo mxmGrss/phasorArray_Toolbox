@@ -630,7 +630,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 o2=ones(size(o1,1),size(o1,2))*o2;
             end
             r = PhasorArray(PhasorArrayAdd(o1,o2));
-            if ~isspecial(r)
+            if ~isspecial(r) 
                 r = r.neglect(0,"exclude0Phasor",false,"reduceMethod","absolute");
             end
         end
@@ -684,7 +684,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             end
             r = PhasorArray(r);
             try 
-                if ~isreal(r) && isreal(o1) && isreal(o2) 
+                if ~isreal(r) && isreal(o1) && isreal(o2) %warning very costly for big phasorArray
                     r = mreal(r);
                 end
             catch
@@ -3955,12 +3955,20 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 end
             else %in this case ismembertol doesn't accept ym and sdpvr input, use manuel difference instead
                 if isempty(tol)
-                    r1 = abs(real(o1.value)-real(o1_r.value))<eps;
-                    r2 = abs(imag(o1.value)-imag(o1_r.value))<eps;
-                else
-                    r1 = abs(real(o1.value)-real(o1_r.value))<tol;
-                    r2 = abs(imag(o1.value)-imag(o1_r.value))<tol;
+                    tol = eps;
                 end
+                try
+                    r1 = abs(real(o1(:))-real(o1_r(:)))<tol;
+                    r2 = abs(imag(o1(:))-imag(o1_r(:)))<tol;
+                catch e
+                        r = 0;
+                        R = zeros(size(o1.value),'logical');
+                        tolmin = NaN;
+                        return
+                end
+
+                    
+                
                 if isa(r1,'sym')
                     try
                     r1 = logical(r1);
@@ -3975,12 +3983,14 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                     %evaluate the assumptions
                 end
             end
+
                 R = zeros(size(o1.value),'logical');
                 R((r1 + r2)==2)= true;
                 r = all(R,'all');	
                 if nargout>2
                     tolmin = tolReal(o1);
                 end
+
         end
         function tol = tolZero(o1, tolstart, tolTol)
             % TOLZERO Determines the lowest tolerance for which the input is considered zero.
