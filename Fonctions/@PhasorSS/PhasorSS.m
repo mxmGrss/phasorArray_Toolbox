@@ -1106,7 +1106,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             end
         end
 
-        function impulse(sys,t)
+        function [yout,t,x] = impulse(sys,t)
             %IMPULSE Perform impulse input simulation of the PhasorSS object
             %   IMPULSE(sys,t) performs impulse input simulation of the PhasorSS object.
             %
@@ -1126,9 +1126,18 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             sysltv = sys.toSS();
             if sys.isLPV
                 respOpt = RespConfig( InitialState = 'x0',InitialParameter=0);
+
+                if nargout > 0
+                [yout,t,x] = impulse(sysltv,t,sys.p,respOpt);
+                else
                 impulse(sysltv,t,sys.p,respOpt)
+                end
             else
+                if nargout > 0
+                [yout,t,x] = impulse(sysltv,t);
+                else
                 impulse(sysltv,t)
+                end
             end
         end
 
@@ -1223,7 +1232,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
         end
 
 
-        function [y,t,x,pOut] = stepu(sys,t,u,stepOption)
+        function [y,tOut,x,pOut] = stepu(sys,t,u,stepOption)
             %STEPU Perform step input simulation of the PhasorSS object with a periodic input u
             %   [y, t, x, pOut] = STEPU(sys, t, u, stepOption) performs step input simulation of the PhasorSS object with a periodic input u.
             %   Note that for LPV system initial condition is computed so that p(0,x0,0) = 0.
@@ -2095,7 +2104,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             superMatrix = [obj.A , obj.B ; obj.C , obj.D];
 
             ff =gcf;
-            ff.Visible = 'off';
+            % ff.Visible = 'off';
             if obj.isLPV
                 T = 2*pi;
             else
@@ -2112,27 +2121,28 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             arrayfun(@(ax) delete([ax.YLabel, ax.Title]), allAxes);
 
             for ii = 1:(obj.nx)
-                subplot(n2,n1,ii)
+                nexttile(ii)
                 title(obj.StateName{ii})
-                subplot(n2,n1,(ii-1)*n1+1)
+                nexttile((ii-1)*n1+1)
                 ylabel(obj.StateName{ii},"FontWeight","bold","Rotation",0)
             end
             for ii = 1:(obj.nu)
-                subplot(n2,n1,obj.nx+ii)
+                nexttile(obj.nx+ii)
                 title(obj.InputName{ii})
             end
             for ii = 1:obj.ny
-                subplot(n2,n1,(obj.nx+ii-1)*n1+1)
+                nexttile((obj.nx+ii-1)*n1+1)
                 ylabel(obj.OutputName{ii},"FontWeight","bold","Rotation",0)
             end
 
+            % allAxes = findall(ff.Children,'type','Axes');
             linkaxes(allAxes,'x');
             %linkaxes y by row
             for ii = 1:n2
                 linkaxes(allAxes((ii-1)*n1+1:ii*n1),'y');
             end
 
-            ff.Visible = 'on';
+            % ff.Visible = 'on';
 
         end 
 

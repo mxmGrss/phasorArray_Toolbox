@@ -232,7 +232,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 return
             end
 
-            if varg.isreal %si on a indiqué fournir un 0-phaosr et les phasor positif
+            if varg.isreal % if we indicated to provide a 0-phasor and positive phasors
                 if numel(varargin)==1
                     varP=varargin{1};
                     varP0=varP(:,:,1);
@@ -242,13 +242,13 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                     assert(numel(varargin)==2,'If 0 and PosPhasor are provided, only 2 argument must be provided')
                     obj = PosPart2PhasorArray(varargin{:});
                 end
-            elseif numel(varargin)>1 %SINON, si on a fourni plusieurs argument scalaire, c'est qu'on fournit une taille pour un phasor array nul
+            elseif numel(varargin)>1 % OTHERWISE, if we provided multiple scalar arguments, we're providing a size for a zero phasor array
                 assert(and(isscalar(varargin{1}),isscalar(varargin{2})),"error")
                 obj.Phasor3D=zeros(varargin{:});
                 varg.reduce =0;
-            elseif isa(varargin{1},'PhasorArray') %si le premier arg est un phasor array, tous les arguments suivant sont ignorés
+            elseif isa(varargin{1},'PhasorArray') % if the first arg is a phasor array, all following arguments are ignored
                 obj.Phasor3D = pvalue(varargin{1});
-            elseif isa(varargin{1},'sparsePhasorArray') %si le premier arg est un sparse phasor array, tous les arguments suivant sont ignorés
+            elseif isa(varargin{1},'sparsePhasorArray') % if the first arg is a sparse phasor array, all following arguments are ignored
                 obj = varargin{1}.toPhasorArray();
                 return
             else
@@ -659,7 +659,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             r = o1;
         end
         function r = pagetimes(o1,o2)
-            %Realise le produit terme à terme de phaseurs de deux PhasorArray
+            % Performs element-wise multiplication of phasors from two PhasorArrays
             d=PhasorUnif(o1,o2);
             r = PhasorArray(pvalue(d{1}).*pvalue(d{2}));
         end
@@ -738,14 +738,12 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             r = PhasorArray(d{1}.*d{2});
         end
         function r = pagerdivide(o1,o2)
-            %Realise la r division terme à terme des Phaseurs de 2
-            %PhasorArray
+            % Performs element-wise right division of phasors from 2 PhasorArrays
             d=PhasorUnif(o1,o2);
             r = PhasorArray(d{1}./d{2});
         end
         function r = pageldivide(o1,o2)
-            %Realise la l division terme à terme des Phaseurs de 2
-            %PhasorArray
+            % Performs element-wise left division of phasors from 2 PhasorArrays
             d=PhasorUnif(o1,o2);
             r = PhasorArray(d{1}.\d{2});
         end
@@ -1486,12 +1484,13 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 n1
                 n2=[]
             end
-            if nargin<3 %cas ou on a en apparence que une seule entrée de coordonnée
-                % cas 1 c'est une matrice d'entier
-                % cas 2 c'est une matrice de logical, et il faut verif
-                % qu'elle fait la bonne taille
+            if nargin<3 
+                % case where we apparently have only one coordinate entry
+                % case 1 it's an integer matrix
+                % case 2 it's a logical matrix, and we need to verify
+                % that it has the right size
 
-                if ~strcmp(n1,':')%on a une matrice en input
+                if ~strcmp(n1,':')% matrix input
                     if islogical(n1)
                         if numelt(o1)==numel(n1)
                             n1=find(logical(n1));
@@ -1501,10 +1500,10 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                     end
                 end
 
-                if size(o1,2)==1 % c'est déjà un phasorArray colonne, normal de n'avoir eu qu'un indice
+                if size(o1,2)==1 % its already a column PhasorArray, normal to have only one index
                     n2=1;
                 else
-                    o1=vect(o1); % on le rend colonne, ce sera plus simple à manipuler
+                    o1=vect(o1); % we make it a column, it will be easier to manipulate
                     n2=1;
                 end
             end
@@ -1564,13 +1563,11 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         function r = ctranspose(o1)
             %CTRANSPOSE overloading for PhasorArray
             %CTRANSPOSE(A) : A' = A(t)'
-            %transpose avec '
             r = mctranspose(o1);
         end
         function r = transpose(o1)
             %TRANSPOSE overloading for PhasorArray
             %TRANSPOSE(A) : A.' = A(t).'
-            %transpose avec .'
             r = mtranspose(o1);
         end
         function r = pagectranspose(o1)
@@ -1581,15 +1578,14 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         function r = pagetranspose(o1)
             %PAGETRANSPOSE overloading for PhasorArray 
             %PAGETRANSPOSE(A) apply transpose to each page of A resulting in A(t).'
-            % transpose appliqué à chacun des phaseurs
             r = PhasorArray(pagetranspose(pvalue(o1)));
         end
         function r = mtranspose(o1)
-            % transpose appliqué à la matrice temporelle
+            % mtranspose(A(t))
             r=pagetranspose(o1);
         end
         function r = mctranspose(o1)
-            % ctranspose appliqué à la matrice temporelle
+            % mctranspose(A(t))
             r=PhasorArray(flip(pagectranspose(o1.value),3));
         end
 
@@ -4725,8 +4721,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 n2=indexOp.Indices{2};
 
                 n3=indexOp.Indices{3};
-                if ischar(n3) %on a reçu l'argument ':', donc forcement un phasorArray
-
+                if ischar(n3) % %we get ":" , so necessarly a phasorArray
                 else
                     if max(abs(n3))>obj.h
                         obj=obj.pad(max(abs(n3))-obj.h);
@@ -4747,8 +4742,8 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 switch numel(indexOp.Indices)
                     case 1
                         m=indexOp.Indices{1};
-                        if  numel(m)==obj.numelt %numelt renvoit la dim de la matrice tempo ie n1 \times n2, donc ce serait un logical array en entrée
-                            if any((m ~= 0) & (m ~= 1)) %on verifie que c'est un logical array
+                        if  numel(m)==obj.numelt %numelt out numel (A(t)) is size(A,1) times size(A,2) returns the dimension of the temporal matrix i.e. n1 \times n2, so it would be a logical array as input
+                            if any((m ~= 0) & (m ~= 1)) % check m is logical
                                 error('Array indices must be positive integers or logical values.')
                             end
 
@@ -4862,7 +4857,6 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
 
     methods (Static, Access=public)
         function out = builtin(funcName, varargin)
-            disp('hebhen alors')
             % Intercepts function-style calls: methodName(obj)
                 out = builtin(funcName, varargin{:});
             end

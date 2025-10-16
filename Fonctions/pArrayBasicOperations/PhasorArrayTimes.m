@@ -52,7 +52,6 @@ if ~isMATLABReleaseOlderThan("R2022a")
     mA=(size(A,3)-1)/2;
     mB=(size(B,3)-1)/2;
 
-
     if isscalar(A)
         D=A*B;
         return

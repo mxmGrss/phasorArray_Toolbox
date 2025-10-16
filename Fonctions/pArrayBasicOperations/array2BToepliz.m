@@ -65,7 +65,6 @@ end
     if nh>max(m)
         Aph=Aph(:,:,(nh+1+(-max(m):max(m))));
     elseif nh<max(m)
-        if isa(Aph,"ndsdpvar") || isa(Aph,"sdpvar") || isa(Aph,"sym")
 %             Aphd=ndsdpvar(size(Aphi,1),size(Aphi,2),max(m));
 %             Aphd(:,:,(end+1)/2+(-nh:nh))=Aph;
 %             Aphd(:,:,1:(end+1)/2+(-nh-1))=0;
@@ -73,9 +72,6 @@ end
 %             Aph=Aphd;
             Aphd=cat(3,zeros(n1,n2,(max(m)-nh)),Aph,zeros(n1,n2,(max(m)-nh)));
             Aph=Aphd;
-        else
-            Aph=padarray(Aph,[0 0 (max(m)-nh)]);
-        end
     
 end
 
