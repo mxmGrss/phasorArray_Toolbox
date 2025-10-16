@@ -1,11 +1,12 @@
 function [HpJ,JHm,Hp,Hm] = spArray2TBHankel(Aph,m,varg)
-%ARRAY2HANKELP Summary 3D array to Hankel * J positive Toeplitz-blocs matrix
-%   recoit une liste de matrice (3D array) [A-nh1 ... A0 ... Anh1] et
-%   construit la matrice faites de Blocs Toeplitz, chacun représentant la
-%   toeplitz de chacun des coeefficients. 
-%   if specified, nhcible pad / truncate the 3D array with zeros so that output is of len (nh+1) blocks. 
-%cell2mat is sligthly more efficient than concatenation of blocks, but not
-%compatible with sdp var, hence the argument method.
+%SPARRAY2TBHANKEL Converts a 3D array to a Hankel * J positive Toeplitz-blocks matrix
+%   Takes a list of matrices (3D array) [A-nh1 ... A0 ... Anh1] and
+%   constructs a matrix made of Toeplitz blocks, each representing the
+%   Toeplitz structure of the coefficients.
+%   If specified, nhcible pads/truncates the 3D array with zeros so that the output
+%   has (nh+1) blocks.
+%   'cell2mat' is slightly more efficient than concatenation of blocks, but
+%   is not compatible with sdp variables, hence the 'method' argument.
 
 arguments
     Aph
