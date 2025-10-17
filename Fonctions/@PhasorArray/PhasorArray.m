@@ -1836,12 +1836,14 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 oo=bsxfun(@times,o1.value,K);
                 r=PhasorArray(oo);
             catch e
-                e
+                warning(e.message)
+                warning('Attempting to diff a non basic type, switching to manual diff')
                 % We need to manually perform the operation intended for each "slice" of P.
                 for idx = 1:size(o1, 3)
                     o1(:,:,idx) = o1(:,:,idx) * K(idx);
                 end
                 r = o1;
+                warning('done with success')
             end
         end
         function r = PhaseShift(o1,angle)

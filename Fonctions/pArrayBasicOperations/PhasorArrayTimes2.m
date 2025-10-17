@@ -92,21 +92,27 @@ end
     if isempty(m)
         m=mA+mB ;
     end
+
+
+    %finally assert that the size of the two arrays are compatible
+    if size(A,2)~=size(B,1)
+        error('The two arrays must have compatible sizes. Left array %s is %d x %d x %d and right array is  %s %d x %d x %d',inputname(1),size(A,1),size(A,2),size(A,3),inputname(2),size(B,1),size(B,2),size(B,3));
+    end
+
+
 try
     if isa(B,'double') %if B is double (hence A sdp or sym), slightly more efficient to use transposed pb
         At = permute(A,[2 1 3]);
-        Bt = permute(B,[2 1  3]);
+        Bt = permute(B,[2 1 3]);
         A_tb = sparray2TBlocks(Bt,2*m);
         B_ftb = array2TFTB(At,m);
         C_ftb = (A_tb * B_ftb);
-        C = TF_TB_2_PhasorArray(C_ftb,size(A,1),size(B,2));
+        C = TF_TB_2_PhasorArray(C_ftb,size(B,2),size(A,1));
         C = permute(C,[2 1  3]);
         D = C;
     else 
         A_tb = sparray2TBlocks(A,2*m);
-        size(A_tb)
         B_ftb = array2TFTB(B,m);
-        size(B_ftb)
         C_ftb = A_tb * B_ftb;
         C = TF_TB_2_PhasorArray(C_ftb,size(A,1),size(B,2));
         D = C;
