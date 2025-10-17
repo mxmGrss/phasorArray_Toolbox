@@ -107,14 +107,14 @@ try
         A_tb = sparray2TBlocks(Bt,2*m);
         B_ftb = array2TFTB(At,m);
         C_ftb = (A_tb * B_ftb);
-        C = TF_TB_2_PhasorArray(C_ftb,size(B,2),size(A,1));
+        C = F_tb_2_PhasorArray(C_ftb,size(B,2),size(A,1));
         C = permute(C,[2 1  3]);
         D = C;
     else 
         A_tb = sparray2TBlocks(A,2*m);
         B_ftb = array2TFTB(B,m);
         C_ftb = A_tb * B_ftb;
-        C = TF_TB_2_PhasorArray(C_ftb,size(A,1),size(B,2));
+        C = F_tb_2_PhasorArray(C_ftb,size(A,1),size(B,2));
         D = C;
     end
     return

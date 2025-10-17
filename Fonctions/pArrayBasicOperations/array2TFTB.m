@@ -1,5 +1,5 @@
 function r= array2TFTB(o1,m)
-%TF_TB Compute the Fourier representation of A in a form compatible with TB(A, m).
+%F_tb Compute the Fourier representation of A in a form compatible with TB(A, m).
 %
 %   This function computes the **Fourier representation** of A(t) up to order `m`, 
 %   but instead of forming a **square Toeplitz Block matrix** (TB(A, m)), it **stacks
@@ -7,9 +7,9 @@ function r= array2TFTB(o1,m)
 %
 %   **Definition:**
 %   - Let `a(t)` be a scalar function with Fourier coefficients `(a_k)_{k∈ℤ}`.
-%   - Then, `TF_TB(a, m) = [a_(-m); a_(-m+1); ... a_0; a_1; ... a_m]`.
+%   - Then, `F_tb(a, m) = [a_(-m); a_(-m+1); ... a_0; a_1; ... a_m]`.
 %   - If `A(t)` is an `N×M` matrix, its Fourier representation is given by:
-%       TF_TB(A, m) = [TF_TB(A_11), TF_TB(A_12); TF_TB(A_21), TF_TB(A_22)].
+%       F_tb(A, m) = [F_tb(A_11), F_tb(A_12); F_tb(A_21), F_tb(A_22)].
 %
 %   **Key Property (TB Compatibility):**
 %   If `y(t) = A(t)x(t)`, then:
@@ -17,10 +17,10 @@ function r= array2TFTB(o1,m)
 %   where `TB(A, m)` is the **Toeplitz Block representation** of `A` (see `TB` method).
 %
 %   **Dimension of the Output:**
-%   - If `A` is an `N×M` matrix, then `TF_TB(A, m)` is a `((2m+1)N) × M` matrix.
+%   - If `A` is an `N×M` matrix, then `F_tb(A, m)` is a `((2m+1)N) × M` matrix.
 %
 %   Syntax:
-%   r = TF_TB(A, m)  
+%   r = F_tb(A, m)  
 %       Computes the Fourier representation of `A` up to order `m`, compatible with TB(A, m).
 %
 %   Input Arguments:
@@ -33,9 +33,9 @@ function r= array2TFTB(o1,m)
 %   Example:
 %   % Compute Fourier representation of A in TB form
 %   A = PhasorArray(rand(4,4,11));
-%   TF_TB_A = TF_TB(A, 5);
+%   F_tb_A = F_tb(A, 5);
 %
-%   See also: TF_BT, TB.
+%   See also: F_bt, TB.
 arguments
     o1
     m=(size(o1,3)-1)/2;

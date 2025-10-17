@@ -61,8 +61,8 @@ for kk = 1:max_iter
         [S{kk},res] = lyap(Ak{kk},Yk{kk}+Q,"T",T,"h",htrunc);
     end
     % M = kron(eye(2), Ak{kk}.' ) + kron(Ak{kk}.' , eye(2));
-    % Ss = (-M * TB(htrunc) - NTB(M, htrunc, T)) \ (TF_TB(vec(Yk{kk} + Q), htrunc));
-    % SS = TF_TB_2_PhasorArray(Ss, 2, 2);
+    % Ss = (-M * TB(htrunc) - NTB(M, htrunc, T)) \ (F_tb(vec(Yk{kk} + Q), htrunc));
+    % SS = F_tb_2_PhasorArray(Ss, 2, 2);
     % S{kk} = SS;
     H(kk) = htrunc;
 

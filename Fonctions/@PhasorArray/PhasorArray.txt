@@ -50,7 +50,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
     %
     %   - **Harmonic Domain Analysis:**
     %       - Toeplitz Formalism: BT, TB, spBT, spTB
-    %       - Fourier Formalism: FvTB, TF_BT, TF_TB, compatible with Toeplitz
+    %       - Fourier Formalism: FvTB, TF_BT, F_tb, compatible with Toeplitz
     %       - Eigenvalue Analysis: HmqEig, HmqNEig
     %
     %   - **Time-Domain Evaluation:**
@@ -92,7 +92,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
     %       - Control:
     %           place
     %       - Toeplitz Formalism:
-    %           FvTB, TF_BT, TF_TB, spBT, spBTHankel, spTB, spTBHankel,
+    %           FvTB, TF_BT, F_tb, spBT, spBTHankel, spTB, spTBHankel,
     %           spTBmtimes, BT, BTHankel, TB, TBHankel, TBmtimes
     %
     %   - **Mathematical Operations:**
@@ -2219,21 +2219,21 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %
             %   This function first **vectorizes** the time-dependent matrix A(t) by stacking
             %   all its columns into a **single-column vector** a(t) = vect(A(t)), and then
-            %   applies the **TF_TB** transformation to obtain its Fourier representation.
+            %   applies the **F_tb** transformation to obtain its Fourier representation.
             %
             %   **Alternative Computation:**
             %   - In MATLAB notation, vectorizing A(t) is equivalent to **A{:}**.
-            %   - Thus, this function is **equivalent to applying TF_TB to A{:}**, i.e.:
-            %       FvTB(A, h) = TF_TB(A{:}, h).
+            %   - Thus, this function is **equivalent to applying F_tb to A{:}**, i.e.:
+            %       FvTB(A, h) = F_tb(A{:}, h).
             %
             %   **Procedure:**
             %   1. Compute the column-wise vectorization:
             %       - If A(t) is an `N×M` matrix, then vect(A(t)) is a column vector of size `NM × 1`.
             %       - This stacking is done **column by column** (following MATLAB’s column-major order).
             %   2. Compute the Fourier series coefficients **up to order h**:
-            %       - Instead of applying `TF_TB` directly to A(t), we apply it to a(t) = vect(A(t)).
+            %       - Instead of applying `F_tb` directly to A(t), we apply it to a(t) = vect(A(t)).
             %       - The result is the Fourier representation of `vect(A(t))`, which is a vectorized form 
-            %         of `TF_TB(A, h)`.
+            %         of `F_tb(A, h)`.
             %
             %   **Key Property:**
             %   If `y(t) = A(t)x(t)`, then:
@@ -2259,10 +2259,10 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %   A = PhasorArray(rand(4,4,11));
             %   FvTB_A = FvTB(A, 5);
             %
-            %   % Compute using TF_TB on the vectorized form
-            %   FvTB_A_alt = TF_TB(A{:}, 5); % Equivalent computation
+            %   % Compute using F_tb on the vectorized form
+            %   FvTB_A_alt = F_tb(A{:}, 5); % Equivalent computation
             %
-            %   See also: TF_TB, vect, trunc, pad.
+            %   See also: F_tb, vect, trunc, pad.
             if size(o1,3)>2*h+1
                 o1=trunc(o1,h);
             else
@@ -2460,8 +2460,8 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             AB_TB=o1TB*o2TB+Hp*Hm2+JHm*HpJ2;
         end
 
-        function r= TF_TB(o1,m)
-            %TF_TB Compute the Fourier representation of A in a form compatible with TB(A, m).
+        function r= F_tb(o1,m)
+            %F_tb Compute the Fourier representation of A in a form compatible with TB(A, m).
             %
             %   This function computes the **Fourier representation** of A(t) up to order `m`, 
             %   but instead of forming a **square Toeplitz Block matrix** (TB(A, m)), it **stacks
@@ -2469,9 +2469,9 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %
             %   **Definition:**
             %   - Let `a(t)` be a scalar function with Fourier coefficients `(a_k)_{k∈ℤ}`.
-            %   - Then, `TF_TB(a, m) = [a_(-m); a_(-m+1); ... a_0; a_1; ... a_m]`.
+            %   - Then, `F_tb(a, m) = [a_(-m); a_(-m+1); ... a_0; a_1; ... a_m]`.
             %   - If `A(t)` is an `N×M` matrix, its Fourier representation is given by:
-            %       TF_TB(A, m) = [TF_TB(A_11), TF_TB(A_12); TF_TB(A_21), TF_TB(A_22)].
+            %       F_tb(A, m) = [F_tb(A_11), F_tb(A_12); F_tb(A_21), F_tb(A_22)].
             %
             %   **Key Property (TB Compatibility):**
             %   If `y(t) = A(t)x(t)`, then:
@@ -2479,10 +2479,10 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %   where `TB(A, m)` is the **Toeplitz Block representation** of `A` (see `TB` method).
             %
             %   **Dimension of the Output:**
-            %   - If `A` is an `N×M` matrix, then `TF_TB(A, m)` is a `((2m+1)N) × M` matrix.
+            %   - If `A` is an `N×M` matrix, then `F_tb(A, m)` is a `((2m+1)N) × M` matrix.
             %
             %   Syntax:
-            %   r = TF_TB(A, m)  
+            %   r = F_tb(A, m)  
             %       Computes the Fourier representation of `A` up to order `m`, compatible with TB(A, m).
             %
             %   Input Arguments:
@@ -2495,7 +2495,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %   Example:
             %   % Compute Fourier representation of A in TB form
             %   A = PhasorArray(rand(4,4,11));
-            %   TF_TB_A = TF_TB(A, 5);
+            %   F_tb_A = F_tb(A, 5);
             %
             %   See also: TF_BT, TB.
             arguments
@@ -2550,7 +2550,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %   A = PhasorArray(rand(4,4,11));
             %   TF_BT_A = TF_BT(A, 5);
             %
-            %   See also: TF_TB, BT.
+            %   See also: F_tb, BT.
             arguments
                 o1
                 m=(size(o1,3)-1)/2;
@@ -4299,13 +4299,13 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             obj = PhasorArray(pA);
         end
 
-        function obj = fromTFTB(TF_TB, n1, n2)
+        function obj = fromTFTB(F_tb, n1, n2)
             % FROMTFTB Create a PhasorArray from a Fourier Transform (TB format).
-            %   obj = FROMTFTB(TF_TB, n1, n2) converts a vector representing the Fourier
+            %   obj = FROMTFTB(F_tb, n1, n2) converts a vector representing the Fourier
             %   decomposition in a Toeplitz block (TB) format into a PhasorArray.
             %
             %   Inputs:
-            %     TF_TB - (vector) A vector containing the Fourier coefficients in TB format.
+            %     F_tb - (vector) A vector containing the Fourier coefficients in TB format.
             %     n1    - (scalar) The first dimension of the matrix.
             %     n2    - (scalar) The second dimension of the matrix.
             %
@@ -4313,11 +4313,11 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %     obj - (PhasorArray) The converted PhasorArray.
             %
             %   Example:
-            %     TF_TB = rand(27, 1); % Example Fourier coefficients in TB format
-            %     phasorArray = PhasorArray.fromTFTB(TF_TB, 3, 3);
+            %     F_tb = rand(27, 1); % Example Fourier coefficients in TB format
+            %     phasorArray = PhasorArray.fromTFTB(F_tb, 3, 3);
             %
-            %   See also: TF_TB_2_PhasorArray,TF_TB
-            PA = TF_TB_2_PhasorArray(TF_TB, n1, n2);
+            %   See also: F_tb_2_PhasorArray,F_tb
+            PA = F_tb_2_PhasorArray(F_tb, n1, n2);
             obj = PhasorArray(PA);
         end
 
