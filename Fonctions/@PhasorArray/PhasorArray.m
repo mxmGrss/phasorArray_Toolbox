@@ -433,6 +433,9 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %   and total energy E.
             %   If elementwise is true, returns element-wise energy. Default is false.
             %
+            %   The energy is computed as: the \ell_2 norm squared of the PhasorArray over all harmonics.
+            %   Through Parseval's theorem, this corresponds to the total energy in the time domain : E = \int |A(t)|^2 dt over one period.
+            %
             %   formula E(i,j) = sum |o1(i,j,k)|^2
             %           E = sum E(i,j)
             %
@@ -1957,7 +1960,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %   See also: DET, REDUCE.
 
             % Call PhasorInv with only the required number of outputs
-            if nargout == 1
+            if nargout <= 1
                 Ainvph = PhasorInv(o1, varargin{:});
                 oInv = PhasorArray(Ainvph);
             elseif nargout == 2

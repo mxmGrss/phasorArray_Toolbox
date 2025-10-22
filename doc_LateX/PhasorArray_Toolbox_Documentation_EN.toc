@@ -1,0 +1,59 @@
+\babel@toc {english}{}\relax 
+\contentsline {section}{\numberline {1}Introduction and Motivation}{3}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Mathematical Foundation}{3}{subsection.1.1}%
+\contentsline {paragraph}{Fundamental Properties:}{4}{section*.2}%
+\contentsline {paragraph}{Truncation Challenges:}{4}{section*.3}%
+\contentsline {paragraph}{Toolbox Objective:}{4}{section*.4}%
+\contentsline {paragraph}{Philosophy:}{5}{section*.5}%
+\contentsline {paragraph}{Example:}{5}{section*.6}%
+\contentsline {section}{\numberline {2}Toolbox Structure}{5}{section.2}%
+\contentsline {section}{\numberline {3}Main Methods of the \texttt {PhasorArray} Class}{5}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Creation and Initialization}{5}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Analysis and Information Retrieval}{6}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}Standard Mathematical Operations}{6}{subsection.3.3}%
+\contentsline {subsection}{\numberline {3.4}Specific Harmonic Manipulation}{6}{subsection.3.4}%
+\contentsline {subsection}{\numberline {3.5}Conversions and Alternative Representations}{6}{subsection.3.5}%
+\contentsline {subsection}{\numberline {3.6}Temporal Domain Evaluation}{6}{subsection.3.6}%
+\contentsline {subsection}{\numberline {3.7}Advanced Harmonic Analysis}{6}{subsection.3.7}%
+\contentsline {subsection}{\numberline {3.8}Standard Operator Overloading}{7}{subsection.3.8}%
+\contentsline {subsection}{\numberline {3.9}Visualization}{7}{subsection.3.9}%
+\contentsline {section}{\numberline {4}Simple Periodic System Simulation}{7}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Creating and Displaying a Periodic Matrix}{7}{subsection.4.1}%
+\contentsline {paragraph}{Creation from Fourier Coefficients}{7}{section*.7}%
+\contentsline {paragraph}{Creation from a Temporal Signal}{7}{section*.8}%
+\contentsline {subsection}{\numberline {4.2}Elementary Manipulations}{8}{subsection.4.2}%
+\contentsline {paragraph}{Addition, Product, and Temporal Operations}{8}{section*.9}%
+\contentsline {subsection}{\numberline {4.3}Harmonic Reduction}{8}{subsection.4.3}%
+\contentsline {paragraph}{Explicit Truncation}{8}{section*.10}%
+\contentsline {paragraph}{Automatic Reduction by Thresholding}{8}{section*.11}%
+\contentsline {paragraph}{Zero Thresholding Reduction}{8}{section*.12}%
+\contentsline {subsection}{\numberline {4.4}Simple Periodic System Simulation}{9}{subsection.4.4}%
+\contentsline {paragraph}{System Simulation}{9}{section*.13}%
+\contentsline {paragraph}{Observations}{9}{section*.14}%
+\contentsline {section}{\numberline {5}Application Example: Harmonic Sylvester Equation Resolution and Harmonic Pole Placement}{9}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Problem Statement}{9}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}Strategy}{9}{subsection.5.2}%
+\contentsline {subsection}{\numberline {5.3}Implementation with the \texttt {PhasorArray} Toolbox}{10}{subsection.5.3}%
+\contentsline {paragraph}{Important Remarks:}{10}{section*.15}%
+\contentsline {subsection}{\numberline {5.4}Results Validation}{10}{subsection.5.4}%
+\contentsline {section}{\numberline {6}Advanced Harmonic Analysis and Control Design}{11}{section.6}%
+\contentsline {subsection}{\numberline {6.1}Lyapunov Equations}{11}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}Riccati Equations and LQR Control}{11}{subsection.6.2}%
+\contentsline {subsection}{\numberline {6.3}Harmonic Eigenvalue Analysis}{12}{subsection.6.3}%
+\contentsline {section}{\numberline {7}Linear Matrix Inequalities (LMI) Resolution}{13}{section.7}%
+\contentsline {subsection}{\numberline {7.1}Problem Statement}{13}{subsection.7.1}%
+\contentsline {subsection}{\numberline {7.2}Method 1: Direct Formulation in Harmonic Domain}{13}{subsection.7.2}%
+\contentsline {subsection}{\numberline {7.3}Method 2: Hankel Correction Approach}{13}{subsection.7.3}%
+\contentsline {section}{\numberline {8}Linear Time-Periodic Systems with PhasorSS}{14}{section.8}%
+\contentsline {subsection}{\numberline {8.1}PhasorSS System Construction}{14}{subsection.8.1}%
+\contentsline {subsection}{\numberline {8.2}System Analysis and Simulation}{15}{subsection.8.2}%
+\contentsline {subsection}{\numberline {8.3}Periodic Input Simulation}{15}{subsection.8.3}%
+\contentsline {section}{\numberline {9}Correspondences Between Temporal and Harmonic Domains}{16}{section.9}%
+\contentsline {section}{\numberline {10}Conclusion}{16}{section.10}%
+\contentsline {subsection}{\numberline {10.1}Key Contributions}{17}{subsection.10.1}%
+\contentsline {paragraph}{Mathematical Rigor:}{17}{section*.17}%
+\contentsline {paragraph}{Practical Implementation:}{17}{section*.18}%
+\contentsline {paragraph}{Advanced Control Capabilities:}{17}{section*.19}%
+\contentsline {paragraph}{System Integration:}{17}{section*.20}%
+\contentsline {subsection}{\numberline {10.2}Applications and Impact}{17}{subsection.10.2}%
+\contentsline {subsection}{\numberline {10.3}Future Developments}{18}{subsection.10.3}%
