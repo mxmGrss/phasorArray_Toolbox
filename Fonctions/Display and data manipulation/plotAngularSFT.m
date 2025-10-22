@@ -213,7 +213,7 @@ if sum(plotTAPRI)>0
         legend('Location','best')
 
     end
-        sgtitle()
+        sgtitle('')
 
 
     aaa = findobj(gcf,'Type','axes','Visible','on');
