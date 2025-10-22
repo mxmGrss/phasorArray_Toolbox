@@ -79,7 +79,7 @@ switch arg.time_structure
 %         arg.hurwitzeig
         hbi=h*4;
        W=rand_phasor(nx,nx,h,"time_structure",'sdp');
-       N=NTB(nx,hbi,arg.T);
+       N=N_tb(nx,hbi,arg.T);
 %        N=kron(eye(nx),diag(1i*(-hbi:hbi)));
        Qhm=array2TBlocks(diag(arg.hurwitzeig),2*hbi);
        Whm=array2TBlocks(W,2*hbi);
@@ -90,7 +90,7 @@ switch arg.time_structure
     case 'Q-spec'
         hbi=h*1;
        W=rand_phasor(nx,nx,h,"time_structure",'sdp');
-       N=NTB(nx,hbi,arg.T);
+       N=N_tb(nx,hbi,arg.T);
 %        N=kron(eye(nx),diag(1i*(-hbi:hbi)));
        Qhm=array2TBlocks(arg.Q,2*hbi);
        Whm=array2TBlocks(W,2*hbi);

@@ -2568,11 +2568,11 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         end
 
         function r= HmqNEig(o1,h,T,bandlimit)
-            % HMQNEIG Compute the eigenvalues of TB(o1, h) - NTB(o1, h, T).
+            % HMQNEIG Compute the eigenvalues of TB(o1, h) - N_tb(o1, h, T).
 %
 %   HMQNEIG(o1, h, T, bandlimit) computes the eigenvalues of the difference between 
 %   the Toeplitz Block matrix `TB(o1, h)` and the non-periodic Toeplitz approximation 
-%   `NTB(o1, h, T)`, capturing spectral properties of `o1`.
+%   `N_tb(o1, h, T)`, capturing spectral properties of `o1`.
 %
 %   Inputs:
 %     o1        - (PhasorArray) The input PhasorArray representing a periodic matrix function.
@@ -2584,10 +2584,10 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
 %                   - 'fundamental': Retains eigenvalues where |imag(r)| < π / |T|.
 %
 %   Outputs:
-%     r - (vector) The eigenvalues of the matrix `TB(o1, h) - NTB(o1, h, T)`.
+%     r - (vector) The eigenvalues of the matrix `TB(o1, h) - N_tb(o1, h, T)`.
 %
 %   Behavior:
-%     - Computes eigenvalues of the difference matrix `Hmq = TB(o1, h) - NTB(o1, h, T)`.
+%     - Computes eigenvalues of the difference matrix `Hmq = TB(o1, h) - N_tb(o1, h, T)`.
 %     - Band-limiting removes eigenvalues outside the specified range.
 %
 %   Example Usage:
@@ -2598,7 +2598,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
 %     % Compute eigenvalues without band-limiting
 %     r = HmqNEig(A, [], 1, 'none');
 %
-%   See also: TB, NTB, eig.
+%   See also: TB, N_tb, eig.
             arguments
                 o1
                 h=20
@@ -2608,7 +2608,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             if isempty(h)
                 h=2*o1.h;
             end
-            r1=o1.TB(h)-NTB(o1.value,h,T);
+            r1=o1.TB(h)-N_tb(o1.value,h,T);
             r=eig(r1);
             switch bandlimit
                 case 'fundamental'

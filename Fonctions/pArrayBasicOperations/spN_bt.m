@@ -1,5 +1,5 @@
-function [N,Nw] = NBT(n,nh,T)
-%NBT output the derivation matrix N = diag(jkw) kron eye(n)  associated to
+function [N,Nw] = spN_bt(n,nh,T)
+%N_bt output the derivation matrix N = diag(jkw) kron eye(n)  associated to
 %the BT harmonic matrix
 % 
 arguments
@@ -16,7 +16,7 @@ end
 
 k=(-nh:nh)';
 w=2*pi/T;
-Nw=diag(1i*k*w);
-N = kron(Nw,eye(n)) ;
+Nw=sparse(1:2*nh+1,1:2*nh+1,1i*k*w);
+N = kron(Nw,speye(n)) ;
 end
 

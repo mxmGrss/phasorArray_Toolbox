@@ -75,6 +75,6 @@ end
 
 
 if nargout==2
-    N = NTB(n1,m/2,1);
+    N = N_tb(n1,m/2,1);
 end
 end

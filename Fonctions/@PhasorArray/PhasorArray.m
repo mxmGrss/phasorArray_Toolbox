@@ -2240,7 +2240,14 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %   See also: NUMELT.
             r=size(o1,1)*size(o1,2);
         end
+        
+        function r = T_bt(o1,m)
+            r = BT(o1,m);
+        end
 
+        function r = T_tb(o1,m)
+            r = TB(o1,m);
+        end
 
         function r = BT(o1,m)
             %BT Construct a Block Toeplitz matrix from a PhasorArray.
@@ -2279,7 +2286,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %   A = PhasorArray(rand(4,4,11));
             %   BT_A = BT(A, 5);
             %
-            %   See also: TB, spTB.
+            %   See also: TB, spBT, T_bt.
             arguments
                 o1
                 m=[]
@@ -2325,7 +2332,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %   A = PhasorArray(rand(4,4,11));
             %   TB_A = TB(A, 5);
             %
-            %   See also: BT, spTB.
+            %   See also: BT, spTB, T_tb.
             arguments
                 o1
                 m=[]
@@ -2588,8 +2595,8 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %   See also: spTBmtimes, TB, TBHankel.
             [~,JHm,Hp,~] = TBHankel(o1,h);
             [HpJ2,~,~,Hm2] = TBHankel(o2,h);
-            o1TB=o1.TB(h);
-            o2TB=o2.TB(h);
+            o1TB=o1.T_tb(h);
+            o2TB=o2.T_tb(h);
             AB_TB=o1TB*o2TB+Hp*Hm2+JHm*HpJ2;
         end
         function AB_TB = spTBmtimes(o1,o2,h)
@@ -2630,10 +2637,10 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         end
 
         function r= F_tb(o1,m)
-            %F_tb Compute the Fourier representation of A in a form compatible with TB(A, m).
+            %F_tb Compute the Fourier representation of A in a form compatible with T_tb(A, m).
             %
             %   This function computes the **Fourier representation** of A(t) up to order `m`, 
-            %   but instead of forming a **square Toeplitz Block matrix** (TB(A, m)), it **stacks
+            %   but instead of forming a **square Toeplitz Block matrix** (T_tb(A, m)), it **stacks
             %   the phasors of each element of A into a structured vectorized form**.
             %
             %   **Definition:**
@@ -2644,22 +2651,22 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %
             %   **Key Property (TB Compatibility):**
             %   If `y(t) = A(t)x(t)`, then:
-            %       F_TB(y) = TB(A, m) ⋅ F_TB(x),
-            %   where `TB(A, m)` is the **Toeplitz Block representation** of `A` (see `TB` method).
+            %       F_TB(y) = T_tb(A, m) ⋅ F_TB(x),
+            %   where `T_tb(A, m)` is the **Toeplitz Block representation** of `A` (see `TB` method).
             %
             %   **Dimension of the Output:**
             %   - If `A` is an `N×M` matrix, then `F_tb(A, m)` is a `((2m+1)N) × M` matrix.
             %
             %   Syntax:
             %   r = F_tb(A, m)  
-            %       Computes the Fourier representation of `A` up to order `m`, compatible with TB(A, m).
+            %       Computes the Fourier representation of `A` up to order `m`, compatible with T_tb(A, m).
             %
             %   Input Arguments:
             %   - o1 (PhasorArray) : The input PhasorArray representing A(t).
             %   - m (integer, optional) : The highest harmonic order to retain. Default: `A.h`.
             %
             %   Output:
-            %   - r ((2m+1)N × M matrix) : The Fourier representation of A in a form compatible with TB(A, m).
+            %   - r ((2m+1)N × M matrix) : The Fourier representation of A in a form compatible with T_tb(A, m).
             %
             %   Example:
             %   % Compute Fourier representation of A in TB form
@@ -2683,10 +2690,10 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             r=reshape(titi,[],size(o1,2),1);
         end
         function r= F_bt(o1,m)
-            %F_bt Compute the Fourier representation of A in a form compatible with BT(A, m).
+            %F_bt Compute the Fourier representation of A in a form compatible with T_bt(A, m).
             %
             %   This function computes the **Fourier representation** of A(t) up to order `m`, 
-            %   but instead of forming a **square Block Toeplitz matrix** (BT(A, m)), it **stacks
+            %   but instead of forming a **square Block Toeplitz matrix** (T_bt(A, m)), it **stacks
             %   the phasors of each element of A into a structured vectorized form**.
             %
             %   **Definition:**
@@ -2697,22 +2704,22 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %
             %   **Key Property (BT Compatibility):**
             %   If `y(t) = A(t)x(t)`, then:
-            %       F_BT(y) = BT(A, m) ⋅ F_BT(x),
-            %   where `BT(A, m)` is the **Block Toeplitz representation** of `A` (see `BT` method).
+            %       F_BT(y) = T_bt(A, m) ⋅ F_BT(x),
+            %   where `T_bt(A, m)` is the **Block Toeplitz representation** of `A` (see `BT` method).
             %
             %   **Dimension of the Output:**
             %   - If `A` is an `N×M` matrix, then `F_bt(A, m)` is an `N × (2m+1)M` matrix.
             %
             %   Syntax:
             %   r = F_bt(A, m)  
-            %       Computes the Fourier representation of `A` up to order `m`, compatible with BT(A, m).
+            %       Computes the Fourier representation of `A` up to order `m`, compatible with T_bt(A, m).
             %
             %   Input Arguments:
             %   - o1 (PhasorArray) : The input PhasorArray representing A(t).
             %   - m (integer, optional) : The highest harmonic order to retain. Default: `A.h`.
             %
             %   Output:
-            %   - r (N × (2m+1)M matrix) : The Fourier representation of A in a form compatible with BT(A, m).
+            %   - r (N × (2m+1)M matrix) : The Fourier representation of A in a form compatible with T_bt(A, m).
             %
             %   Example:
             %   % Compute Fourier representation of A in BT form
@@ -2737,37 +2744,37 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         end
 
         function r= HmqNEig(o1,h,T,bandlimit)
-            % HMQNEIG Compute the eigenvalues of TB(o1, h) - NTB(o1, h, T).
-%
-%   HMQNEIG(o1, h, T, bandlimit) computes the eigenvalues of the difference between 
-%   the Toeplitz Block matrix `TB(o1, h)` and the non-periodic Toeplitz approximation 
-%   `NTB(o1, h, T)`, capturing spectral properties of `o1`.
-%
-%   Inputs:
-%     o1        - (PhasorArray) The input PhasorArray representing a periodic matrix function.
-%     h         - (integer, optional) The truncation order for the harmonics.
-%                   - Default: `2*o1.h` (twice the highest harmonic stored in `o1`).
-%     T         - (double) The period of the PhasorArray.
-%     bandlimit - (char) Specifies band-limiting of eigenvalues:
-%                   - 'none' (default): No band-limiting.
-%                   - 'fundamental': Retains eigenvalues where |imag(r)| < π / |T|.
-%
-%   Outputs:
-%     r - (vector) The eigenvalues of the matrix `TB(o1, h) - NTB(o1, h, T)`.
-%
-%   Behavior:
-%     - Computes eigenvalues of the difference matrix `Hmq = TB(o1, h) - NTB(o1, h, T)`.
-%     - Band-limiting removes eigenvalues outside the specified range.
-%
-%   Example Usage:
-%     % Compute eigenvalues with fundamental band-limiting
-%     A = PhasorArray(rand(4,4,11));
-%     r = HmqNEig(A, 10, 2, 'fundamental');
-%
-%     % Compute eigenvalues without band-limiting
-%     r = HmqNEig(A, [], 1, 'none');
-%
-%   See also: TB, NTB, eig.
+            % HMQNEIG Compute the eigenvalues of T_tb(o1, h) - N_tb(o1, h, T).
+            %
+            %   HMQNEIG(o1, h, T, bandlimit) computes the eigenvalues of the difference between 
+            %   the Toeplitz Block matrix `T_tb(o1, h)` and the non-periodic Toeplitz approximation 
+            %   `N_tb(o1, h, T)`, capturing spectral properties of `o1`.
+            %
+            %   Inputs:
+            %     o1        - (PhasorArray) The input PhasorArray representing a periodic matrix function.
+            %     h         - (integer, optional) The truncation order for the harmonics.
+            %                   - Default: `2*o1.h` (twice the highest harmonic stored in `o1`).
+            %     T         - (double) The period of the PhasorArray.
+            %     bandlimit - (char) Specifies band-limiting of eigenvalues:
+            %                   - 'none' (default): No band-limiting.
+            %                   - 'fundamental': Retains eigenvalues where |imag(r)| < π / |T|.
+            %
+            %   Outputs:
+            %     r - (vector) The eigenvalues of the matrix `T_tb(o1, h) - N_tb(o1, h, T)`.
+            %
+            %   Behavior:
+            %     - Computes eigenvalues of the difference matrix `Hmq = T_tb(o1, h) - N_tb(o1, h, T)`.
+            %     - Band-limiting removes eigenvalues outside the specified range.
+            %
+            %   Example Usage:
+            %     % Compute eigenvalues with fundamental band-limiting
+            %     A = PhasorArray(rand(4,4,11));
+            %     r = HmqNEig(A, 10, 2, 'fundamental');
+            %
+            %     % Compute eigenvalues without band-limiting
+            %     r = HmqNEig(A, [], 1, 'none');
+            %
+            %   See also: TB, N_tb, eig.
             arguments
                 o1
                 h=20
@@ -2777,7 +2784,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             if isempty(h)
                 h=2*o1.h;
             end
-            r1=o1.TB(h)-NTB(o1.value,h,T);
+            r1=o1.T_tb(h)-N_tb(o1.value,h,T);
             r=eig(r1);
             switch bandlimit
                 case 'fundamental'
@@ -2800,19 +2807,19 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %            - Default: `o1.h` (the highest harmonic stored in `o1`).
             %
             %   Outputs:
-            %     r   - (vector) The eigenvalues of the Toeplitz Block matrix `TB(o1, h)`.
+            %     r   - (vector) The eigenvalues of the Toeplitz Block matrix `T_tb(o1, h)`.
             %
             %   Behavior:
-            %     - The matrix is truncated to order `h` to form `TB(o1, h)`. 
+            %     - The matrix is truncated to order `h` to form `T_tb(o1, h)`. 
             %     - If `h` is not specified, the function uses the highest harmonic available in `o1`.
             %
             %   Output Dimensions:
             %     - If `A(t)` is an `N×N` matrix and the truncation order is `h`, then:
-            %         - `TB(o1, h)` is a `(2h+1)N × (2h+1)N` matrix.
+            %         - `T_tb(o1, h)` is a `(2h+1)N × (2h+1)N` matrix.
             %         - `r` is a vector of eigenvalues of length `(2h+1)N`.
             %
             %   Example Usage:
-            %     % Compute eigenvalues of TB(A, h) with a specific truncation order
+            %     % Compute eigenvalues of T_tb(A, h) with a specific truncation order
             %     A = PhasorArray(rand(4,4,11));
             %     r = HmqEig(A, 10);
             %
@@ -2824,7 +2831,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 o1
                 h=o1.h
             end
-            r1=o1.TB(h);
+            r1=o1.T_tb(h);
             r=eig(r1);
         end
 

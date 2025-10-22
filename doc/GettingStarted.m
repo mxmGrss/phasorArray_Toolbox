@@ -245,8 +245,8 @@ plot(tcX,1,0:0.01:2,"DispImag",1,"DispReal",1) %[output:65a2d0e0]
 h=5 %[output:5602c65f]
 
 %TB and BT matrix
-A.TB(h) %[output:578a65d3]
-A.BT(h) %[output:699814f6]
+A.T_tb(h) %[output:578a65d3]
+A.T_bt(h) %[output:699814f6]
 
 %en version sparse
 A.spBT(h) %[output:5b0df3c8] %[output:5ecb5f6f]
@@ -254,14 +254,14 @@ A.spTB(h) %[output:06af72fd]
 
 T=1 %period %[output:98c532ea]
 nx=2 %number of state %[output:21152221]
-NTB(nx,h,T) %[output:33fadb3e]
-NBT(nx,h,T) %[output:35c19d76]
+N_tb(nx,h,T) %[output:33fadb3e]
+N_bt(nx,h,T) %[output:35c19d76]
 
-spNBT(nx,h,T) %[output:5cf07011]
-spNTB(nx,h,T) %[output:1058c3dd]
+spN_bt(nx,h,T) %[output:5cf07011]
+spN_tb(nx,h,T) %[output:1058c3dd]
 
 %[text] The 'N' function accept a phasorArray as first argument and deduce from the first dimension of the matrix the number of state
-NTB(A,h,T) %[output:3f844343]
+N_tb(A,h,T) %[output:3f844343]
 %[text] to compute the square hankel form used in LMI use
 %[text]  \[$\\mathcal{H}\_{m,m}(A^+)\\mathcal{J}\_{m,m},\\mathcal{J}\_{m,m}\\mathcal{H}\_{m,m}(A^-),\\mathcal{H}\_{m,m}(A^+),\\mathcal{H}\_{m,m}(A^-)\]=A.TBHankel(h);$
 %[text] BT hankel is not yet implemented
@@ -293,7 +293,7 @@ P2=(sdpvar(size(A,1),size(A,2),hP,'symmetric','complex')) %[output:04c81d1c]
 P1=(ndsdpvar(size(A,1),size(A,2),1,'symmetric','real')) %[output:5531297e]
 %sdpvar phaseur array
 P = PosPart2PhasorArray(P1,P2) %[output:578ccf2a]
-PT=P.TB(h) %[output:58cf39ef]
+PT=P.T_tb(h) %[output:58cf39ef]
 
 %ou directement avec la methode statique de PhasorArray
 P = PhasorArray.ndsdpvar(2,2,5,PhasorType='symmetric',real=true) %[output:5bc67120]
@@ -329,18 +329,19 @@ plot(M) %[output:600570be]
 %%
 %[text] ## More...
 
-% les formes fourier au lieu de Toepliz
+% Fourier Forms compatible with respective toeplitz formalism
 A.F_bt %[output:378c2ce1]
 A.F_tb  %[output:8ba3f263]
 
 
-%forme Fourier vec en TB
+% Vectorized fourier
 A.FvTB(5) %[output:418f78f8]
 A{:}.F_tb(5) %[output:8c6efb9b]
 
-%TB2Array converti une matrice TB, dont on connait le nombre de bloc, pour
-%en reconstruite le phasorArray 3D
-TB2array(A.TB(h),size(A,1))  %[output:0be258fe]
+%TB2Array retrieve the underlying phasor array, knowing at least one
+%dimension of the time domain matrices, other dimension are automatically
+%deduced
+TB2array(A.T_tb(h),size(A,1))  %[output:0be258fe]
 
 
 sum(A,1) %[output:671de4a2]

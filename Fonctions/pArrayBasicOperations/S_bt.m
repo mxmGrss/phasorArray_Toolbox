@@ -1,5 +1,5 @@
-function [out] = SBT(h,phi)
-%STB produce a Block toeplitz dephasing matrix until the order h
+function [out] = S_bt(h,phi)
+%S_bt produce a Block toeplitz dephasing matrix until the order h
 if ~iscolumn(phi)
     phi=phi.';
 end

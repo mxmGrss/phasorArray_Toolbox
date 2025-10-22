@@ -1,8 +1,8 @@
 function r= array2TFTB(o1,m)
-%F_tb Compute the Fourier representation of A in a form compatible with TB(A, m).
+%F_tb Compute the Fourier representation of A in a form compatible with T_tb(A, m).
 %
 %   This function computes the **Fourier representation** of A(t) up to order `m`, 
-%   but instead of forming a **square Toeplitz Block matrix** (TB(A, m)), it **stacks
+%   but instead of forming a **square Toeplitz Block matrix** (T_tb(A, m)), it **stacks
 %   the phasors of each element of A into a structured vectorized form**.
 %
 %   **Definition:**
@@ -13,22 +13,22 @@ function r= array2TFTB(o1,m)
 %
 %   **Key Property (TB Compatibility):**
 %   If `y(t) = A(t)x(t)`, then:
-%       F_TB(y) = TB(A, m) ⋅ F_TB(x),
-%   where `TB(A, m)` is the **Toeplitz Block representation** of `A` (see `TB` method).
+%       F_TB(y) = T_tb(A, m) ⋅ F_TB(x),
+%   where `T_tb(A, m)` is the **Toeplitz Block representation** of `A` (see `TB` method).
 %
 %   **Dimension of the Output:**
 %   - If `A` is an `N×M` matrix, then `F_tb(A, m)` is a `((2m+1)N) × M` matrix.
 %
 %   Syntax:
 %   r = F_tb(A, m)  
-%       Computes the Fourier representation of `A` up to order `m`, compatible with TB(A, m).
+%       Computes the Fourier representation of `A` up to order `m`, compatible with T_tb(A, m).
 %
 %   Input Arguments:
 %   - o1 (PhasorArray) : The input PhasorArray representing A(t).
 %   - m (integer, optional) : The highest harmonic order to retain. Default: `A.h`.
 %
 %   Output:
-%   - r ((2m+1)N × M matrix) : The Fourier representation of A in a form compatible with TB(A, m).
+%   - r ((2m+1)N × M matrix) : The Fourier representation of A in a form compatible with T_tb(A, m).
 %
 %   Example:
 %   % Compute Fourier representation of A in TB form

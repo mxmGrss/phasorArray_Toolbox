@@ -48,7 +48,7 @@ end
 
 if ndims(X)==3
     X=PhasorArray(X);
-    X=X.TB();
+    X=X.T_tb();
 end
 
 if ismatrix(varg.xticklabel) && ~isempty(varg.xticklabel)
