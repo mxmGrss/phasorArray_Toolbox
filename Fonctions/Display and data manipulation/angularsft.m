@@ -65,7 +65,7 @@ arguments
     NameSignals=[]
     PlotTAPRI {mustBeNumericOrLogical}=[true true false false false]
     optarg.xAxes {mustBeMember(optarg.xAxes,{'time','phase','revolution'})} = 'time'
-    optarg.method {mustBeMember(optarg.method,{'angle','mixed'})} = 'mixed'
+    optarg.method {mustBeMember(optarg.method,{'angle','mixed'})} = 'angle'
     optarg.orientation {mustBeMember(optarg.orientation,{'ver','hor'})} = 'hor'
     optarg.plotDebut logical = true
     optarg.plotOmega logical = false
