@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (MiKTeX 25.4) (preloaded format=pdflatex 2025.5.16)  22 OCT 2025 10:27
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (MiKTeX 25.4) (preloaded format=pdflatex 2025.5.16)  22 OCT 2025 10:41
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -576,7 +576,7 @@ Overfull \hbox (38.28682pt too wide) in paragraph at lines 681--682
 [16]
 
 [17]
-Overfull \hbox (127.78317pt too wide) in paragraph at lines 913--914
+Overfull \hbox (127.78317pt too wide) in paragraph at lines 949--950
 \OT1/cmr/m/n/10.95 ex-am-ple scripts and doc-u-men-ta-tion pro-vided with the tool-box dis-tri-bu-tion at \OT1/cmtt/m/n/10.95 github.com/mxmGrss/phasorArray[]Toolbox\OT1/cmr/m/n/10.95 . 
  []
 
@@ -592,20 +592,20 @@ L3 programming layer <2025-04-14>
 LaTeX Font Warning: Some font shapes were not available, defaults substituted.
 
 Package rerunfilecheck Info: File `PhasorArray_Toolbox_Documentation_EN.out' has not changed.
-(rerunfilecheck)             Checksum: EBC28780663635E79A5820E0D2CD21F6;8490.
+(rerunfilecheck)             Checksum: EC349244DF962783E40F303360EA48E6;8857.
  ) 
 Here is how much of TeX's memory you used:
- 16198 strings out of 469941
- 252424 string characters out of 5469430
- 1130423 words of memory out of 5000000
- 42399 multiletter control sequences out of 15000+600000
+ 16202 strings out of 469941
+ 252498 string characters out of 5469430
+ 1130426 words of memory out of 5000000
+ 42401 multiletter control sequences out of 15000+600000
  639254 words of font info for 88 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  75i,16n,79p,643b,2057s stack positions out of 10000i,1000n,20000p,200000b,200000s
  <C:\Users\max_d\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\tcrm1095.pk><C:/Users/max_d/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmbx10.pfb><C:/Users/max_d/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmbx12.pfb><C:/Users/max_d/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmbxti10.pfb><C:/Users/max_d/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmex10.pfb><C:/Users/max_d/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi10.pfb><C:/Users/max_d/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi6.pfb><C:/Users/max_d/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi7.pfb><C:/Users/max_d/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi8.pfb><C:/Users/max_d/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr10.pfb><C:/Users/max_d/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr12.pfb><C:/Users/max_d/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr6.pfb><C:/Users/max_d/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr7.pfb><C:/Users/max_d/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr8.pfb><C:/Users/max_d/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy10.pfb><C:/Users/max_d/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy6.pfb><C:/Users/max_d/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy7.pfb><C:/Users/max_d/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy8.pfb><C:/Users/max_d/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmti10.pfb><C:/Users/max_d/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmti12.pfb><C:/Users/max_d/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmtt10.pfb><C:/Users/max_d/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmtt12.pfb><C:/Users/max_d/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmtt9.pfb><C:/Users/max_d/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/symbols/msbm10.pfb>
-Output written on PhasorArray_Toolbox_Documentation_EN.pdf (18 pages, 432219 bytes).
+Output written on PhasorArray_Toolbox_Documentation_EN.pdf (18 pages, 435285 bytes).
 PDF statistics:
- 842 PDF objects out of 1000 (max. 8388607)
- 414 named destinations out of 1000 (max. 500000)
- 321 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 853 PDF objects out of 1000 (max. 8388607)
+ 416 named destinations out of 1000 (max. 500000)
+ 337 words of extra memory for PDF output out of 10000 (max. 10000000)
 

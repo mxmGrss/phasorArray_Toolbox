@@ -1,5 +1,5 @@
 # Fdb version 4
-["pdflatex"] 1761121638.72477 "i:/Maxime/OneDrive/Documents/GitHub/phasorArray_Toolbox/doc_LateX/PhasorArray_Toolbox_Documentation_EN.tex" "PhasorArray_Toolbox_Documentation_EN.pdf" "PhasorArray_Toolbox_Documentation_EN" 1761121640.25168 0
+["pdflatex"] 1761122515.16686 "i:/Maxime/OneDrive/Documents/GitHub/phasorArray_Toolbox/doc_LateX/PhasorArray_Toolbox_Documentation_EN.tex" "PhasorArray_Toolbox_Documentation_EN.pdf" "PhasorArray_Toolbox_Documentation_EN" 1761122517.14185 0
   "C:/Users/max_d/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map" 1761118109 91430 61852a4397bafee275818cd05b7c15e0 ""
   "C:/Users/max_d/AppData/Local/MiKTeX/fonts/pk/ljfour/jknappen/ec/dpi600/tcrm1095.pk" 1750602661 12668 d4138066929b91d9a96d1bf926405a40 ""
   "C:/Users/max_d/AppData/Local/MiKTeX/miktex/data/le/pdftex/pdflatex.fmt" 1747382704 13157641 88af87dd1e6c52d978a809a4f6a3557f ""
@@ -131,11 +131,11 @@
   "C:/Users/max_d/AppData/Local/Programs/MiKTeX/tex/latex/tools/tabularx.sty" 1730400552 7243 e5dac1240636811edb77568b81818372 ""
   "C:/Users/max_d/AppData/Local/Programs/MiKTeX/tex/latex/url/url.sty" 1388490452 12796 8edb7d69a20b857904dd0ea757c14ec9 ""
   "C:/Users/max_d/AppData/Local/Programs/MiKTeX/tex/latex/xcolor/xcolor.sty" 1729265222 55384 b454dec21c2d9f45ec0b793f0995b992 ""
-  "PhasorArray_Toolbox_Documentation_EN.aux" 1761121639 7919 90bef87dd7cfdc05356946765518f45b "pdflatex"
-  "PhasorArray_Toolbox_Documentation_EN.out" 1761121639 8490 ebc28780663635e79a5820e0d2cd21f6 "pdflatex"
-  "PhasorArray_Toolbox_Documentation_EN.tex" 1761121638 39761 66e7396250c06ff0a00f589c4d1e8ef9 ""
-  "PhasorArray_Toolbox_Documentation_EN.toc" 1761121639 5034 12f4f6bbac2be02c0ed2f7b34fed75d6 "pdflatex"
-  "i:/Maxime/OneDrive/Documents/GitHub/phasorArray_Toolbox/doc_LateX/PhasorArray_Toolbox_Documentation_EN.tex" 1761121638 39761 66e7396250c06ff0a00f589c4d1e8ef9 ""
+  "PhasorArray_Toolbox_Documentation_EN.aux" 1761122516 8194 20893f464ee86c090b1f461193d52857 "pdflatex"
+  "PhasorArray_Toolbox_Documentation_EN.out" 1761122516 8857 ec349244df962783e40f303360ea48e6 "pdflatex"
+  "PhasorArray_Toolbox_Documentation_EN.tex" 1761122514 41577 1fec8b6a97a9daccf23cacce84cbb08c ""
+  "PhasorArray_Toolbox_Documentation_EN.toc" 1761122516 5227 73da17e384ee44a4c3f1b6fe111d9836 "pdflatex"
+  "i:/Maxime/OneDrive/Documents/GitHub/phasorArray_Toolbox/doc_LateX/PhasorArray_Toolbox_Documentation_EN.tex" 1761122514 41577 1fec8b6a97a9daccf23cacce84cbb08c ""
   (generated)
   "PhasorArray_Toolbox_Documentation_EN.aux"
   "PhasorArray_Toolbox_Documentation_EN.log"

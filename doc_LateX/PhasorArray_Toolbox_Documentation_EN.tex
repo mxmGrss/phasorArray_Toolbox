@@ -898,6 +898,42 @@ The examples presented demonstrate the toolbox's effectiveness across various ap
 
 The significant reduction in code complexity and development time (observed factors of 3-5 in real projects) makes this toolbox an essential tool for researchers and engineers working with periodic systems.
 
+\subsection{Complete Example References}
+
+Rather than duplicating code in this documentation, users should refer to the comprehensive example files provided in the \texttt{Exemples/} directory. Each file demonstrates specific aspects of the toolbox with complete, executable workflows:
+
+\subsubsection{Example File Guide}
+
+\begin{itemize}
+    \item \textbf{\texttt{BasicToolbox.m}} (883 lines): Comprehensive introduction covering:
+    \begin{itemize}
+        \item PhasorArray creation from time functions using \texttt{funcToPhasorArray}
+        \item Arithmetic operations, truncation strategies with \texttt{neglect} and \texttt{trunc}
+        \item Visualization techniques: \texttt{stem}, \texttt{plot}, \texttt{barsurf}
+        \item Random generation with \texttt{randomPhasorArrayWithPole}
+        \item ScalarPhasorArray construction for scalar periodic signals
+    \end{itemize}
+    
+
+    \item \textbf{\texttt{Exemple\_Toolbox\_LMI.m}} (1000+ lines): Advanced control design:
+    \begin{itemize}
+        \item Complete LMI-based stabilization workflows with \texttt{lmiStab}
+        \item Direct and Hankel correction methods for LMI formulation
+        \item Use of YALMIP with \texttt{ndsdpvar} for periodic matrix variables
+        \item Visualization of solutions 
+    \end{itemize}
+
+
+    \item \textbf{\texttt{Periodic\_State\_space\_example.m}}: PhasorSS applications:
+    \begin{itemize}
+        \item State-space system creation and manipulation
+        \item System simulation: \texttt{lsim}, \texttt{step}, \texttt{initial}, \texttt{impulse}
+    \end{itemize}
+\end{itemize}
+
+
+These example files provide complete, tested workflows that users can modify for their specific applications. They are regularly updated to reflect best practices and new features.
+
 \subsection{Future Developments}
 
 The toolbox continues to evolve with ongoing research in harmonic control theory. Future enhancements may include:
