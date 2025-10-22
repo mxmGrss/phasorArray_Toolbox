@@ -172,12 +172,12 @@ if sum(plotTAPRI)>0
             nexttile(T,ii)
             switch optarg.plotOmega
                 case 1
-                    plot(time,omega)
+                    plot(xAx,omega)
                     title('\omega(t) (rad/s)')
                     xlabel('time (sec)')
                     grid on
                 case 2
-                    plot(time,omega/2/pi)
+                    plot(xAx,omega/2/pi)
                     title('f(t) (Hz)')
                     grid on
                     xlabel('time (sec)')
@@ -229,7 +229,7 @@ if sum(plotTAPRI)>0
     end
     setBottomXLabel(ff.Children, xlabelVar) % Set the x-label of the bottom axes
     
-    pause(1e-1) % Pause for a short time to allow the figure to become visible
+    pause(1e-2) % Pause for a short time to allow the figure to become visible
     set(ff,'Visible','on')
 
     dcm = datacursormode(gcf);
