@@ -22,7 +22,9 @@ n3 =size(Apos,3);
 
 %Check dimensionality
 if n3==1 %case Apos is not a 3D array, can be the case for convenience if A(t) is scalar or column/row vector, usign the other dimension to store phasor
-    if isvector(A0)
+    if n1 == m1 && n2 == m2
+        %nothing to see there
+    elseif isvector(A0)
         if isscalar(A0)
             if isrow(Apos)
                 Apos=Apos.';

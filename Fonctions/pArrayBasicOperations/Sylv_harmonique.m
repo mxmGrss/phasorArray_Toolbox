@@ -107,9 +107,9 @@ function [Xph,M,M1,M2,colQ,colX] = Sylv_harmonique(Ahm,Bhm,Chm,h,omeg,varargin)
        % colQ=sparse(colQ);
 
     %more effcient I kron A by using blkdiag and repmat
-        tmp = repmat({A},nxB,1);
-        M1 = blkdiag(tmp{:});
-        M1=sparse(M1);
+    tmp = repmat({A},nxB,1);
+    M1  = blkdiag(tmp{:});
+    M1  = sparse(M1);
 
     % I o B*
         M2=PR_In(B',nxa,h);

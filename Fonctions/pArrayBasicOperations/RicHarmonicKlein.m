@@ -40,6 +40,10 @@ if any(real(LL)>0)
     error("Unstable System, please pick K0 such that A(t)-B(t)K0(t) is stable")
 end
 
+Q = PhasorArray(Q);
+R = PhasorArray(R);
+
+outIsReal = all([isreal(A),isreal(B),isreal(Q),isreal(R)]);
 
 Rinv = inv(R);
 Kk{1} = K0;
@@ -48,9 +52,16 @@ S = cell(1, max_iter); % Preallocate S for max_iter iterations
 for kk = 1:max_iter
     if kk > 1
         Kk{kk} = Rinv * B.' * S{kk-1};
+        if outIsReal
+            Kk{kk} = mreal(Kk{kk});
+        end
     end
     Ak{kk} = A - B * Kk{kk};
     Yk{kk} = Kk{kk}.' * R * Kk{kk};
+    if outIsReal
+        Ak{kk} = mreal(Ak{kk});
+        Yk{kk} = mreal(Yk{kk});
+    end
     
     % Solve Lyapunov: Ak’*S + S*Ak + (Yk+Q) + dot(S) = 0
     
@@ -65,6 +76,10 @@ for kk = 1:max_iter
     % SS = F_tb_2_PhasorArray(Ss, 2, 2);
     % S{kk} = SS;
     H(kk) = htrunc;
+
+    if outIsReal
+        S{kk} = mreal(S{kk});
+    end
 
     % Check convergence
     if kk > 1
