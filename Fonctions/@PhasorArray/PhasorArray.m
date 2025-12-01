@@ -3280,6 +3280,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 arg.GlobalYLim logical =false
                 arg.linkaxes='x'
                 arg.forceReal = false
+                arg.grid = 'on'
             end
 
             if isscalar(o1)
@@ -3310,7 +3311,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             end
             [rr,tt]=PhasorArray2time(o1,T,t,plot=arg.plot, DispImag=arg.DispImag, ...
                 DispReal=arg.DispReal,explosed=arg.explosed,hold=arg.hold,ZeroCentered=arg.ZeroCentered, ...
-                title=arg.title,linetype=arg.linetype,GlobalYLim=arg.GlobalYLim,linkaxes=arg.linkaxes,forceReal=arg.forceReal);
+                title=arg.title,linetype=arg.linetype,GlobalYLim=arg.GlobalYLim,linkaxes=arg.linkaxes,forceReal=arg.forceReal,grid = arg.grid);
 
             if nargout>0
                 r=rr;

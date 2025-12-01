@@ -38,8 +38,8 @@ function [phasor_cell,theta,omega,IDX, phasorStruct] = angularsft(theta,time,ome
 %                       .IDX       - Indices corresponding to the angular components.
 %
 %   Formula used for each harmonic h_k:
-%       h_k = integral from (t - Ti) to t exp(i k * theta(tau)) * omega(tau) * signal(tau) d(tau) / 2π
-%       where Ti satisfies: theta(Ti) = theta(t) - 2π
+%       h_k = integral from (t - Ti) to t exp(i k * theta(tau)) * omega(tau) * signal(tau) d(tau) / 2
+%       where Ti satisfies: theta(Ti) = theta(t) - 2
 %
 %   Notes:
 %       - If `theta` is empty, it is approximated using cumtrapz over `omega` and `time`.
@@ -49,11 +49,11 @@ function [phasor_cell,theta,omega,IDX, phasorStruct] = angularsft(theta,time,ome
 %   Methods:
 %       * 'angle' method:
 %           - Uses angular representation of the signal, i.e., computes `exp(-i * k * theta)` for each harmonic.
-%           - Formula: `h_k = integral from (theta - 2π) to theta exp(-i k * theta) * signal d(theta) / 2π`
+%           - Formula: `h_k = integral from (theta - 2) to theta exp(-i k * theta) * signal d(theta) / 2`
 %       
 %       * 'mixed' method:
 %           - Incorporates both angular signal and pulsation, i.e., computes `exp(-i * k * theta) * omega` for each harmonic.
-%           - Formula: `h_k = integral(exp(-i k * theta) * omega * signal) / 2π`
+%           - Formula: `h_k = integral(exp(-i k * theta) * omega * signal) / 2`
 %
 %   See also: cumtrapz, shift2pi, validate_input, plotAngularSFT
 arguments
@@ -62,7 +62,7 @@ arguments
     omega
     signals
     harmonics  = 0:5
-    NameSignals=[]
+    NameSignals={}
     PlotTAPRI {mustBeNumericOrLogical}=[true true false false false]
     optarg.xAxes {mustBeMember(optarg.xAxes,{'time','phase','revolution'})} = 'time'
     optarg.method {mustBeMember(optarg.method,{'angle','mixed'})} = 'angle'
@@ -266,7 +266,7 @@ end
 
 
         if isempty(nm_sig)
-            nm_sig="signal "+string(1:numel(hm))';
+            nm_sig="signal "+string(1:numel(sig))';
         end
 
 

@@ -36,9 +36,10 @@ end
 
 Ak0 = A - B * K0;
 LL = HmqNEig(Ak0,htrunc,T,"fundamental");
-if any(real(LL)>0)
-    error("Unstable System, please pick K0 such that A(t)-B(t)K0(t) is stable")
-end
+% if any(real(LL)>0)
+%     LL(:)'
+%     error("Unstable System, please pick K0 such that A(t)-B(t)K0(t) is stable")
+% end
 
 Q = PhasorArray(Q);
 R = PhasorArray(R);

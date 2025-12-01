@@ -157,11 +157,11 @@ if sum(plotTAPRI)>0
         temp_sig_plot.sig{3}=angle(phasor_v(indPh,IDXp>1));
         temp_sig_plot.sig{4}=real(phasor_v(indPh,IDXp>1));
         temp_sig_plot.sig{5}=imag(phasor_v(indPh,IDXp>1));
-        temp_sig_plot.title={titleVar;titleVar+" abs phasor (dB)";titleVar+" angle phasor (dB)";titleVar+" real part phasor";titleVar+" imag part phasor"};
+        temp_sig_plot.title={titleVar;titleVar+" abs phasor ";titleVar+" angle phasor ";titleVar+" real part phasor";titleVar+" imag part phasor"};
 
         temp_sig_plot.title={titleVar;...
-            strcat(titleStr, " ",titleVar ," (dB)");...
-             strcat(titleVar, " angle " ,legendStr, "(dB)");...
+            strcat(titleStr, " ",titleVar ," ");...
+             strcat(titleVar, " angle " ,legendStr, "");...
              strcat(titleVar, " real part " ,legendStr);...
              strcat(titleVar, " imag part " ,legendStr)};
 
@@ -182,7 +182,7 @@ if sum(plotTAPRI)>0
                     grid on
                     xlabel('time (sec)')
             end
-            grid minor
+            % grid minor
         end
 
         for iter_i=1:numel(plotTAPRI)
@@ -205,7 +205,12 @@ if sum(plotTAPRI)>0
                 
                 hold off
                 grid on
-                grid minor
+                % grid minor
+
+                if iter_i>1
+                legend(legendStr+string(optarg.Hm2plot{ii}))
+                legend off
+                end
 
             end
         end

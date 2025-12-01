@@ -92,7 +92,7 @@ classdef dSpaceDataExplorer < handle
             LeftPanel = uipanel(MainGrid);
             LeftPanel.Layout.Row = 1;
             LeftPanel.Layout.Column = 1;
-            obj.LeftGrid = uigridlayout(LeftPanel,[2,2]);
+            obj.LeftGrid = uigridlayout(LeftPanel,[2,1]);
             obj.LeftGrid.RowHeight = {'fit', '1x'};
 
 
@@ -108,7 +108,7 @@ classdef dSpaceDataExplorer < handle
 
             FileSelPanel = uipanel(obj.LeftGrid);
             FileSelPanel.Layout.Row = 1;
-            FileSelPanel.Layout.Column = [1 2];
+            FileSelPanel.Layout.Column = 1;
 
             FileSelGrid = uigridlayout(FileSelPanel,[1 3]);
 
@@ -137,15 +137,15 @@ classdef dSpaceDataExplorer < handle
                 'Multiselect', 'on', ...
                 'ValueChangedFcn', @(src, evt) listboxCallback(obj));
             obj.listbox.Layout.Row = 2;
-            obj.listbox.Layout.Column = 2;
+            obj.listbox.Layout.Column = 1;
 
             %create a tree on the left
-            obj.treeSig = uitree(obj.LeftGrid,'FontSize',12,'Multiselect','on');
-            obj.treeSig.Layout.Row = 2;
-            obj.treeSig.Layout.Column = 1;
-
-            %populate the tree with the signal tree
-            populateTreeSig(obj);
+            % obj.treeSig = uitree(obj.LeftGrid,'FontSize',12,'Multiselect','on');
+            % obj.treeSig.Layout.Row = 2;
+            % obj.treeSig.Layout.Column = 1;
+            % 
+            % %populate the tree with the signal tree
+            % populateTreeSig(obj);
 
 
             % Create the axes for plotting
@@ -372,10 +372,18 @@ classdef dSpaceDataExplorer < handle
                 % Set the default values for angular speed and phase dropdowns
                 angularSpeedIdx = find(strcmp(obj.clearedSignalNames, optarg.speedSigName));
                 phaseIdx = find(strcmp(obj.clearedSignalNames, optarg.phaseSigName));
-                set(obj.angularSpeedDropdown, 'Value', angularSpeedIdx);
-                set(obj.phaseDropdown, 'Value', phaseIdx);
+                try
+                    set(obj.angularSpeedDropdown, 'Value', angularSpeedIdx);
+                catch
+                    % warning('couldnt auto set angular speed')
+                end
+                try
+                    set(obj.phaseDropdown, 'Value', phaseIdx);
+                catch
+                    % warning('couldnt auto set  phase')
+                end
 
-                populateTreeSig(obj);
+                % populateTreeSig(obj);
             end
 
         end
@@ -528,7 +536,7 @@ classdef dSpaceDataExplorer < handle
 
         function computeSFTCallback(obj,opt)
             if nargin <2
-                opt =1;
+                opt =2;
             end
             fitleredFlattenedTreeIndex = obj.flattenedTree([obj.flattenedTree{:,2}] ~= 0,2);
 
@@ -754,7 +762,7 @@ classdef dSpaceDataExplorer < handle
 
             nexttile
             plot(time,dOmega./angularSpeedStruct.Data)
-            title('Approximate hmq dω/dt /ω')
+            title('Approximate hmq d/dt /')
             xlabel('Time')
             ylabel('hmq')
 
@@ -770,7 +778,7 @@ classdef dSpaceDataExplorer < handle
             % signal are dom, om, and dom/om
             % Prepare the signals and names for angularsft
             signals = {dOmega,angularSpeedStruct.Data, dOmega./angularSpeedStruct.Data};
-            names = {'dω/dt','ω','dω/dt /ω'};
+            names = {'d/dt','','d/dt /'};
 
             % Unwrap the angular signal and apply the factor
             theta = unwrap(phaseStruct.Data) ;
@@ -783,7 +791,7 @@ classdef dSpaceDataExplorer < handle
             plotAngularSFT(phasorStruct, 'orientation', 'hor', 'plotDebut', 1, 'xAxes', 'time');
 
 
-            %compute ω(t-T(t)) and T(t)
+            %compute (t-T(t)) and T(t)
             [omega_a_tmT,istartmooving,ifirstrev,~,timeHat,~,~,IDX] = shift2pi(theta,time,omega);
 
             %theta(i)-2pi = theta(IDX(i))
@@ -802,7 +810,7 @@ classdef dSpaceDataExplorer < handle
             nexttile
             hold on
             rap_om = omega(istartmooving:end)./omega_a_tmT;
-            plot(tmooving,(1-rap_om)/sftFactor,"DisplayName","1-ω(t)/ω(t-T(t))")
+            plot(tmooving,(1-rap_om)/sftFactor,"DisplayName","1-(t)/(t-T(t))")
             plot(tmooving,dT,"DisplayName","dT/dt via grad")
             xlabel('Time')
             title('derivative of T(t)')
@@ -810,7 +818,7 @@ classdef dSpaceDataExplorer < handle
 
             nexttile
             plot(tmooving,rap_om)
-            title('ω(t)/ω(t-T(t))')
+            title('(t)/(t-T(t))')
             xlabel('Time')
 
 

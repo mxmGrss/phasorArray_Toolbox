@@ -96,6 +96,7 @@ arguments
     arg.computationMethod    = 1
     arg.providedPhasorForm {mustBeMember(arg.providedPhasorForm,["exp","SinCos"])} = "exp"
     arg.parent               = [];
+    arg.grid {mustBeMember(arg.grid,["off","on","minor"])}                = 'on'
 end
 
 % Use a less efficient but compatible computation method for older MATLAB releases
@@ -478,7 +479,7 @@ if arg.explosed
                 end
 
                 grid off
-                grid minor
+                grid(arg.grid)
 
                 % imaginary part
                 ax((2*(nxi-1)+1)*ny+nyi)=subplot(2*nx,ny,(2*(nxi-1)+1)*ny+nyi);
@@ -498,7 +499,7 @@ if arg.explosed
 
             end
             grid off
-            grid minor
+            grid(arg.grid)
 
 
         end
@@ -706,7 +707,7 @@ if arg.explosed
                 end
 
                 grid off
-                grid minor
+                grid(arg.grid)
 
                 % imaginary part
                 % ax((2*(nxi-1)+1)*ny+nyi)=subplot(2*nx,ny,(2*(nxi-1)+1)*ny+nyi);
@@ -728,7 +729,7 @@ if arg.explosed
 
             end
             grid off
-            grid minor
+            grid(arg.grid)
 
 
         end
