@@ -1,5 +1,12 @@
-function [epsilons,eepsilon,adbParam] = epsHAPV(th, om)
-[k, ~, ~] = find2piAntecedant(th,om);
+function [epsilons,eepsilon,adbParam] = epsHAPV(th, om, firstRotIsNan)
+switch nargin
+    case 2
+        % Handle case when no firstRotIsNan is provided
+        firstRotIsNan = true;
+    otherwise
+        firstRotIsNan = false;
+end
+[k, ~, ~] = find2piAntecedant(th,om,firstRotIsNan);
 
 epsilons = zeros(size(k));
 eepsilon = zeros(size(k));
@@ -11,15 +18,20 @@ dotOmegaOverOmegaSquared = dotOmega ./ (om ); % Compute dot omega / omega²
 adbParam = abs(dotOmegaOverOmegaSquared * 2*pi);
 
 for ki = 1:numel(k)
-    indexPReviousRev = (k(ki)):ki ;
-    omt = om(ki);
-    omtau = om(indexPReviousRev) ;
-    epsilons(ki) = max(abs((omtau - omt)./omtau));
+    if isnan(k(ki))
+        epsilons(ki) = NaN;
+        eepsilon(ki) = NaN;
+        continue
+    end
+    indexPReviousRev = (k(ki)):ki ; %all index of previous rotation
+    omt = om(ki); %omega courant
+    omtau = om(indexPReviousRev) ; %omega(tau) sur la derniere rot
+    epsilons(ki) = max(abs((omtau - omt)./omtau)); %epsilon(t)
 
     %epsilon over the last rotation
-    epstau = epsilons(indexPReviousRev) ;
+    epstau = epsilons(indexPReviousRev) ; %epsilon sur la derniere rot
     %supp over last rotation
-    eepsilon(ki) = max(abs(epstau));
+    eepsilon(ki) = max(abs(epstau)); %max de epsilon sur une rotation
 
 end
 end

@@ -1,4 +1,4 @@
-function [k, f, ushifted] = find2piAntecedant(th,u)
+function [k, f, ushifted] = find2piAntecedant(th,u,firstRotIsNaN)
 %FIND2PIANTECEDANT Find 2π antecedent indices and compute phase-shifted signals.
 %
 %   [K, F] = FIND2PIANTECEDANT(TH) finds for each element TH(i), the largest 
@@ -69,6 +69,7 @@ function [k, f, ushifted] = find2piAntecedant(th,u)
     arguments
         th {mustBeNumeric, mustBeVector, mustBeIncreasing}
         u = []
+        firstRotIsNaN = false
     end
     
     % Ensure th is a row vector for consistent indexing
@@ -112,17 +113,26 @@ function [k, f, ushifted] = find2piAntecedant(th,u)
             end
         else
             % If no such k(ii) exists, set k(ii) and f(ii) to default values
-            k(ii) = 1;
-            f(ii) = 0;
+            if firstRotIsNaN
+                k(ii) = NaN;
+                f(ii) = NaN;
+            else
+                k(ii) = 1;
+                f(ii) = 0;
+            end
         end
     end
 
     if nargin > 1 && ~isempty(u)
-        u= u(:)'; % Ensure u is a row vector
+        % u= u; % Ensure u is a row vector
         % If a second input u is provided, compute the shifted values
         ushifted = zeros(size(u));
         for ii = 1:n
-            ushifted(ii) = u(k(ii)) + f(ii) * (u(k(ii)+1) - u(k(ii)));
+            if isnan(k(ii))
+                ushifted(ii) = NaN;
+            else
+                ushifted(ii) = u(k(ii)) + f(ii) * (u(k(ii)+1) - u(k(ii)));
+            end
         end
     else
         ushifted = [];
