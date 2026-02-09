@@ -20,7 +20,7 @@ If you deal with periodic systems, you know the struggle: time-varying matrices,
 **PhasorArray solves this by:**
 
 *   **Algebraicizing the Periodic**: Converts $\dot{x}(t) = A(t)x(t)$ into $\dot{X} = (\mathcal{A} - \mathcal{N})X$. Suddenly, your periodic problem looks just like an LTI one.
-*   **Guaranteeing Consistency**: We implement distinct, rigorous algorithms (Riedinger et al.) for truncation [6]. This ensures that your harmonic operations actually converge to the true infinite-dimensional solution ($\mathcal{T}(AB)_h \to \mathcal{T}(A)\mathcal{T}(B)$).
+*   **Guaranteeing Consistency**: We implement distinct, rigorous algorithms (Riedinger et al.) for truncation [6]. This ensures that your harmonic operations actually converge to the true infinite-dimensional solution ($\mathcal{T}(AB)_h$ to $\mathcal{T}(A)\mathcal{T}(B)$).
 *   **Targeting Real Applications**:
     *   **LTP Systems**: Floquet analysis and stabilization made easy.
     *   **Bilinear Systems**: Design **Forwarding Controllers** for global stability on Power Converters (see [2], [4]).
@@ -56,7 +56,7 @@ Don't just model—solve.
 
 *   **Eigenvalues**: Compute **Floquet exponents** with `HmqNEig` to determine stability.
 *   **Lyapunov**: Assess stability and compute periodic Gramians with `lyap`.
-*   **Riccati (HARE)**: Synthesize **LQR** and **$H_\infty$** controllers using efficient iterative algorithms (`RicHarmonicKlein`).
+*   **Riccati (HARE)**: Synthesize **LQR** and **$H_{\infty}$** controllers using efficient iterative algorithms (`RicHarmonicKlein`).
 *   **Sylvester**: Solve observer design problems with `sylvester`.
 
 ### 3. Robust Control (LMI)
@@ -64,7 +64,7 @@ Don't just model—solve.
 Seamless integration with **YALMIP** allows you to harness the power of convex optimization.
 
 *   **`ndsdpvar`**: Create periodic decision variables effortlessly.
-*   **Toeplitz-Block LMIs**: Formulate and solve $H_2$/$H_\infty$ problems to design controllers that are **robust** across entire operating ranges.
+*   **Toeplitz-Block LMIs**: Formulate and solve $H_2$/$H_{\infty}$ problems to design controllers that are **robust** across entire operating ranges.
 
 ---
 
