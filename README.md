@@ -64,7 +64,7 @@ Don't just model—solve.
 Seamless integration with **YALMIP** allows you to harness the power of convex optimization.
 
 *   **`ndsdpvar`**: Create periodic decision variables effortlessly.
-*   **Toeplitz-Block LMIs**: Formulate and solve $H_2$/$H_{\infty}$ problems to design controllers that are **robust** across entire operating ranges.
+*   **Toeplitz-Block LMIs**: Formulate and solve $H_2$ or $H_{\infty}$ problems to design controllers that are **robust** across entire operating ranges.
 
 ---
 
