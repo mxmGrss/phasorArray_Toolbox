@@ -9,8 +9,7 @@
 The **PhasorArray Toolbox** is an object-oriented library that takes the pain out of analyzing and controlling **Linear Time-Periodic (LTP)** and **Bilinear Systems**. 
 
 By leveraging **Harmonic Modeling** and **Toeplitz Matrix** algebra, it effectively turns complex periodic differential equations into standard algebraic problems. This means you can apply robust LTI control techniques—like Eigenvalue analysis or $H_\infty$ synthesis—to systems that were previously too difficult to model (e.g., Power Converters, Rotating Machinery).
-
-> **Built on Solid Science**: This isn't just a utility; it's an implementation of advanced control theory results (ECC, TCST, ECCE), ensuring **numerical consistency** and **global stability** where ad-hoc methods often fail.
+**Built on Solid Science**: This toolbox enables the numerical application of advanced theoretical results presented in recent control literature [1-8], ensuring **consistency** and **guarantees** where ad-hoc methods often fail.
 
 ---
 
@@ -21,11 +20,11 @@ If you deal with periodic systems, you know the struggle: time-varying matrices,
 **PhasorArray solves this by:**
 
 *   **Algebraicizing the Periodic**: Converts $\dot{x}(t) = A(t)x(t)$ into $\dot{X} = (\mathcal{A} - \mathcal{N})X$. Suddenly, your periodic problem looks just like an LTI one.
-*   **Guaranteeing Consistency**: We implement distinct, rigorous algorithms (Riedinger et al.) for truncation. This ensures that your harmonic operations actually converge to the true infinite-dimensional solution ($\mathcal{T}(AB)_h \to \mathcal{T}(A)\mathcal{T}(B)$).
+*   **Guaranteeing Consistency**: We implement distinct, rigorous algorithms (Riedinger et al.) for truncation [6]. This ensures that your harmonic operations actually converge to the true infinite-dimensional solution ($\mathcal{T}(AB)_h \to \mathcal{T}(A)\mathcal{T}(B)$).
 *   **Targeting Real Applications**:
     *   **LTP Systems**: Floquet analysis and stabilization made easy.
-    *   **Bilinear Systems**: Design **Forwarding Controllers** for global stability on Power Converters (see *IEEE TCST*).
-    *   **Variable Frequency**: Use **Dynamic Phasors** to control **PMSM** drives even during speed transients (see *IEEE ECCE*).
+    *   **Bilinear Systems**: Design **Forwarding Controllers** for global stability on Power Converters (see [2], [4]).
+    *   **Variable Frequency**: Use **Dynamic Phasors** to control **PMSM** drives even during speed transients (see [3]).
 
 ### Based On & Related To
 This framework encompasses and generalizes methods known in the literature as:
@@ -118,14 +117,14 @@ title('Periodic Solution P(t) of Lyapunov Equation');
 
 ## 🔬 Applications & Scientific Context
 
-### Grid-Tied Power Converters (TCST)
+### Grid-Tied Power Converters [2], [4]
 
 For **Bilinear Systems** like AC/DC converters, the toolbox enables the design of **Forwarding Controllers**. 
 
 *   **Problem**: Standard controllers often fail to guarantee stability under large disturbances.
 *   **Solution**: Our approach guarantees **Global Stability** and allows for precise **Harmonic Mitigation** (Active Filtering) by directly shaping the closed-loop harmonic spectrum.
 
-### Variable Speed Drives & PMSM (ECCE)
+### Variable Speed Drives & PMSM [3]
 
 The toolbox extends to **LPV (Linear Parameter-Varying)** models using **Dynamic Phasors**.
 
@@ -154,11 +153,17 @@ See the `Exemples/` folder for complete scripts covering:
 
 ## 🔗 References
 
-If you use this toolbox in your research, please cite the associated papers:
+### Toolbox & Applications
+1.  **[Toolbox]** M. Grosso, P. Riedinger, and J. Daafouz, *"The PhasorArray Toolbox for Harmonic Analysis and Control Design,"* arXiv preprint arXiv:2510.21294, 2025.
+2.  **[TCST]** M. Grosso, P. Riedinger, J. Daafouz, S. Pierfederici, H. J. Idrissi, and B. Lapôtre, *"Harmonic Control of Three-Phase AC/DC Converter With Time-Domain Guarantees,"* *IEEE Transactions on Control Systems Technology*, 2025.
+3.  **[ECCE]** M. Grosso, P. Riedinger, J. Daafouz, S. Pierfederici, H. J. Idrissi, and B. Lapôtre, *"Frequency-Varying Harmonic Domain Control for PMSMs with Current Harmonic Mitigation,"* in *2025 IEEE Energy Conversion Conference Congress and Exposition (ECCE)*, pp. 1-8, 2025.
+4.  **[IECON]** M. Grosso, P. Riedinger, J. Daafouz, S. Pierfederici, H. J. Idrissi, and B. Lapôtre, *"Control of three-phase PWM rectifier using multiple frame dq transform and harmonic modeling,"* in *IECON 2024-50th Annual Conference of the IEEE Industrial Electronics Society*, 2024.
 
-1.  **ECC**: *The PhasorArray Toolbox for Harmonic Analysis and Control Design*.
-2.  **TCST**: *Global Stabilization of Periodically Forced Bilinear Systems*.
-3.  **ECCE**: *Frequency-Varying Harmonic Domain Control for PMSMs*.
+### Theoretical Foundations
+5.  **[TAC 24]** F. Vernerey, P. Riedinger, and J. Daafouz, *"A TBLMI Framework for Harmonic Robust Control,"* *IEEE Transactions on Automatic Control*, 2025 (Erratum 2025).
+6.  **[TAC 22]** P. Riedinger and J. Daafouz, *"Solving infinite-dimensional harmonic Lyapunov and Riccati equations,"* *IEEE Transactions on Automatic Control*, vol. 68, no. 10, pp. 5938-5953, 2022.
+7.  **[TAC 21]** N. Blin, P. Riedinger, J. Daafouz, L. Grimaud, and P. Feyel, *"Necessary and sufficient conditions for harmonic control in continuous time,"* *IEEE Transactions on Automatic Control*, vol. 67, no. 8, pp. 4013-4028, 2021.
+8.  **[CDC 23]** F. Vernerey, P. Riedinger, and J. Daafouz, *"On solving infinite-dimensional Toeplitz block LMIs,"* in *2023 62nd IEEE Conference on Decision and Control (CDC)*, pp. 4717-4722, 2023.
 
 ---
 
