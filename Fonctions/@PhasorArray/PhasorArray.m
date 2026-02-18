@@ -2781,7 +2781,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             arguments
                 o1
                 h=20
-                T=1
+                T=2*pi
                 bandlimit {mustBeMember(bandlimit,{'none','fundamental'})}='none'
             end
             if isempty(h)
