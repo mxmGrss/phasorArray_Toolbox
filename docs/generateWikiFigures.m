@@ -5,7 +5,7 @@
 clear; clc; close all;
 
 % --- Setup Paths & Folder ---
-assetDir = fullfile('docs', 'wiki_assets');
+assetDir = fullfile( 'wiki_assets');
 if ~exist(assetDir, 'dir')
     mkdir(assetDir);
 end
@@ -45,7 +45,7 @@ for i = 1:length(h_list)
 end
 
 xlabel('Time [s]'); ylabel('Amplitude');
-title('Time-Domain Reconstruction vs. Harmonic Order');
+sgtitle('Time-Domain Reconstruction vs. Harmonic Order');
 legend('Location', 'bestoutside'); grid on;
 exportgraphics(figA, fullfile(assetDir, 'reconstruction_h_comparison.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
 
@@ -60,7 +60,7 @@ figB = figure('Name', 'spectral_decay', 'Position', [100 100 600 400]);
 set(gcf, 'Color', 'none');
 stem(pA_spec);
 xlabel('Harmonic Order'); ylabel('|A_k|');
-title('Harmonic Spectrum (Spectral Decay)');
+sgtitle('Harmonic Spectrum (Spectral Decay)');
 grid on;
 exportgraphics(figB, fullfile(assetDir, 'spectral_decay.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
 
@@ -74,7 +74,7 @@ TBM = Ar.T_tb(h_tb);
 figC1 = figure('Name', 'toeplitz_spy', 'Position', [100 100 500 500]);
 set(gcf, 'Color', 'none');
 spy(TBM);
-title(sprintf('Toeplitz Block Matrix Structure (h=%d, n=3)', h_tb));
+sgtitle(sprintf('Toeplitz Block Matrix Structure (h=%d, n=3)', h_tb));
 xlabel('Column Index'); ylabel('Row Index');
 exportgraphics(figC1, fullfile(assetDir, 'toeplitz_structure_spy.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
 
@@ -85,7 +85,7 @@ figC2 = figure('Name', 'toeplitz_barsurf', 'Position', [100 100 600 500]);
 set(gcf, 'Color', 'none');
 barsurf(abs(double(TBM)));
 colorbar
-title(sprintf('Toeplitz Magnitude Map (h=%d, n=3)', h_tb));
+sgtitle(sprintf('Toeplitz Magnitude Map (h=%d, n=3)', h_tb));
 xlim([-1 (2*h_tb+1)*3+1]);
 ylim([-1 (2*h_tb+1)*3+1]);
 view([-0 90])
@@ -96,8 +96,8 @@ exportgraphics(figC2, fullfile(assetDir, 'toeplitz_structure_barsurf.svg'), 'Bac
 fprintf('Generating Figure C3: Time Plot of Ar (SVG)...\n');
 figC3 = figure('Name', 'time_plot_Ar', 'Position', [100 100 600 400]);
 set(gcf, 'Color', 'none');
-plot(Ar);
-title('Time-Domain Evaluation of A(t) (T=1)');
+plot(Ar,2*pi);
+sgtitle('Time-Domain Evaluation of A(t) (T=2*pi)');
 grid on;
 exportgraphics(figC3, fullfile(assetDir, 'time_domain_evaluation_Ar.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
 
@@ -107,7 +107,7 @@ fprintf('Generating Figure C4: Stem Plot of Ar (SVG)...\n');
 figC4 = figure('Name', 'stem_plot_Ar', 'Position', [100 100 600 400]);
 set(gcf, 'Color', 'none');
 stem(Ar);
-title('Stem Plot of A(t) Harmonics');
+sgtitle('Stem Plot of A(t) Harmonics');
 grid on;
 exportgraphics(figC4, fullfile(assetDir, 'harmonic_spectrum_stem_Ar.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
 
@@ -127,7 +127,7 @@ set(gcf, 'Color', 'none');
 h_dc = 5;
 hmqDcGain(sys, h_dc, t_sys);
 colorbar
-title(sprintf('DC Gain (Effective Transfer, h=%d)', h_dc));
+sgtitle(sprintf('DC Gain (Effective Transfer, h=%d)', h_dc));
 view([-0 90])
 exportgraphics(figD, fullfile(assetDir, 'harmonic_transfer_dcgain.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
 
@@ -150,7 +150,7 @@ for i = 1:length(h_gif_list)
     
     plot(t, y_true, 'k--', 'LineWidth', 1); hold on;
     plot(t, squeeze(y_rec), 'r', 'LineWidth', 2);
-    title(sprintf('Gibbs Effect Reconstruction (h = %d)', h));
+    sgtitle(sprintf('Gibbs Effect Reconstruction (h = %d)', h));
     xlabel('Time [s]'); ylabel('Amplitude');
     ylim([-1.5 1.5]); grid on;
     hold off;
