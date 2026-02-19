@@ -5,6 +5,27 @@
 <title>Qt SVG Document</title>
 <desc>MATLAB, The MathWorks, Inc. Version 25.2.0.3123386 R2025b Update 3</desc>
 <defs>
+<pattern id="fillPattern33_" x="680" y="15.75" width="25" height="26" patternUnits="userSpaceOnUse" >
+<image xlink:href="data:image/png;base64, iVBORw0KGgoAAAANSUhEUgAAABkAAAAaCAYAAABCfffNAAAACXBIWXMAABJ0AAASdAHeZh94AAADJElEQVRIidWWz0syWxjHP/O7wU2uWkRtWjgitXChkWQLW0mEy/6A/o9wFfSPBCURUZsyoUXUImvCAq8YIi3KSIiYdBhnnLu4KPlm760LwXu/MJszz5nPOc/3ec4Z4eXl5S9+WOJPA/4siCAIKIpCrVZjfX2dWq2GoiiIooiqqqiqiqZpSJI0dL78FYCmaZimyfHxMc1mk4ODA3zfJxgMsrOzQ7vdxrZtFhYWmJ+fx7btr+9EEARkWebq6oqjoyMeHx+Zm5uj2WySz+epVCpMTk5yd3dHsVjk4eFh6G4+hYiiSLfbpVqtUigUeH5+JhqNkk6nicViPD09YZom4XCYZDLJ+Pg4sizj+/7X0iUIAp7n0Wg0yOVy2LbN4uIiiUQCWZZZXl4mGAySz+fZ2tpidXWVVqtFIBCg2+1+/N6vfdJLUbVaJZfL0Wq1yGQyRCIRJEnC9/3+Im5vb9nd3SUQCLC0tEQoFEIQhA8g8VeApmlcX1+zt7dHu90mk8kQCoVQFKWfCt/3URSFUChEJpOh1WpRKBQwTZNOp/PBlwGILMtcXl5ycnLC29sbqVSKSCSCrut4njcw0fM8dF0nEomQSqV4fX3l8PCQ09NTHMf5HFKpVCgUCliWxfz8PMlkEkmSPgDegyRJIplMkkgk8DyPs7MzLi4uPodsbm5iWRbxeJzZ2Vlc1x1aLe/l+z6u6xKLxUin04yOjpLL5QZiBoyv1+tMTU2xvb1NuVxmbW2NTqdDt9vtd3ZPjuPgOA6iKKIoCtlslnA4zMrKCvV6nbGxsX7sQAn3DIZ//OlJVVXK5TKlUqlfXdPT0xiGgeu6/Xjf95FlmYmJiQFfBiC2bQ/tWFVVKZVK7O/vYxgG5XIZgJmZmT7kffp+a/zv5Ps+hmGQzWYxDONfvfpPkB7IcZxvAb4N6YG+q6Fnl+/7iKKIruvIstx/3nd8b0zX9f7d8tkChkIkScKyLEzTxHVdRkZGaDQa/aKQJIlGo8HNzQ22bSPLMpZlfe/S0jSN+/t7NjY2+mOdTodoNAqAruucn59TLBYH3sfj8aGQD6fwT+jP+ZH4X0D+BoUqeqN4mYW6AAAAAElFTkSuQmCC" x="0" y="0" width="25" height="26" />
+</pattern>
+<pattern id="fillPattern34_" x="655" y="15.75" width="25" height="26" patternUnits="userSpaceOnUse" >
+<image xlink:href="data:image/png;base64, iVBORw0KGgoAAAANSUhEUgAAABkAAAAaCAYAAABCfffNAAAACXBIWXMAABJ0AAASdAHeZh94AAADdElEQVRIid2Wz0sqXRjHP86ZUaEWSum4qLCMgiA0jLC0IEGqP+bdt+wfitpG4I8bSJtiFCqubYLohyKjSTjm/HpXCb4p3cW9d/E+cBZzZs75PM/3e3jOeNrt9k/+cEh/GvDXIPKoSb/fT7PZpFAoUKlUaDQamKYJgBCCra0ttre3WV5eptvtfgvx/NcTn89HpVKhUChQr9eJRqPMzMygqiqKotBoNLi4uMDv97OxsUE2mx0k8EuV+P1+NE2jWCyi6zqpVIpYLEYkEiEYDCKEoN1uA6BpGuVyGa/XSyqVQpIkbNv+HvIpka7rZDIZcrkcALZtY9s2lmUxMTHB/v4+oVCI8/Nzzs7OmJubIxKJIEkSrut+gQwZ/ylRMpkkl8thmib9fh/btgeLHcfBMAzi8Th7e3v0ej1+/PiBruvI8kiLhyGVSoVoNEosFgMYmdXnvOu6TE9Pk0gkuL+/p9PpIIT4HtJoNAYmA0xMTIwdQggmJydZWlqi3W7z8fGBx+MZCRmqzzRNVFVFVVUeHx8pFosjs+v3+8TjcRKJBLOzsziOg+M4IwFfIACKoqAoCt1ul1qthizLXzI0DIPZ2VlkWcbr9Y6tYCRECEGj0aBer7OwsMDR0dHYha7r0mq1eHp6wnVdJGl88xiCZLNZyuUypmmyt7eHZVkjZfB4PMiyzMPDA8fHx6TTacLhMJZljYQM4dPpND6fj2q1ytXVFa7roigKQoiBJEIIFEXh9vaWfD5Pt9tlc3OTYDD4a5BoNMr6+jqmaVIoFNA0jZeXF97f3weAbrfLzc0NxWKR6+vrwcEQQoyVTBweHv7z+WBZFouLi0iSxN3dHdVqlV6vR6/XQ5ZlTNOkVqtxenrK29sboVCIfr/P8/MzqqoSCARGQr40yM9oNptomkalUuH19RXLsgaS7ezskEwmCQQCaJrGyckJ8/PzHBwcsLq6imEY30OEEDiOQ6fTodVqYRjGoPlJkkQ4HCYQCOD1etF1nVKpxOXlJaqqksvlWFtbo9frDfYb2Wxs28bj8RAMBpmenv6itWVZWJaFbdsEAgEymQz9fp9qtUqpVGJqaopwODz4fuzhdl0Xy7L4+PjAMIyhYZrmoH85jkM4HGZ3d5fV1VV0XSefzw/t9VuuX9M0iUQiZLNZVlZWKBaLQ+/HGv874//zt/JXIP8ClyasWisPcOQAAAAASUVORK5CYII=" x="0" y="0" width="25" height="26" />
+</pattern>
+<pattern id="fillPattern35_" x="630" y="15.75" width="25" height="26" patternUnits="userSpaceOnUse" >
+<image xlink:href="data:image/png;base64, iVBORw0KGgoAAAANSUhEUgAAABkAAAAaCAYAAABCfffNAAAACXBIWXMAABJ0AAASdAHeZh94AAADsUlEQVRIid2WzUvzWhCHn+Q0tVIXFe0H+EH9QEGQViqiVgWLRf1j7t6l/4tuRbcitFGhulHaLtRbN2JRbNFYXSQ1SZO7MtBrxbt433dxB7LImXCemfnNmROp0Wj8zW82+XcD/hjE12kxEAjw/PxMPp+nVCpRr9exLAsAIQSLi4ssLy8zOTmJrus/QqR/a9LV1UWpVCKfz1Or1YjH4wwODhKNRlEUhXq9zunpKYFAgLm5OTKZjBfAf8okEAhQLBZRVRVN05ifn2dsbIxoNOpBarUaAMVikUKhgN/vZ35+HlmWabVaP0M+S6RpGktLS2SzWc9XrVbRdZ3R0VE2NjYIh8McHR1xeHjI8PAwsVgMWZZxXfcLpE34zxKlUimy2SyWZWGaJoqioKoqu7u7yLKMYRgkEgnW19dpNpucnJygaRo+X0eJ2yGlUol4PM7Y2BhAW1RCCG8T13VxXZf+/n6SySS3t7e8v78jhPgZUq/XPZEBgsEgwWAQn8+HoigIIeju7iYYDCKEoKenh4mJCRqNBh8fH0iS1BHSlp9lWZ7I1WoVVVURQqAoCjc3NzQaDXZ2drxyJZNJhoaGcBwHx3E6Ar5AABRFQVEUdF2nUqng8/kQQnjRVioVdF1naGgIn8+H3+//NoOOECEE9XqdWq3G6Ogo29vbAHR3d7Ozs0OlUmF7exvTNHFdl9fXVx4eHnBdF1n+fni0eTKZDIVCgUKhAIBt25imiW3bGIaBruuYpukdvru7O/b29kin00QiEWzb/hmSTqfp6uqiXC5zcXGB67ooioLjOCQSCdbW1ry1q6srcrkcuq6zsLBAb2/vt5C2csXjcWZnZzk7OyOfzwMwMDBAMBgkkUigKAovLy/c39+jqiqXl5deJwohkCSp46kXW1tbf32+2LbN+Pg4sixzfX1NuVym2WzSbDaRJAnDMKhUKhwcHPD29kY4HMY0TR4fH4lGo4RCoY6ZfBmQn/b8/EyxWKRUKvH09IRt214XrayskEqlCIVCFItF9vf3GRkZYXNzk+npaQzD+BkihMBxHN7f33l9fcUwDK8MsiwTiUQIhUL4/X40TeP4+Jjz83Oi0SjZbJaZmRmazWZnTT6t1WohSRK9vb309/d/aU/btrFtm1arRSgUYmlpCdM0KZfLHB8f09fXRyQS8b7/trld18W2bT4+PjAMo+2xLMubX47jEIlEWF1dZXp6Gk3TyOVybXv9kuvXsixisRiZTIapqSlUVW3zfyv8r7T/z9/KH4H8A8qozNMSHq17AAAAAElFTkSuQmCC" x="0" y="0" width="25" height="26" />
+</pattern>
+<pattern id="fillPattern36_" x="605" y="15.75" width="25" height="26" patternUnits="userSpaceOnUse" >
+<image xlink:href="data:image/png;base64, iVBORw0KGgoAAAANSUhEUgAAABkAAAAaCAYAAABCfffNAAAACXBIWXMAABJ0AAASdAHeZh94AAAD00lEQVRIie2WO09qSxiGn5EFC9DghbtcEpfXGAMxSiy0MDFq7a/xH/g7LCy0srPRxFgYTSwkXqJHLdQoBBAFAYHlWsypDme7Fc9u9skpzpdMM5OZZ97vnflmRKFQ+IPfHG2/G/CvQZRWA0IIhBAYhkGtVkNRFK6urlhdXUUIwcLCAvPz86iqSqPRwDRNGo3Gr0Pa2tqoVqvc3Nywt7dHqVSis7OT9/d3TNPE6XSSTCbJZDI8Pz8TDoeZnp6mt7eXRqOBlPKfIRaLhVKpxPHxMdfX13R2dlIul6lUKgQCATweD5eXl+RyOaxWK4+Pj2iahsfjwWq1YrPZqNfrf2/6OyXpdJpgMMj8/Dz9/f0YhoHf7ycSiaCqKh6Ph7m5Oer1OhcXFxwdHZFMJrm9vf243nee2O12vF4v4+PjRKNRpJSYpkm9Xqejo4NYLMbs7CxOp5PDw0PW19dZW1tjfX39e4gQAiklTqeTUChEPp+nXC7T3d1NMBhs5ttut6OqKm9vb024pmmMjIx8r0RVVarVKtVqlfb2dnp7e8lms9RqNdxuN36/HykljUYDh8OB1Wolk8lgGAbxeJypqSkCgcAHP+An48/Pzzk7O+Pt7Y2enh6klNRqNfL5PD6fj56eHlKpFFJKVFVFVVXK5TLVapWBgQH8fj+5XA6fz9casru7y9PTE4Zh8Pj42OxPp9O43W40TQMgFArhdrvxer0YhkEkEiEcDqPrOsVikXA43BqSTqeZmJhgdHSUXC7H5uYmAC8vLyiKwvj4OJqm0d3dDYBpmlQqFZaWltA0jdPTU4rFYnP8S0+Wl5dJpVJsbGxgGAYrKyssLi4yMDCAw+FACIHL5cIwDAzDaB6Q4eFhurq6SKVS5HI5YrFYa4jL5SKRSCCEYH9/n6enJxKJBCMjI3R0dHx5m/+KQqFAoVBAURRCoVBriK7rxGIxxsbGKJVK7O/v4/V68Xq92Gy2lgAhBNlsltfXVxwOx/fpklJit9uJx+MMDg5ydHRENptF1/UvF/8xyuVys65ZrdbWEID393cikQjxeBwhBDs7O+Tz+U8Tf1aSz+cBcLvdnxR/gkgpsVgsRKNRpqamODk54f7+Hl3XEUJ8CVAUhbu7O6SURKPRTyX/y9plmiZdXV1MTExgt9s5OzsjnU7jcrlwOBzN5nQ6mxfy4eEBVVXp6+v7tVIvpURRFAKBAJOTk5yennJwcICu6x/8EUJgmiaZTIZKpcLQ0BB+v/+TkpYvo2maCCGYmZnh6uqKra0ttre3P6Tsxx1rmkZfXx+qqlKr1T6m9P/fyn8O8ifY88GmS4z6OgAAAABJRU5ErkJggg==" x="0" y="0" width="25" height="26" />
+</pattern>
+<pattern id="fillPattern37_" x="580" y="15.75" width="25" height="26" patternUnits="userSpaceOnUse" >
+<image xlink:href="data:image/png;base64, iVBORw0KGgoAAAANSUhEUgAAABkAAAAaCAYAAABCfffNAAAACXBIWXMAABJ0AAASdAHeZh94AAAB2ElEQVRIie2Wv4rqUBCHv4nJJkHxBcRKsBPUwlIF9R0sxAey8iEsLLS0EPIIFjYKVxBB0crCQjFqknOLRbnrrn92YS+X5f7KIcx3zm9mzkQ2m80vvlnadwP+GkS/DoTDYbrdLp1OB8MwABCRp5IppdA0DcMwaDabtyEAh8OBeDxOvV7H87ynT2yaJtPplE6nc/8mAL7vE4lESKfTnE4nlFJPQV5eXgAIguAxREQIgoD9fv8pCLy6cG3vD+0uEUFEUEpdfFVKYVkWoVDobiLXdW/a+gai6zqDwYD5fE4kErnEHMdhtVpdWvpavu9TKBRIJBKPIZPJBMdxcF2XTCZDEASICMvlkslkgmVZ7xIopfA8j1wud3Oe3kDa7Tbr9ZpisUg+n8f3fZRS1Go1NE370I5z4tPpxPF4fAypVqv0ej1GoxHRaJRSqYSI0Gq1Ht6kVquRSqUeQ5LJJLvdjn6/z2g0olKpEAQBsVgMEblbE9u2nyu853lks1nG4zGz2ewSK5fLT3XXU3YppTAMA8Mw0LTXERIRXNe9Czjr/Kxc64dO/FnnvWDbNrquf+oVNk3z3fcfQkKhENvtluFw+KV9cq7nXYhpmiwWCxqNBvC1zfin5P/fyj8H+Q2optuzyQsSVgAAAABJRU5ErkJggg==" x="0" y="0" width="25" height="26" />
+</pattern>
+<pattern id="fillPattern38_" x="555" y="15.75" width="25" height="26" patternUnits="userSpaceOnUse" >
+<image xlink:href="data:image/png;base64, iVBORw0KGgoAAAANSUhEUgAAABkAAAAaCAYAAABCfffNAAAACXBIWXMAABJ0AAASdAHeZh94AAACkElEQVRIie2WTUvrWhSGn72T1Jb6gYh1XhARUUeCUwfixKET/RX6h/wDjh050A4cSbVUEa8RBxaFpCYmaWKbmmafkRWJH5Vzz+UMbmAT2Ovj2WvlXWELz/P+4Q8/8k8D/jOI/hNnwzAIgoDt7W2kfDufEIKdnR0WFhZot9u/BwFQSrGxscHMzAxJkhBFEbu7uyRJ8mnMjyEA5XKZ+fl5lFL4vo+maSil/l1IHMd0u12SJKHdbn8JgL9VXUKIT/c/sw0MEUKQJAlBEGRsSinCMKTT6bxT3Y8hhmHgui6VSgXDMPrJhRAUi0Wq1SqmaZLL5TIVDQTRNA3HcajVapyfnzM5OYkQAk3TyOfzLC8vY1kWJycnNBoN0jR9Fz+QunK5HGdnZxwcHFAqlcjn8zw+PvbtKysreJ5HvV6n2+2ytbWFrr+lHgii6zqe51EoFNjc3MSyrIzP2toaSZJg2zbFYpE4jgeHCCFwXZcoigjDkHq9Tq/Xy/gNDQ3RbDbRdT0zN99CNE3DNE1830dKSa1W+9Cv2+1i2zbT09MZ27eQNE25uLggDENWV1dZX1/P/KeklFiWxd7eHr7vZ3J8qi4pJUopbm9vubq6YnR0lLm5OTqdDkmS0Ov1SNO035pWq8Xz8zOQHdgPK3kdKMdx2N/fZ2RkhKWlJcrlMkop7u7ucF2Xp6en/np4eCAIAmZnZ7+X8Kv0Go0Gh4eHmKbJ4uIicRxzdHREs9nEcRxarVZfDK9VTE1NUSqVvv7waZrieR6WZXF6esrx8TFSSqIoolqtcn9/j23b6LqOlBIhxLv3+Pg4ExMTX0NeXl64vLykUqlwc3NDoVAA4Pr6ut/r4eHhjzqMUoqxsbEPKxH/31b+Osgvy1ZRFTyLYykAAAAASUVORK5CYII=" x="0" y="0" width="25" height="26" />
+</pattern>
+<pattern id="fillPattern39_" x="530" y="15.75" width="25" height="26" patternUnits="userSpaceOnUse" >
+<image xlink:href="data:image/png;base64, iVBORw0KGgoAAAANSUhEUgAAABkAAAAaCAYAAABCfffNAAAACXBIWXMAABJ0AAASdAHeZh94AAABSklEQVRIie2Vr4/CMBiGHy4Y7CwahyWzcw0OS/YnFIHhr6iZGLYOj0NeMrfgZtG1zdxnT7EccNsKd0suuXtVk/54+vZ7247qun5nYL0NDfiHICLDQ4wxOOeGhUwmE/I8p6qqoPGj0AiXZUlRFDjnyLKMw+HA+XxmtVqRJEnn3HHf4iKCtZbL5cJisUApBUCapkynU47HI8450jR9HZLnOd57tNbMZrOni94LOZ1OOOfY7XZEUdQc0efjUkqxXC5fg4gIRVGglCKKosbRer3GGNO04zjuddKarqqqEBGSJMFai/eezWZDHMc37RC1pssYw3w+x3tPXddorYMW7IVst9ubTq011tqgYmdZ1tr3UJPr4CtQRJpktel+c/fqvPH7/b5zcii0NV1d9p8BfAnps/4s4AHy6u67APBDn1af++BX+Dv6vd/v34V8AMFjoyhNjFuyAAAAAElFTkSuQmCC" x="0" y="0" width="25" height="26" />
+</pattern>
 </defs>
 <g fill="none" stroke="black" stroke-width="1" fill-rule="evenodd" stroke-linecap="square" stroke-linejoin="bevel" >
 
@@ -328,6 +349,54 @@ font-family="Helvetica" font-size="24" font-weight="400" font-style="normal"
 >
 <text fill="#212121" fill-opacity="1" stroke="none" xml:space="preserve" x="0" y="0" font-family="Helvetica" font-size="24" font-weight="400" font-style="normal" 
  >Time-Domain Reconstruction vs. Harmonic Order</text>
+</g>
+
+<g fill="#f0f0f0" fill-opacity="0.941176" stroke="none" transform="matrix(6e-05,0,0,6e-05,-18.1,-5.9)"
+font-family="Helvetica" font-size="24" font-weight="400" font-style="normal" 
+>
+<path vector-effect="none" fill-rule="evenodd" d="M5.3e+06,157500 L5.3e+06,407500 L7.05e+06,407500 L7.05e+06,157500 L5.3e+06,157500"/>
+</g>
+
+<g fill="url(#fillPattern33_)" stroke="none" transform="matrix(0.6,0,0,0.6,-18.1,-5.9)"
+font-family="Helvetica" font-size="24" font-weight="400" font-style="normal" 
+>
+<path vector-effect="none" fill-rule="evenodd" d="M680,15.75 L680,40.75 L705,40.75 L705,15.75 L680,15.75"/>
+</g>
+
+<g fill="url(#fillPattern34_)" stroke="none" transform="matrix(0.6,0,0,0.6,-18.1,-5.9)"
+font-family="Helvetica" font-size="24" font-weight="400" font-style="normal" 
+>
+<path vector-effect="none" fill-rule="evenodd" d="M655,15.75 L655,40.75 L680,40.75 L680,15.75 L655,15.75"/>
+</g>
+
+<g fill="url(#fillPattern35_)" stroke="none" transform="matrix(0.6,0,0,0.6,-18.1,-5.9)"
+font-family="Helvetica" font-size="24" font-weight="400" font-style="normal" 
+>
+<path vector-effect="none" fill-rule="evenodd" d="M630,15.75 L630,40.75 L655,40.75 L655,15.75 L630,15.75"/>
+</g>
+
+<g fill="url(#fillPattern36_)" stroke="none" transform="matrix(0.6,0,0,0.6,-18.1,-5.9)"
+font-family="Helvetica" font-size="24" font-weight="400" font-style="normal" 
+>
+<path vector-effect="none" fill-rule="evenodd" d="M605,15.75 L605,40.75 L630,40.75 L630,15.75 L605,15.75"/>
+</g>
+
+<g fill="url(#fillPattern37_)" stroke="none" transform="matrix(0.6,0,0,0.6,-18.1,-5.9)"
+font-family="Helvetica" font-size="24" font-weight="400" font-style="normal" 
+>
+<path vector-effect="none" fill-rule="evenodd" d="M580,15.75 L580,40.75 L605,40.75 L605,15.75 L580,15.75"/>
+</g>
+
+<g fill="url(#fillPattern38_)" stroke="none" transform="matrix(0.6,0,0,0.6,-18.1,-5.9)"
+font-family="Helvetica" font-size="24" font-weight="400" font-style="normal" 
+>
+<path vector-effect="none" fill-rule="evenodd" d="M555,15.75 L555,40.75 L580,40.75 L580,15.75 L555,15.75"/>
+</g>
+
+<g fill="url(#fillPattern39_)" stroke="none" transform="matrix(0.6,0,0,0.6,-18.1,-5.9)"
+font-family="Helvetica" font-size="24" font-weight="400" font-style="normal" 
+>
+<path vector-effect="none" fill-rule="evenodd" d="M530,15.75 L530,40.75 L555,40.75 L555,15.75 L530,15.75"/>
 </g>
 </g>
 </svg>
