@@ -5,7 +5,7 @@
 <title>Qt SVG Document</title>
 <desc>MATLAB, The MathWorks, Inc. Version 25.2.0.3123386 R2025b Update 3</desc>
 <defs>
-<pattern id="fillPattern2983_" x="658" y="47" width="27" height="509" patternUnits="userSpaceOnUse" >
+<pattern id="fillPattern3336_" x="658" y="47" width="27" height="509" patternUnits="userSpaceOnUse" >
 <image xlink:href="data:image/png;base64, iVBORw0KGgoAAAANSUhEUgAAABsAAAH9CAYAAADrvgd+AAAACXBIWXMAABJ0AAASdAHeZh94AAACq0lEQVR4nO2d0W3DMBTEpEQrdP85i1pSh/DhPghyAeHAey+O09rz9+/njhKf1kFjjLHGmbXDusnu7Z1XdoZNdrFtHJea7B5qG7nOyFufmozrzDlLoLMIaGe9w3QWAZxs2sYAbWfUZOP0Dis7s40B3CARwM4mdoNwr/XBuxGbzG8xCdz6EcDOuFt/+ItFAOcsAtkZN5ltDNBNdrDJLvaK+HCTFb/GtJP1boSYLILJInST7bFrh+kswjrFm8R+nkVYW2cB2rsRm6z4ZxPt3dg7zDZGWBvsrIdzFmHtSb3Dswc2GdfZpP7K9IDbSHW2i+fpLAI42WMbA+gswtrzWzvMrR9hPWBn1GQPdjeSnWGTYZ259RNwNwj4Uo481NRk3KHmzhm4jdhkXGfkZNQN8lyuM24yaht1lqCcDLxBsM64c4Z9KOuxjQHa/zhFdcZtI/eB1Qc7Z2Rn1GRcZ9xktjFB2xn1z0TJzrDJdBbAR3ZEIN/hwc4Z2Rl2zrBtBP9tAdiZc/Yerxsj+P0sQjkZdutzHzzIfV0j97HOEztnH2wbP9g2cp19sc6+4A1CdUZOZhvf49VVBHAbuc5MlsBkEcB3C7ivReW2EZwM+1JDsDPsBnHrJ9BZBPQrNqnJnLMEflJHqDoDrytuQcDJbGMA7rrSWQTfVBrBZBHAbQRvEG4y7M1NrjPwnGHbyHVG/hbTO0xnEdZHZwF0FkFnEfy5P4LOIrSvQajvzSU76x2mswhrOGcBnLMIaxxsG7nOsBuEfFdOZ+9xziKQk2E/zwb282yCnZnsPW6QCGRn3GTgNvYuHHUWATxnF+wMO2fYNo6js/foLAJ4g1zbGMA2Rljj7tph7TnjOsMmO7bxPW6QCOtik4E3CNYZuY3UZG79BM5ZBLQz5+w9zlmENe5TO+wfYbhmEsRMuREAAAAASUVORK5CYII=" x="0" y="0" width="27" height="509" />
 </pattern>
 </defs>
@@ -4918,7 +4918,7 @@ font-family="MS Shell Dlg 2" font-size="7.8" font-weight="400" font-style="norma
 <polyline fill="none" vector-effect="none" points="685,556 685,47 " />
 </g>
 
-<g fill="url(#fillPattern2983_)" stroke="none" transform="matrix(0.6,0,0,0.6,-77.7,-7.825)"
+<g fill="url(#fillPattern3336_)" stroke="none" transform="matrix(0.6,0,0,0.6,-77.7,-7.825)"
 font-family="MS Shell Dlg 2" font-size="7.8" font-weight="400" font-style="normal" 
 >
 <path vector-effect="none" fill-rule="evenodd" d="M658,556 L685,556 L685,47 L658,47 L658,556"/>

@@ -140,7 +140,20 @@ sgtitle('Stem Plot of A(t) Harmonics');
 grid on;
 exportgraphics(figC4, fullfile(assetDir, 'harmonic_spectrum_stem3_Ar.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
 
-
+%% --- Figure C5: TB vs BT Comparison (BarSurf) ---
+fprintf('Generating Figure C5: TB vs BT Comparison (SVG)...\n');
+figC5 = figure('Name', 'tb_vs_bt', 'Position', [100 100 1000 450]);
+set(gcf, 'Color', 'none');
+subplot(1,2,1);
+barsurf(abs(double(Ar.T_tb(5))));
+title('Toeplitz Block (T\_tb)');
+view([0 90]); colorbar;
+subplot(1,2,2);
+barsurf(abs(double(Ar.T_bt(5))));
+title('Block Toeplitz (T\_bt)');
+view([0 90]); colorbar;
+sgtitle('Comparison: TB vs BT Ordering (h=5)');
+exportgraphics(figC5, fullfile(assetDir, 'toeplitz_tb_vs_bt.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
 %% --- Figure D: Harmonic Transfer (DC Gain) ---
 fprintf('Generating Figure D: Harmonic Transfer DC Gain (SVG)...\n');
 t_sys = 2*pi;
