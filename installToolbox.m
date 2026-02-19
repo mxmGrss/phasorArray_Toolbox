@@ -54,3 +54,4 @@ addpath(genpath(rootFolder));
 savepath;
 
 fprintf('Path updated successfully.\nJump to the <a href="matlab:doc PhasorArray">Phasor Array Documentation</a> and <a href="matlab:doc PhasorSS">PhasorSS Documentation</a> \nOr see an exemple with <a href="matlab:open GettingStarted.mlx">GettingStarted</a>\nAll the basis are <a href="matlab:open BasicToolBox.mlx">here</a>\nFor Periodic State Space system jump to <a href="matlab:open Periodic_State_space_example.mlx">PeriodicStateSpace</a>\nFor LMIs exemple see <a href="matlab:open Exemple_Toolbox_LMI.mlx">Exemple_Toolbox_LMI</a>\n');
+fprintf('To verify the installation, you can <a href="matlab:test_PhasorArray_basic; test_PhasorArray_advanced">Run All Global Tests</a>\n');
