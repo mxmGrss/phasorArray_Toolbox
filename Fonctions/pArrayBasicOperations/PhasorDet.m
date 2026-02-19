@@ -79,18 +79,56 @@ Adet_t=permute(Adet_t,[1 3 2]);
 
 Adetphcomp=TimeArray2Phasors(Adet_t,nT);
 
-h=(numel(Adetphcomp)-1)/2;
-A_half=squeeze(abs(Adetphcomp(1,1,(h+1):end)));
-log10Ph=log10(A_half);
-log10Ph(isnan(log10Ph))=mean(log10Ph(end-10:end));
-log10Ph(isinf(log10Ph))=mean(log10Ph(end-10:end));
-diffPh = log10(abs(diff(A_half,1)));
-filt_diff= lowpass(diffPh,0.05);
+% --- Auto-Truncation Logic (Heuristic) ---
+% Goal: Detect the noise floor where spectral magnitude stops decreasing
+% and becomes dominated by numerical noise.
+h = (numel(Adetphcomp)-1)/2;
+magnitude = squeeze(abs(Adetphcomp(1,1,(h+1):end)));
+
+% 1. Convert to log-scale (dB-like)
+% Protect against log10(0) -> -Inf by clamping to eps
+safe_magnitude = max(magnitude, eps); 
+log10Ph = log10(safe_magnitude);
+
+% 2. Estimate Noise Floor (from tail of the spectrum)
+% Use last 10 samples or all if length < 10
+n_tail = min(10, numel(log10Ph));
+if n_tail > 0
+    noise_floor = mean(log10Ph(end-n_tail+1:end));
+else
+    noise_floor = -15; % Default fallback
+end
+
+% Replace actual zeros (which became eps -> -16) with noise floor for cleaner diff
+log10Ph(magnitude < 10*eps) = noise_floor;
+
+% 3. Compute Spectral Slope (Derivative of log-magnitude)
+% Positive slope means noise floor reached (or oscillation)
+diffPh = diff(log10Ph, 1);
+
+% 4. Smooth the slope to avoid local false positives
+% Use lowpass filter if available/robust, else simple moving average
+try
+    % Try standard MATLAB lowpass with steepness control
+    filt_diff = lowpass(diffPh, 0.05); 
+catch
+    % Fallback: moving average (robust and standard)
+    filt_diff = movmean(diffPh, 5);
+end
 
 if ~varg.autoTrunc
-Adetph=ReduceArray(Adetphcomp,'reduceMethod',varg.reduceMethod,'reduceThreshold',varg.reduceThreshold);
+    % Standard reduction based on threshold
+    Adetph = ReduceArray(Adetphcomp, 'reduceMethod', varg.reduceMethod, 'reduceThreshold', varg.reduceThreshold);
 else
-Adetph=ReduceArray(Adetphcomp,find(filt_diff>0,1)+5);
+    % Auto-truncation: Cut where the smoothed slope turns positive (noise floor)
+    % Find first positive slope + buffer
+    idx_cutoff = find(filt_diff > 0, 1);
+    if isempty(idx_cutoff)
+        idx_cutoff = numel(filt_diff); % Keep all if no noise floor found
+    end
+    % Add safety margin (+5 harmonics)
+    trunc_h = min(idx_cutoff + 5, h);
+    Adetph = ReduceArray(Adetphcomp, trunc_h);
 end
 
 if varg.plot

@@ -145,7 +145,7 @@ end
 
 switch varg.solver
     case 'adaptative'
-        odeOpts = odeset('RelTol',1e-6,'AbsTol',1e-6,'MaxStep',dt_sim,'Stats','on','Jacobian',@(t,y) ATt(T,t));
+        odeOpts = odeset('RelTol',1e-6,'AbsTol',1e-6,'MaxStep',dt_sim,'Stats','off','Jacobian',@(t,y) ATt(T,t));
         if nargout>2
             rDotDot = [];
             odeOpts=odeset(odeOpts,OutputFcn=@outputFcn);

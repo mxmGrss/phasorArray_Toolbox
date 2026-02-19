@@ -50,8 +50,8 @@ end
 
 if nA1==1 && nA2==1 && mA>0
     if isa(A,'sdpvar') || isa(A,'ndsdpvar')
-        %Ad=ndsdpvar(size(B,1),size(B,1),2*mA+1);
-        Ad =  zero(size(B,1),size(B,1),2*mA+1);
+        Ad=ndsdpvar(size(B,1),size(B,1),2*mA+1)*0;
+        % Ad =  zero(size(B,1),size(B,1),2*mA+1);
         for ii=-mA:mA
             Ad(:,:,ii+mA+1)= Ad(:,:,ii+mA+1) + eye(size(B,1))*A(1,1,ii+mA+1);
         end

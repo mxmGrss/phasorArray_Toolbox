@@ -1,0 +1,32 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "The PhasorArray Toolbox"
+abstract: "A Matlab toolbox dedicated to harmonic modelling and control of Linear Time-Periodic systems."
+version: "v1"
+date-released: "2025-06-03"
+license: MIT
+repository-code: "https://github.com/mxmGrss/phasorArray_Toolbox"
+doi: "10.5281/zenodo.17560958"
+authors:
+  - family-names: "Grosso"
+    given-names: "Maxime"
+    orcid: "https://orcid.org/0009-0007-6721-781X"
+    affiliation: "Centre de Recherche en Automatique de Nancy, Université de Lorraine"
+  - family-names: "Riedinger"
+    given-names: "Pierre"
+    orcid: "https://orcid.org/0000-0002-8221-4736"
+    affiliation: "Centre de Recherche en Automatique de Nancy, Université de Lorraine"
+  - family-names: "Daafouz"
+    given-names: "Jamal"
+    orcid: "https://orcid.org/0000-0001-8313-8790"
+    affiliation: "Centre de Recherche en Automatique de Nancy, Université de Lorraine, Institut Universitaire de France"
+keywords:
+  - periodic systems
+  - harmonic analysis
+  - Fourier decomposition
+  - Toeplitz matrix
+  - MATLAB toolbox
+  - LTP systems
+  - control theory
+  - phasor
