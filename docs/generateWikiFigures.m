@@ -1,0 +1,169 @@
+%% generateWikiFigures.m
+% Script to generate illustrative figures for the PhasorArray Toolbox Wiki.
+% Figures are saved in docs/wiki_assets/ with transparent backgrounds and SVG format.
+
+clear; clc; close all;
+
+% --- Setup Paths & Folder ---
+assetDir = fullfile('docs', 'wiki_assets');
+if ~exist(assetDir, 'dir')
+    mkdir(assetDir);
+end
+
+% Set default figure properties for professional look
+set(0, 'DefaultFigureColor', 'w');
+set(0, 'DefaultAxesFontSize', 12);
+set(0, 'DefaultLineLineWidth', 1.5);
+
+fprintf('Starting Wiki Figure Generation...\n');
+
+%% --- Figure A: Reconstruction (Phasor vs Time) ---
+fprintf('Generating Figure A: Reconstruction Comparison (SVG)...\n');
+T_sig = 2*pi;
+t = linspace(0, T_sig, 1000);
+y_true = square(t);
+
+h_list = [1, 3, 10, 40, 120];
+colors = lines(length(h_list));
+
+figA = figure('Name', 'reconstruction_comparison', 'Position', [100 100 800 450]);
+set(gcf, 'Color', 'none');
+plot(t, y_true, 'k--', 'DisplayName', 'Original (Square)', 'LineWidth', 1);
+hold on;
+
+for i = 1:length(h_list)
+    h = h_list(i);
+    % build Ak as positive harmonics (index 1 = harmonic 1)
+    Ak = zeros(1, 1, h + 1);
+    for k = 1:2:h
+        Ak(1, 1, k) = -2j / (pi*k);
+    end
+    pA = PhasorArray(0, Ak, 'isreal', true);
+    y_rec = evalTime(pA, T_sig, t);
+    plot(t, squeeze(y_rec), 'Color', colors(i,:), ...
+        'DisplayName', sprintf('h = %d', h));
+end
+
+xlabel('Time [s]'); ylabel('Amplitude');
+title('Time-Domain Reconstruction vs. Harmonic Order');
+legend('Location', 'bestoutside'); grid on;
+exportgraphics(figA, fullfile(assetDir, 'reconstruction_h_comparison.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
+
+
+%% --- Figure B: Spectral Decay (Random Signal) ---
+fprintf('Generating Figure B: Spectral Decay (SVG)...\n');
+h_spec = 15;
+A_pos = (rand(1, 1, h_spec+1) + 1i*rand(1, 1, h_spec+1)) .* exp(-0.3*(0:h_spec));
+pA_spec = PhasorArray(A_pos(1,1,1), A_pos(1,1,2:end), 'isreal', true);
+
+figB = figure('Name', 'spectral_decay', 'Position', [100 100 600 400]);
+set(gcf, 'Color', 'none');
+stem(pA_spec);
+xlabel('Harmonic Order'); ylabel('|A_k|');
+title('Harmonic Spectrum (Spectral Decay)');
+grid on;
+exportgraphics(figB, fullfile(assetDir, 'spectral_decay.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
+
+
+%% --- Figure C1: Toeplitz Structure (Spy) ---
+fprintf('Generating Figure C1: Toeplitz Spy (SVG)...\n');
+Ar = PhasorArray.random(3, 3, 5); 
+h_tb = 5;
+TBM = Ar.T_tb(h_tb);
+
+figC1 = figure('Name', 'toeplitz_spy', 'Position', [100 100 500 500]);
+set(gcf, 'Color', 'none');
+spy(TBM);
+title(sprintf('Toeplitz Block Matrix Structure (h=%d, n=3)', h_tb));
+xlabel('Column Index'); ylabel('Row Index');
+exportgraphics(figC1, fullfile(assetDir, 'toeplitz_structure_spy.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
+
+
+%% --- Figure C2: Toeplitz BarSurf ---
+fprintf('Generating Figure C2: Toeplitz BarSurf (SVG)...\n');
+figC2 = figure('Name', 'toeplitz_barsurf', 'Position', [100 100 600 500]);
+set(gcf, 'Color', 'none');
+barsurf(abs(double(TBM)));
+colorbar
+title(sprintf('Toeplitz Magnitude Map (h=%d, n=3)', h_tb));
+xlim([-1 (2*h_tb+1)*3+1]);
+ylim([-1 (2*h_tb+1)*3+1]);
+view([-0 90])
+exportgraphics(figC2, fullfile(assetDir, 'toeplitz_structure_barsurf.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
+
+
+%% --- Figure C3: Time-Domain Evaluation of Ar ---
+fprintf('Generating Figure C3: Time Plot of Ar (SVG)...\n');
+figC3 = figure('Name', 'time_plot_Ar', 'Position', [100 100 600 400]);
+set(gcf, 'Color', 'none');
+plot(Ar);
+title('Time-Domain Evaluation of A(t) (T=1)');
+grid on;
+exportgraphics(figC3, fullfile(assetDir, 'time_domain_evaluation_Ar.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
+
+
+%% --- Figure C4: Harmonic Stem Plot of Ar ---
+fprintf('Generating Figure C4: Stem Plot of Ar (SVG)...\n');
+figC4 = figure('Name', 'stem_plot_Ar', 'Position', [100 100 600 400]);
+set(gcf, 'Color', 'none');
+stem(Ar);
+title('Stem Plot of A(t) Harmonics');
+grid on;
+exportgraphics(figC4, fullfile(assetDir, 'harmonic_spectrum_stem_Ar.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
+
+
+%% --- Figure D: Harmonic Transfer (DC Gain) ---
+fprintf('Generating Figure D: Harmonic Transfer DC Gain (SVG)...\n');
+t_sys = 2*pi;
+A0 = [-0.1 1; -1 -0.1];
+A1 = [0 0.5; 0.5 0];
+pA_sys = PhasorArray(A0, A1, 'isreal', true);
+B = [0; 1];
+C = [1 0];
+sys = PhasorSS(pA_sys, B, C, 0, t_sys);
+
+figD = figure('Name', 'harmonic_transfer', 'Position', [100 100 700 500]);
+set(gcf, 'Color', 'none');
+h_dc = 5;
+hmqDcGain(sys, h_dc, t_sys);
+colorbar
+title(sprintf('DC Gain (Effective Transfer, h=%d)', h_dc));
+view([-0 90])
+exportgraphics(figD, fullfile(assetDir, 'harmonic_transfer_dcgain.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
+
+
+%% --- Figure E: Gibbs Effect (GIF) ---
+fprintf('Generating Figure E: Gibbs Effect Animation (GIF)...\n');
+gifFilename = fullfile(assetDir, 'gibbs_effect_animation.gif');
+figE = figure('Name', 'gibbs_gif', 'Position', [100 100 600 450]);
+
+h_gif_list = unique(floor(logspace(0, 3, 30)));
+
+for i = 1:length(h_gif_list)
+    h = h_gif_list(i);
+    Ak = zeros(1, 1, h + 1);
+    for k = 1:2:h
+        Ak(1, 1, k) = -2j / (pi*k);
+    end
+    pA = PhasorArray(0, Ak, 'isreal', true);
+    y_rec = evalTime(pA, T_sig, t);
+    
+    plot(t, y_true, 'k--', 'LineWidth', 1); hold on;
+    plot(t, squeeze(y_rec), 'r', 'LineWidth', 2);
+    title(sprintf('Gibbs Effect Reconstruction (h = %d)', h));
+    xlabel('Time [s]'); ylabel('Amplitude');
+    ylim([-1.5 1.5]); grid on;
+    hold off;
+    
+    frame = getframe(figE);
+    im = frame2im(frame);
+    [imind, cm] = rgb2ind(im, 256);
+    
+    if i == 1
+        imwrite(imind, cm, gifFilename, 'gif', 'Loopcount', inf, 'DelayTime', 0.2);
+    else
+        imwrite(imind, cm, gifFilename, 'gif', 'WriteMode', 'append', 'DelayTime', 0.1);
+    end
+end
+
+fprintf('All assets generated successfully in %s\n', assetDir);
