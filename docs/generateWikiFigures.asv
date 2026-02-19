@@ -67,7 +67,7 @@ exportgraphics(figB, fullfile(assetDir, 'spectral_decay.svg'), 'BackgroundColor'
 
 %% --- Figure C1: Toeplitz Structure (Spy) ---
 fprintf('Generating Figure C1: Toeplitz Spy (SVG)...\n');
-Ar = PhasorArray.random(3, 3, 5,"time_structure","cmplx"); 
+Ar = PhasorArray.random(3, 3, 5); 
 h_tb = 5;
 TBM = Ar.T_tb(h_tb);
 
@@ -114,12 +114,12 @@ exportgraphics(figC3, fullfile(assetDir, 'time_domain_evaluation_Ar.svg'), 'Back
 
 %% --- Figure C3b: Time-Domain Evaluation of Ar ---
 fprintf('Generating Figure C3: Time Plot of Ar (SVG)...\n');
-figC3 = figure('Name', 'time_plot3D_Ar', 'Position', [100 100 600 400]);
+figC3 = figure('Name', 'time_plot_Ar', 'Position', [100 100 600 400]);
 set(gcf, 'Color', 'none');
 plot3D(Ar,2*pi);
 sgtitle('Time-Domain Evaluation of A(t) (T=2*pi)');
 grid on;
-exportgraphics(figC3, fullfile(assetDir, 'time_domain3D_evaluation_Ar.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
+exportgraphics(figC3, fullfile(assetDir, 'time_domain_evaluation_Ar.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
 
 
 %% --- Figure C4: Harmonic Stem Plot of Ar ---
