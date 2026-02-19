@@ -1,15 +1,20 @@
 # PhasorArray Toolbox
 
-**Harmonic Modeling, Analysis, and Control of Periodic Systems made simple.**
+**Harmonic Modeling, Analysis, and Control of Periodic Systems.**
 
 [![MATLAB](https://img.shields.io/badge/MATLAB-R2021b%2B-blue.svg)](https://www.mathworks.com/products/matlab.html)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17560958.svg)](https://doi.org/10.5281/zenodo.17560958)
+[![Wiki](https://img.shields.io/badge/Documentation-Wiki-green.svg)](https://github.com/mxmGrss/phasorArray_Toolbox/wiki)
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/mxmGrss/phasorArray_Toolbox/graphs/commit-activity)
 
-The **PhasorArray Toolbox** is an object-oriented library that takes the pain out of analyzing and controlling **Linear Time-Periodic (LTP)** and **Bilinear Systems**. 
+The **PhasorArray Toolbox** is an object-oriented MATLAB library providing a rigorous framework for the analysis and control of **Linear Time-Periodic (LTP)** and **Bilinear Systems**. 
 
-By leveraging **Harmonic Modeling** and **Toeplitz Matrix** algebra, it effectively turns complex periodic differential equations into standard algebraic problems. This means you can apply robust LTI control techniques—like Eigenvalue analysis or $H_\infty$ synthesis—to systems that were previously too difficult to model (e.g., Power Converters, Rotating Machinery).
-**Built on Solid Science**: This toolbox enables the numerical application of advanced theoretical results presented in recent control literature [1-8], ensuring **consistency** and **guarantees** where ad-hoc methods often fail.
+By establishing a **one-to-one correspondence** (bijection) between time-domain signals ($L^2_{loc}$) and their harmonic representation ($\mathcal{H}$), the toolbox transforms complex periodic differential equations into standard algebraic problems. This enables the application of robust LTI techniques—such as Eigenvalue (Floquet) analysis or $H_\infty$ synthesis—to complex periodic processes (e.g., Grid-tied converters, rotating machinery).
+
+**Built on Solid Science**: This toolbox enables the numerical application of advanced theoretical results [1-8], ensuring **consistency** and **guarantees** where ad-hoc methods often fail.
+
+![Gibbs Reconstruction](https://github.com/mxmGrss/phasorArray_Toolbox/blob/main/docs/wiki_assets/gibbs_effect_animation.gif?raw=true)
 
 ---
 
@@ -19,12 +24,22 @@ If you deal with periodic systems, you know the struggle: time-varying matrices,
 
 **PhasorArray solves this by:**
 
-*   **Algebraicizing the Periodic**: Converts $\dot{x}(t) = A(t)x(t)$ into $\dot{X} = (\mathcal{A} - \mathcal{N})X$. Suddenly, your periodic problem looks just like an LTI one.
-*   **Guaranteeing Consistency**: We implement distinct, rigorous algorithms (Riedinger et al.) for truncation [6]. This ensures that your harmonic operations actually converge to the true infinite-dimensional solution ($\mathcal{T}(AB)_h$ to $\mathcal{T}(A)\mathcal{T}(B)$).
+*   **[Algebraicizing the Periodic](https://github.com/mxmGrss/phasorArray_Toolbox/wiki/Theory)**: Converts $\dot{x}(t) = A(t)x(t)$ into $\dot{X} = (\mathcal{A} - \mathcal{N})X$. By establishing an isometric representation, periodic dynamics are treated with the rigor of standard LTI systems.
+*   **Guaranteeing Consistency**: We implement distinct, rigorous algorithms for truncation [6]. This ensures that harmonic operations converge to the true infinite-dimensional solution (e.g., ensuring $\mathcal{T}(AB)_h \to \mathcal{T}(A)\mathcal{T}(B)$ remains mathematically consistent).
 *   **Targeting Real Applications**:
-    *   **LTP Systems**: Floquet analysis and stabilization made easy.
-    *   **Bilinear Systems**: Design **Forwarding Controllers** for global stability on Power Converters (see [2], [4]).
-    *   **Variable Frequency**: Use **Dynamic Phasors** to control **PMSM** drives even during speed transients (see [3]).
+    *   **LTP Systems**: [Eigenvalue (Floquet) analysis](https://github.com/mxmGrss/phasorArray_Toolbox/wiki/Solvers#floquet-analysis-hmqneig) and stability assessment.
+    *   **Bilinear Systems**: Implementation of **Forwarding Controllers** for global stability on Power Converters (see [2], [4]).
+    *   **Variable Frequency**: Utilization of **Dynamic Phasors** for the control of **PMSM** drives during rapid speed transients (see [3]).
+
+---
+
+### [Visual Diagnostics](https://github.com/mxmGrss/phasorArray_Toolbox/wiki/Diagnostics-Visualization)
+
+The toolbox provides dedicated visualization routines for inspecting harmonic content and operator structures:
+
+| Magnitude Map (`barsurf`) | Spectral Decay (`stem`) | Toeplitz Structure (`spy`) |
+| :---: | :---: | :---: |
+| ![BarSurf](https://github.com/mxmGrss/phasorArray_Toolbox/blob/main/docs/wiki_assets/phasorArray_barsurf.svg?raw=true) | ![Spectral](https://github.com/mxmGrss/phasorArray_Toolbox/blob/main/docs/wiki_assets/spectral_decay.svg?raw=true) | ![Toeplitz](https://github.com/mxmGrss/phasorArray_Toolbox/blob/main/docs/wiki_assets/toeplitz_structure_spy.svg?raw=true) |
 
 ### Based On & Related To
 This framework encompasses and generalizes methods known in the literature as:
@@ -38,7 +53,7 @@ This framework encompasses and generalizes methods known in the literature as:
 
 ## ✨ Key Features
 
-### 1. The `PhasorArray` Class
+### 1. The [`PhasorArray`](https://github.com/mxmGrss/phasorArray_Toolbox/wiki/PhasorArray-Class) Class
 
 The core of the toolbox. It hides the complexity of Fourier series and Toeplitz matrices behind a clean, intuitive object.
 
@@ -50,16 +65,16 @@ The core of the toolbox. It hides the complexity of Fourier series and Toeplitz 
 *   **Flexible Forms**: Switch between `SinCos`, `AngleAmp`, or `RealImag` representations instantly.
 *   **Reduction Tools**: Use `neglect(tol)` to automatically prune negligible harmonics and keep your models light.
 
-### 2. Advanced Solvers
+### 2. Advanced [Solvers](https://github.com/mxmGrss/phasorArray_Toolbox/wiki/Solvers)
 
 Don't just model—solve.
 
 *   **Eigenvalues**: Compute **Floquet exponents** with `HmqNEig` to determine stability.
 *   **Lyapunov**: Assess stability and compute periodic Gramians with `lyap`.
-*   **Riccati (HARE)**: Synthesize **LQR** and **$H_{\infty}$** controllers using efficient iterative algorithms (`RicHarmonicKlein`).
-*   **Sylvester**: Solve observer design problems with `sylvester`.
+*   **Riccati (HARE)**: Synthesis of **LQR** and **$H_{\infin}$** controllers via efficient iterative algorithms (`RicHarmonicKlein`).
+*   **Sylvester**: Solving observer design and disturbance rejection problems with `sylvester`.
 
-### 3. Robust Control (LMI)
+### 3. Robust Control ([LMI](https://github.com/mxmGrss/phasorArray_Toolbox/wiki/Interfacing-with-YALMIP))
 
 Seamless integration with **YALMIP** allows you to harness the power of convex optimization.
 
@@ -151,9 +166,21 @@ See the `Exemples/` folder for complete scripts covering:
 
 ---
 
-## 🔗 References
+## 🔗 Bibliography & Citation
 
-### Toolbox & Applications
+If you use this toolbox in your research, please cite the following work:
+
+```bibtex
+@software{phasorarray2025,
+  author = {Grosso, M. and Riedinger, P. and Daafouz, J.},
+  title = {The PhasorArray Toolbox for Harmonic Modelling and Control of Periodic systems},
+  year = {2025},
+  publisher = {Zenodo},
+  doi = {10.5281/zenodo.17560958}
+}
+```
+
+### Full Reference List
 1.  **[Toolbox]** M. Grosso, P. Riedinger, and J. Daafouz, *"The PhasorArray Toolbox for Harmonic Analysis and Control Design,"* arXiv preprint arXiv:2510.21294, 2025.
 2.  **[TCST]** M. Grosso, P. Riedinger, J. Daafouz, S. Pierfederici, H. J. Idrissi, and B. Lapôtre, *"Harmonic Control of Three-Phase AC/DC Converter With Time-Domain Guarantees,"* *IEEE Transactions on Control Systems Technology*, 2025.
 3.  **[ECCE]** M. Grosso, P. Riedinger, J. Daafouz, S. Pierfederici, H. J. Idrissi, and B. Lapôtre, *"Frequency-Varying Harmonic Domain Control for PMSMs with Current Harmonic Mitigation,"* in *2025 IEEE Energy Conversion Conference Congress and Exposition (ECCE)*, pp. 1-8, 2025.
