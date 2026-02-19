@@ -10,7 +10,7 @@
 
 The **PhasorArray Toolbox** is an object-oriented MATLAB library providing a rigorous framework for the analysis and control of **Linear Time-Periodic (LTP)** and **Bilinear Systems**. 
 
-By establishing a **one-to-one correspondence** (bijection) between time-domain signals ($L^2_{loc}$) and their harmonic representation ($\mathcal{H}$), the toolbox transforms complex periodic differential equations into standard algebraic problems. This enables the application of robust LTI techniques—such as Eigenvalue (Floquet) analysis or $H_\infty$ synthesis—to complex periodic processes (e.g., Grid-tied converters, rotating machinery).
+By establishing a **one-to-one correspondence** (bijection) between time-domain signals ($L^2_{loc}$) and their harmonic representation ($\mathcal{H}$), the toolbox transforms complex periodic differential equations into standard algebraic problems. This enables the application of robust LTI techniques, such as Eigenvalue (Floquet) analysis or $H_\infty$ synthesis, to complex periodic processes (e.g., Grid-tied converters, rotating machinery).
 
 **Built on Solid Science**: This toolbox enables the numerical application of advanced theoretical results [1-8], ensuring **consistency** and **guarantees** where ad-hoc methods often fail.
 
@@ -67,7 +67,7 @@ The core of the toolbox. It hides the complexity of Fourier series and Toeplitz 
 
 ### 2. Advanced [Solvers](https://github.com/mxmGrss/phasorArray_Toolbox/wiki/Solvers)
 
-Don't just model—solve.
+Don't just model, solve.
 
 *   **Eigenvalues**: Compute **Floquet exponents** with `HmqNEig` to determine stability.
 *   **Lyapunov**: Assess stability and compute periodic Gramians with `lyap`.
