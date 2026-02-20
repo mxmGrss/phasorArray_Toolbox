@@ -2095,11 +2095,13 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             out.D = obj.D.neglect(threshold);
         end
 
-        function plot(obj)
+        function plot(obj,linkrow)
             %PLOT Plot the PhasorSS object
             %   PLOT(obj) plots the PhasorSS object calling the plot method of PhasorArray class for each matrix A,B,C,D.
             %
-
+            if nargin <2
+                linkrow = 'false';
+            end
             %Concate the matrices A,B,C,D in a PhasorArray
             superMatrix = [obj.A , obj.B ; obj.C , obj.D];
 
@@ -2138,8 +2140,10 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             % allAxes = findall(ff.Children,'type','Axes');
             linkaxes(allAxes,'x');
             %linkaxes y by row
+            if linkrow
             for ii = 1:n2
                 linkaxes(allAxes((ii-1)*n1+1:ii*n1),'y');
+            end
             end
 
             % ff.Visible = 'on';
