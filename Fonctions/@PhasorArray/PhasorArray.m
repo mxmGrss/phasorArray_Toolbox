@@ -495,7 +495,6 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             if nargout<2
                 if ~elementwise
                     Eew = E;
-                    disp("hihi")
                 end
             end
         end

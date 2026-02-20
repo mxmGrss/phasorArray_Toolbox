@@ -50,24 +50,23 @@ legend('Location', 'bestoutside'); grid on;
 exportgraphics(figA, fullfile(assetDir, 'reconstruction_h_comparison.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
 
 
-%% --- Figure B: Spectral Decay (Random Signal) ---
-fprintf('Generating Figure B: Spectral Decay (SVG)...\n');
+%% --- Figure B: Spectral Decay (Energy per harmonic) ---
+fprintf('Generating Figure B: Spectral Decay — pageEnergy (SVG)...\n');
+rng(42); % Fix seed for reproducibility
 h_spec = 15;
 A_pos = (rand(1, 1, h_spec+1) + 1i*rand(1, 1, h_spec+1)) .* exp(-0.3*(0:h_spec));
 pA_spec = PhasorArray(A_pos(1,1,1), A_pos(1,1,2:end), 'isreal', true);
 
 figB = figure('Name', 'spectral_decay', 'Position', [100 100 600 400]);
 set(gcf, 'Color', 'none');
-stem(pA_spec);
-xlabel('Harmonic Order'); ylabel('|A_k|');
-sgtitle('Harmonic Spectrum (Spectral Decay)');
-grid on;
+pageEnergy(pA_spec, true, 'none', 'log');
+sgtitle('Normalised Energy per Harmonic (log scale)');
 exportgraphics(figB, fullfile(assetDir, 'spectral_decay.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
 
 
 %% --- Figure C1: Toeplitz Structure (Spy) ---
 fprintf('Generating Figure C1: Toeplitz Spy (SVG)...\n');
-Ar = PhasorArray.random(3, 3, 5); 
+Ar = PhasorArray.random(3, 3, 5,"time_structure","cmplx"); 
 h_tb = 5;
 TBM = Ar.T_tb(h_tb);
 
@@ -92,15 +91,14 @@ view([-0 90])
 exportgraphics(figC2, fullfile(assetDir, 'toeplitz_structure_barsurf.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
 
 %% --- Figure C2bis: BarSurf ---
-fprintf('Generating Figure C2: Toeplitz BarSurf (SVG)...\n');
-figC2 = figure('Name', 'toeplitz_barsurf', 'Position', [100 100 600 500]);
+fprintf('Generating Figure C2bis: PhasorArray BarSurf (SVG)...\n');
+figC2bis = figure('Name', 'phasorarray_barsurf', 'Position', [100 100 600 500]);
 set(gcf, 'Color', 'none');
 barsurf(Ar);
 colorbar
-% sgtitle(sprintf('Toeplitz Magnitude Map (h=%d, n=3)', h_tb));
 view([-10 50])
 title('Harmonic content of A_i(t)')
-exportgraphics(figC2, fullfile(assetDir, 'phasorArray_barsurf.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
+exportgraphics(figC2bis, fullfile(assetDir, 'phasorArray_barsurf.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
 
 
 %% --- Figure C3: Time-Domain Evaluation of Ar ---
@@ -114,12 +112,12 @@ exportgraphics(figC3, fullfile(assetDir, 'time_domain_evaluation_Ar.svg'), 'Back
 
 %% --- Figure C3b: Time-Domain Evaluation of Ar ---
 fprintf('Generating Figure C3: Time Plot of Ar (SVG)...\n');
-figC3 = figure('Name', 'time_plot_Ar', 'Position', [100 100 600 400]);
+figC3 = figure('Name', 'time_plot3D_Ar', 'Position', [100 100 600 400]);
 set(gcf, 'Color', 'none');
 plot3D(Ar,2*pi);
 sgtitle('Time-Domain Evaluation of A(t) (T=2*pi)');
 grid on;
-exportgraphics(figC3, fullfile(assetDir, 'time_domain_evaluation_Ar.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
+exportgraphics(figC3, fullfile(assetDir, 'time_domain3D_evaluation_Ar.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
 
 
 %% --- Figure C4: Harmonic Stem Plot of Ar ---
@@ -131,16 +129,29 @@ sgtitle('Stem Plot of A(t) Harmonics');
 grid on;
 exportgraphics(figC4, fullfile(assetDir, 'harmonic_spectrum_stem_Ar.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
 
-%% --- Figure C4b: Harmonic Stem Plot of Ar ---
-fprintf('Generating Figure C4: Stem Plot of Ar (SVG)...\n');
-figC4b = figure('Name', 'stem_plot_Ar', 'Position', [100 100 600 400]);
+%% --- Figure C4b: Harmonic Stem3 Plot of Ar ---
+fprintf('Generating Figure C4b: Stem3 Plot of Ar (SVG)...\n');
+figC4b = figure('Name', 'stem3_plot_Ar', 'Position', [100 100 600 400]);
 set(gcf, 'Color', 'none');
 stem3(Ar);
-sgtitle('Stem Plot of A(t) Harmonics');
+sgtitle('3D Stem Plot of A(t) Harmonics');
 grid on;
-exportgraphics(figC4, fullfile(assetDir, 'harmonic_spectrum_stem3_Ar.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
+exportgraphics(figC4b, fullfile(assetDir, 'harmonic_spectrum_stem3_Ar.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
 
-
+%% --- Figure C5: TB vs BT Comparison (BarSurf) ---
+fprintf('Generating Figure C5: TB vs BT Comparison (SVG)...\n');
+figC5 = figure('Name', 'tb_vs_bt', 'Position', [100 100 1000 450]);
+set(gcf, 'Color', 'none');
+subplot(1,2,1);
+barsurf(abs(double(Ar.T_tb(5))));
+title('Toeplitz Block (T\_tb)');
+view([0 90]); colorbar;
+subplot(1,2,2);
+barsurf(abs(double(Ar.T_bt(5))));
+title('Block Toeplitz (T\_bt)');
+view([0 90]); colorbar;
+sgtitle('Comparison: TB vs BT Ordering (h=5)');
+exportgraphics(figC5, fullfile(assetDir, 'toeplitz_tb_vs_bt.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
 %% --- Figure D: Harmonic Transfer (DC Gain) ---
 fprintf('Generating Figure D: Harmonic Transfer DC Gain (SVG)...\n');
 t_sys = 2*pi;
@@ -194,5 +205,189 @@ for i = 1:length(h_gif_list)
         imwrite(imind, cm, gifFilename, 'gif', 'WriteMode', 'append', 'DelayTime', 0.1);
     end
 end
+
+%% =====================================================================
+%% NEW FIGURES FOR WIKI PAGES THAT WERE MISSING ILLUSTRATIONS
+%% =====================================================================
+
+%% --- Figure F: Harmonic Growth (Arithmetic-Operations page) ---
+fprintf('Generating Figure F: Harmonic Growth after Multiplication (SVG)...\n');
+rng(42);
+A_arith = PhasorArray.random(2, 2, 3, "time_structure", "cmplx");
+B_arith = PhasorArray.random(2, 2, 5, "time_structure", "cmplx");
+C_arith = A_arith * B_arith; % h_C = 3 + 5 = 8
+
+figF = figure('Name', 'harmonic_growth', 'Position', [100 100 900 350]);
+set(gcf, 'Color', 'none');
+subplot(1,3,1);
+pageEnergy(A_arith, true, 'none', 'linear');
+title(sprintf('A (h=%d)', A_arith.h)); xlabel('Harmonic'); ylabel('Norm. Energy');
+subplot(1,3,2);
+pageEnergy(B_arith, true, 'none', 'linear');
+title(sprintf('B (h=%d)', B_arith.h)); xlabel('Harmonic'); ylabel('Norm. Energy');
+subplot(1,3,3);
+pageEnergy(C_arith, true, 'none', 'linear');
+title(sprintf('C = A*B (h=%d)', C_arith.h)); xlabel('Harmonic'); ylabel('Norm. Energy');
+sgtitle('Harmonic Growth: h_C = h_A + h_B after Cauchy Product');
+exportgraphics(figF, fullfile(assetDir, 'harmonic_growth_multiplication.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
+
+%% --- Figure G: Getting-Started illustration ---
+fprintf('Generating Figure G: Getting Started Tutorial Output (SVG)...\n');
+T_gs = 0.02; w_gs = 2*pi/T_gs;
+x_gs = 1 + 0.5 * PhasorArray.cos(0, 1);
+A0_gs = [0, w_gs; -w_gs, 0];
+A_vary_gs = PhasorArray.eye(2) * PhasorArray.cos(0, 1);
+A_gs = PhasorArray(A0_gs) + A_vary_gs;
+
+figG = figure('Name', 'getting_started', 'Position', [100 100 900 400]);
+set(gcf, 'Color', 'none');
+subplot(1,2,1);
+plot(x_gs, T_gs);
+title('Periodic Signal x(t) = 1 + 0.5 cos(\omega t)');
+xlabel('Time [s]'); ylabel('Amplitude'); grid on;
+subplot(1,2,2);
+plot(A_gs, T_gs);
+sgtitle('Getting Started: Periodic Signal & System Matrix');
+exportgraphics(figG, fullfile(assetDir, 'getting_started_output.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
+
+%% --- Figure H: Simulation Guide — LTP system ---
+fprintf('Generating Figure H: LTP Simulation (SVG)...\n');
+T_sim = 0.3
+w_sim = 2*pi/T_sim;
+
+% Build a stable 3-state system with T = 0.1
+A0_sim = [-2 1 0; 0 -4 1; -1 0 -7];
+A1_sim = [0 0.5 3; 0.5 2 -0.2; 1 0 0.3];
+A_sim = PhasorArray(A0_sim, A1_sim, 'isreal', true);
+B_sim = [0; 0; 1];
+C_sim = eye(3);
+sys_ltp = PhasorSS(A_sim, B_sim, C_sim, zeros(3,1), T_sim);
+
+x0_sim = [1; 0.5; -0.3];
+t_sim = 0:T_sim/200:(10*T_sim);
+u_sig = zeros(1, length(t_sim));
+u_sig(t_sim >= 1) = 10; % Step at t=0.5
+
+figH = figure('Name', 'ltp_simulation', 'Position', [100 100 900 500]);
+set(gcf, 'Color', 'none');
+
+% Show the parameter trajectory
+subplot(3,1,1);
+t_plot = linspace(0, 3, 2000);
+p_vals = ones(size(t_plot))*2*pi/T_sim;
+plot(t_plot, p_vals, 'b', 'LineWidth', 1.5);
+title('Parameter trajectory p(t)');
+xlabel('Time [s]'); ylabel('p [rad/s]'); grid on;
+
+
+subplot(3,1,2);
+[y_ini, t_ini] = initial(sys_ltp, x0_sim, 3);
+plot(t_ini, squeeze(y_ini));
+title('LTP Free Response (initial condition)');
+xlabel('Time [s]'); ylabel('States'); grid on;
+legend('x_1','x_2','x_3');
+
+subplot(3,1,3);
+[y_lsim, t_lsim] = lsim(sys_ltp, t_sim, u_sig, x0_sim);
+plot(t_lsim, squeeze(y_lsim));
+title('LTP Forced Response (step at t = 1 s)');
+xlabel('Time [s]'); ylabel('States'); grid on;
+legend('x_1','x_2','x_3');
+
+sgtitle(sprintf('LTP System Simulation (T = %.2f s)', T_sim));
+exportgraphics(figH, fullfile(assetDir, 'simulation_ltp.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
+
+%% --- Figure H2: Simulation Guide — LPV system ---
+fprintf('Generating Figure H2: LPV Simulation (SVG)...\n');
+% Same system as LTP but with time-varying parameter p(t,x,u)
+% p = 2*pi/0.1 * (1 + sigmoid(t, center=1, width=0.5)) + cos(2*pi/0.2 * t).*(t>1.3)
+p_fun = @(t,x,u) (2*pi/T_sim) * (1 + 1./(1 + exp(-((t - 1.7)/0.25)))) ...
+                  + cos(2*2*pi/T_sim * t) .* (t > 1.3);
+
+
+
+u_sig(1,t_sim >= 1) = 10; % Step at t=0.5
+u_sig(2,:) = w_sim; % Step at t=0.5
+
+p_fun = @(t,x,u) x(end);
+
+sys_lpv = PhasorSS(A_sim, B_sim, C_sim, zeros(3,1));
+sys_lpv = sys_lpv.setLPV(p_fun);
+
+
+sys_lpv = PhasorSS(A_sim, B_sim, C_sim, zeros(3,1));
+sys_lpv = sys_lpv.setLPV(p_fun);
+
+figH2 = figure('Name', 'lpv_simulation', 'Position', [100 100 900 700]);
+set(gcf, 'Color', 'none');
+
+% Show the parameter trajectory
+subplot(3,1,1);
+t_plot = linspace(0, 3, 2000);
+p_vals = arrayfun(@(tt) p_fun(tt,0,0), t_plot);
+plot(t_plot, p_vals, 'b', 'LineWidth', 1.5);
+title('Parameter trajectory p(t)');
+xlabel('Time [s]'); ylabel('p [rad/s]'); grid on;
+
+% Free response
+subplot(3,1,2);
+[y_lpv_ini, t_lpv_ini] = initial(sys_lpv, x0_sim, 3);
+plot(t_lpv_ini, squeeze(y_lpv_ini));
+title('LPV Free Response (initial condition)');
+xlabel('Time [s]'); ylabel('States'); grid on;
+legend('x_1','x_2','x_3');
+
+% Forced response
+subplot(3,1,3);
+[y_lpv_f, t_lpv_f] = lsim(sys_lpv, t_sim, u_sig, x0_sim);
+plot(t_lpv_f, squeeze(y_lpv_f));
+title('LPV Forced Response (step at t = 0.5 s)');
+xlabel('Time [s]'); ylabel('States'); grid on;
+legend('x_1','x_2','x_3');
+
+sgtitle('LPV System Simulation — Varying Parameter p(t)');
+exportgraphics(figH2, fullfile(assetDir, 'simulation_lpv.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
+
+%% --- Figure I: Solvers — Floquet Exponents & Convergence ---
+fprintf('Generating Figure I: Solver Eigenvalue Analysis (SVG)...\n');
+T_solv = 0.1;
+A_solv = A_sim; % reuse the stable LTP system
+
+h_range = 2:2:30;
+n_eigs = size(A0_sim,1);
+all_eigs = cell(length(h_range),1);
+
+for idx = 1:length(h_range)
+    h_cur = h_range(idx);
+    eigs_cur = HmqNEig(A_solv, h_cur, T_solv, 'fundamental');
+    all_eigs{idx} = eigs_cur;
+end
+
+figI = figure('Name', 'floquet_convergence', 'Position', [100 100 900 400]);
+set(gcf, 'Color', 'none');
+
+subplot(1,2,1);
+eigs_final = all_eigs{end};
+plot(real(eigs_final), imag(eigs_final), 'bx', 'MarkerSize', 8, 'LineWidth', 2);
+hold on;
+xline(0, 'r--', 'LineWidth', 1);
+title(sprintf('Floquet Exponents (h = %d)', h_range(end)));
+xlabel('Real Part'); ylabel('Imaginary Part'); grid on;
+axis equal;
+
+subplot(1,2,2);
+% Track convergence of the n_eigs fundamental exponents
+eig_conv = zeros(length(h_range), n_eigs);
+for idx = 1:length(h_range)
+    ev = sort(real(all_eigs{idx}));
+    eig_conv(idx,:) = ev(1:n_eigs);
+end
+plot(h_range, eig_conv, '-o', 'LineWidth', 1.5);
+title('Convergence of Re(\lambda) vs Truncation h');
+xlabel('Truncation order h'); ylabel('Re(\lambda)'); grid on;
+legend(arrayfun(@(k) sprintf('\\lambda_%d', k), 1:n_eigs, 'UniformOutput', false));
+
+sgtitle(sprintf('Floquet Analysis (T = %.2f s)', T_solv));
+exportgraphics(figI, fullfile(assetDir, 'solver_floquet_convergence.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
 
 fprintf('All assets generated successfully in %s\n', assetDir);

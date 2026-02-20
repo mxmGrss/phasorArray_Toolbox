@@ -443,9 +443,7 @@ function test_detLeibniz_vs_FFT_3x3(~)
     dL = detLeibnizHmc(A);
     % Disable reduction to match exact Leibniz
 
-    disp('leibOk')
     dF = det(A, 'reduceThreshold', 0);
-    disp('detOk')
     
     for t0 = linspace(0, 2*pi, 10)
         vL = full(evalp(dL, t0));
