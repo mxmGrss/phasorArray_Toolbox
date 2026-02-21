@@ -12,7 +12,7 @@ The **PhasorArray Toolbox** is an object-oriented MATLAB library providing a rig
 
 By establishing a **one-to-one correspondence** (bijection) between time-domain signals ($L^2_{loc}$) and their harmonic representation ($\mathcal{H}$), the toolbox transforms complex periodic differential equations into standard algebraic problems. This enables the application of robust LTI techniques, such as Eigenvalue (Floquet) analysis or $H_\infty$ synthesis, to complex periodic processes (e.g., Grid-tied converters, rotating machinery).
 
-**Built on Solid Science**: This toolbox enables the numerical application of advanced theoretical results [1-8], ensuring **consistency** and **guarantees** where ad-hoc methods often fail.
+**Built on Solid Science**: This toolbox implements the theoretical results of [1-8] numerically, with convergence and consistency guarantees that ad-hoc methods cannot provide.
 
 ![Gibbs Reconstruction](https://github.com/mxmGrss/phasorArray_Toolbox/blob/main/docs/wiki_assets/gibbs_effect_animation.gif?raw=true)
 
@@ -25,7 +25,7 @@ If you deal with periodic systems, you know the struggle: time-varying matrices,
 **PhasorArray solves this by:**
 
 *   **[Algebraicizing the Periodic](https://github.com/mxmGrss/phasorArray_Toolbox/wiki/Theory)**: Converts $\dot{x}(t) = A(t)x(t)$ into $\dot{X} = (\mathcal{A} - \mathcal{N})X$. By establishing an isometric representation, periodic dynamics are treated with the rigor of standard LTI systems.
-*   **Guaranteeing Consistency**: We implement distinct, rigorous algorithms for truncation [6]. This ensures that harmonic operations converge to the true infinite-dimensional solution (e.g., ensuring $\mathcal{T}(AB)_h \to \mathcal{T}(A)\mathcal{T}(B)$ remains mathematically consistent).
+*   **Guaranteeing Consistency**: We implement the truncation algorithms of [6], so that harmonic operations converge to the true infinite-dimensional solution (e.g., $\mathcal{T}(AB)_h \to \mathcal{T}(A)\mathcal{T}(B)$ remains mathematically consistent).
 *   **Targeting Real Applications**:
     *   **LTP Systems**: [Eigenvalue (Floquet) analysis](https://github.com/mxmGrss/phasorArray_Toolbox/wiki/Solvers#floquet-analysis-hmqneig) and stability assessment.
     *   **Bilinear Systems**: Implementation of **Forwarding Controllers** for global stability on Power Converters (see [2], [4]).
@@ -55,7 +55,7 @@ This framework encompasses and generalizes methods known in the literature as:
 
 ### 1. The [`PhasorArray`](https://github.com/mxmGrss/phasorArray_Toolbox/wiki/PhasorArray-Class) Class
 
-The core of the toolbox. It hides the complexity of Fourier series and Toeplitz matrices behind a clean, intuitive object.
+The core of the toolbox. Stores Fourier coefficients in a 3-D array and overloads arithmetic so that periodic matrices behave like ordinary ones.
 
 *   **Natural Syntax**: Add, multiply, invert periodic matrices as if they were constants: `C = A * B + inv(D)`.
 *   **Smart Constructors**:
@@ -67,8 +67,6 @@ The core of the toolbox. It hides the complexity of Fourier series and Toeplitz 
 
 ### 2. Advanced [Solvers](https://github.com/mxmGrss/phasorArray_Toolbox/wiki/Solvers)
 
-Don't just model, solve.
-
 *   **Eigenvalues**: Compute **Floquet exponents** with `HmqNEig` to determine stability.
 *   **Lyapunov**: Assess stability and compute periodic Gramians with `lyap`.
 *   **Riccati (HARE)**: Synthesis of **LQR** and **$H_{\infin}$** controllers via efficient iterative algorithms (`RicHarmonicKlein`).
@@ -76,9 +74,9 @@ Don't just model, solve.
 
 ### 3. Robust Control ([LMI](https://github.com/mxmGrss/phasorArray_Toolbox/wiki/Interfacing-with-YALMIP))
 
-Seamless integration with **YALMIP** allows you to harness the power of convex optimization.
+Direct integration with **YALMIP** for convex optimization over periodic systems.
 
-*   **`ndsdpvar`**: Create periodic decision variables effortlessly.
+*   **`ndsdpvar`**: Create periodic decision variables as `PhasorArray` objects.
 *   **Toeplitz-Block LMIs**: Formulate and solve $H_2$ or $H_{\infty}$ problems to design controllers that are **robust** across entire operating ranges.
 
 ---
