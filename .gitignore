@@ -111,3 +111,6 @@ current_config_fast_reboot.mat
 *.fig
 /.github
 /.copilot/
+ 
+# Agent Workspace
+.agent_work/

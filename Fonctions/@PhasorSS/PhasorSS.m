@@ -1499,6 +1499,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 inputNames = o1.InputName;
             end
 
+            formattedRange = cell(1, length(inputRange));
             for i = 1:2:length(inputRange)
                 input = inputRange{i};
                 if ischar(input) && ~strcmp(input,':')
@@ -1557,24 +1558,26 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 DTB = D.T_tb(h);
                 BTB = B.T_tb(h);
 
-                hmqStateName={};
-                hmqInputName={};
-                hmqOutputName={};
+                numH = 2*h + 1;
+                hmqStateName = cell(1, numel(o1.StateName) * numH);
+                hmqInputName = cell(1, numel(o1.InputName) * numH);
+                hmqOutputName = cell(1, numel(o1.OutputName) * numH);
 
 
+                h_vec = -h:h;
                 for ii = 1:numel(o1.StateName)
-                    temp = "〈"+o1.StateName{ii}+"〉_{"+string(-h:h)+"}";
-                    hmqStateName=[hmqStateName temp];
+                    temp = "〈" + o1.StateName{ii} + "〉_{" + string(h_vec) + "}";
+                    hmqStateName((ii-1)*numH + (1:numH)) = cellstr(temp);
                 end
 
                 for ii = 1:numel(o1.InputName)
-                    temp = "〈"+o1.InputName{ii}+"〉_{"+string(-h:h)+"}";
-                    hmqInputName=[hmqInputName temp];
+                    temp = "〈" + o1.InputName{ii} + "〉_{" + string(h_vec) + "}";
+                    hmqInputName((ii-1)*numH + (1:numH)) = cellstr(temp);
                 end
 
                 for ii = 1:numel(o1.OutputName)
-                    temp = "〈"+o1.OutputName{ii}+"〉_{"+string(-h:h)+"}";
-                    hmqOutputName=[hmqOutputName temp];
+                    temp = "〈" + o1.OutputName{ii} + "〉_{" + string(h_vec) + "}";
+                    hmqOutputName((ii-1)*numH + (1:numH)) = cellstr(temp);
                 end
 
 

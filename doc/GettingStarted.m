@@ -312,7 +312,7 @@ hp=10;
 T0=1;
 
 %A^TP + PA +Q =0
-P=PhasorArray(Sylv_harmonique(A',A,Q,2*hp,2*pi/T0));
+P=PhasorArray(SylvHarmonic(A',A,Q,2*hp,2*pi/T0));
 figure %[output:0eb56c89]
 plot(P) %[output:0eb56c89]
 
@@ -323,7 +323,7 @@ C=PhasorArray(rand_phasor(nz,nx,4,"time_structure","real")) %[output:0bc32b46]
 O=rand(nz,nz) %[output:6639fbbf]
 
 %dotM + -OM + MA -C =0
-M=PhasorArray(Sylv_harmonique(-O,A,-C,2*hp,2*pi/T0));
+M=PhasorArray(SylvHarmonic(-O,A,-C,2*hp,2*pi/T0));
 plot(M) %[output:600570be]
 
 %%

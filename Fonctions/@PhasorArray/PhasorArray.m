@@ -239,11 +239,15 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                     varPpos=varP(:,:,2:end);
                     obj = PosPart2PhasorArray(varP0,varPpos);
                 else
-                    assert(numel(varargin)==2,'If 0 and PosPhasor are provided, only 2 argument must be provided')
+                    if numel(varargin) ~= 2
+                        error('PhasorArray:InvalidArgumentCount', 'If 0 and PosPhasor are provided, only 2 argument must be provided');
+                    end
                     obj = PosPart2PhasorArray(varargin{:});
                 end
             elseif numel(varargin)>1 % OTHERWISE, if we provided multiple scalar arguments, we're providing a size for a zero phasor array
-                assert(and(isscalar(varargin{1}),isscalar(varargin{2})),"error")
+                if ~(isscalar(varargin{1}) && isscalar(varargin{2}))
+                    error('PhasorArray:InvalidArgumentType', 'Arguments for zero matrix must be scalars');
+                end
                 obj.Phasor3D=zeros(varargin{:});
                 varg.reduce =0;
             elseif isa(varargin{1},'PhasorArray') % if the first arg is a phasor array, all following arguments are ignored
@@ -252,7 +256,9 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 obj = varargin{1}.toPhasorArray();
                 return
             else
-                assert(mod(size(varargin{1},3),2)==1,'Dim3 of 3D array cannot be even')
+                if mod(size(varargin{1},3),2) ~= 1
+                    error('PhasorArray:dimensionError', 'Dim3 of 3D array cannot be even');
+                end
                 obj.Phasor3D = varargin{1};
             end
             if varg.reduce
@@ -3979,10 +3985,10 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
 
                 if isa(r1,'sym')
                     try
-                    r1 = logical(r1);
-                    r2 = logical(r2);
+                        r1 = logical(r1);
+                        r2 = logical(r2);
                     catch e
-                        try 
+                        try
                             ws = warning('off', 'symbolic:sym:isAlways:TruthUnknown');
                             r1 = isAlways(r1);
                             r2 = isAlways(r2);
@@ -3993,7 +3999,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                             r = 0;
                             R = zeros(size(o1.value),'logical');
                             tolmin = NaN;
-                        return
+                            return
                         end
                     end
                     %evaluate the assumptions
@@ -4522,7 +4528,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             % h is the number of harmonics to consider geq 0, default is max(A.h,Q.h) or max(A.h,B.h,C.h)
             % T is the period of the periodic system, default is 2*pi
 
-            % SEE ALSO : sylv_harmonique
+            % SEE ALSO : SylvHarmonic
             arguments
                 o1
                 o2
@@ -4531,6 +4537,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 optarg.h = []
                 optarg.thresholdResidual = 1e-6
                 optarg.autoUpdateh = false
+                optarg.verbose = 1
             end
             if isempty(o3)
                 %lyap(A,Q,"h",h,"T",T)
@@ -4592,19 +4599,21 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             end
 
 
-            %call sylv_harmonique
-            res = PhasorArray(Sylv_harmonique(o1,o2,o3,h,2*pi/T));
+            %call SylvHarmonic
+            res = PhasorArray(SylvHarmonic(o1,o2,o3,h,2*pi/T));
 
             residual.phasor = res.d(T) + o1*res + res*o2 + o3;
             residual.resnorm = norm(residual.phasor.value,'fro');
             if optarg.autoUpdateh
                 while residual.resnorm > optarg.thresholdResidual
                     h = h+1 ;
-                    res = PhasorArray(Sylv_harmonique(o1,o2,o3,h,2*pi/T));
+                    res = PhasorArray(SylvHarmonic(o1,o2,o3,h,2*pi/T));
                     residual.phasor = res.d(T) + o1*res + res*o2 + o3;
                     residual.resnorm = norm(residual.phasor.value,'fro');
                 end
-                fprintf('lyap : solved for h = %d, with residual %e\n',h,residual.resnorm)
+                if optarg.verbose
+                    fprintf('lyap : solved for h = %d, with residual %e\n',h,residual.resnorm)
+                end
             else
                 if residual.resnorm > optarg.thresholdResidual
                     warning('phasorArray:lyap:residual',"lyap : the residual norm of the lyapunov equation is %d, consider increasing h",residual.resnorm)
@@ -5250,7 +5259,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %   Outputs:
             %     OBJ - (PhasorArray) Generated PhasorArray with specified poles.
             %
-            %   See also: Sylv_harmonique, random
+            %   See also: SylvHarmonic, random
             arguments
                 nx
                 poles
@@ -5278,7 +5287,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             La = PhasorArray(diag(poles));
 
             %Solve the appropriate Sylvester equation
-            P = PhasorArray(Sylv_harmonique(-A,La,BG,4*varg.h,2*pi/T));
+            P = PhasorArray(SylvHarmonic(-A,La,BG,4*varg.h,2*pi/T));
             %Compute K
             K = BG/P;
             %compute the new A with appropriate eigen values
