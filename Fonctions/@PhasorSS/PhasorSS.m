@@ -531,10 +531,10 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             %
             %   See also: CHECKIFREAL, ISREAL, TOLREAL
             objo = obj;
-            objo.setA(mreal(obj.A));
-            objo.setB(mreal(obj.B));
-            objo.setC(mreal(obj.C));
-            objo.setD(mreal(obj.D));
+            objo = objo.setA(mreal(obj.A));
+            objo = objo.setB(mreal(obj.B));
+            objo = objo.setC(mreal(obj.C));
+            objo = objo.setD(mreal(obj.D));
             objo = objo.checkIfReal();
         end
 
@@ -1858,7 +1858,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
 
         end
 
-        function lft(sys1,sys2,nu,ny)
+        function out = lft(sys1,sys2,nu,ny)
             %LFT Lower LFT or Upper LFT of two PhasorSS objects, according to redheffer star product
             %   sys = LFT(sys1,sys2) computes the lower LFT of two PhasorSS objects.
             %   sys = LFT(sys1,sys2,nu,ny) computes the lower LFT of two PhasorSS objects with nu inputs and ny outputs.
@@ -1940,7 +1940,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 part1.B1 = sys1.B{:,1:nw1};
                 part1.B2 = sys1.B{:,nw1+1:end};
                 part1.C1 = sys1.C{1:nz1,:};
-                part1.C2 = sys1.C{nz11+1:end,:};
+                part1.C2 = sys1.C{nz1+1:end,:};
                 part1.D11 = sys1.D{1:nz1,1:nw1};
                 part1.D12 = sys1.D{1:nz1,nw1+1:end};
                 part1.D21 = sys1.D{ny1+1:end,1:nw1};
@@ -1978,7 +1978,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
 
                 newB11 = part1.B1+part1.B2*invDelta2*part2.D11*part1.D21;
                 newB12 = part1.B2*invDelta2*part2.D12;
-                newB21 = part2.b1*invDelta1*part1.D21;
+                newB21 = part2.B1*invDelta1*part1.D21;
                 newB22 = part2.B2+part2.B1*invDelta1*part1.D22*part2.D12;
                 newB = [newB11 newB12;newB21 newB22];
 
@@ -2034,7 +2034,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 C=tensorprod(C,double(eit),3,1);
                 D=tensorprod(D,double(eit),3,1);
             else
-                h = (size(Phas,3)-1)/2;
+                h = (size(A,3)-1)/2;
                 eit=exp(1i*(-h:h)'*angle);
                 A=tensorprod(A,double(eit),3,1); %est un 3D array dont Mt(:,:,k) est M(t(k))
                 B=tensorprod(B,double(eit),3,1);

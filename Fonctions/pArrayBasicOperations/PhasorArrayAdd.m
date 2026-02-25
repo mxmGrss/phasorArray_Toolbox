@@ -28,7 +28,7 @@ function [summedPhasors, paddedPhasors] = PhasorArrayAdd(inputPhasors)
         
         summedPhasors = paddedPhasors{1};
         for ii = 2:numel(paddedPhasors)
-            summedPhasors = summedPhasors + paddedPhasors{2};
+            summedPhasors = summedPhasors + paddedPhasors{ii};
         end
     end
 end
