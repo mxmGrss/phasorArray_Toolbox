@@ -537,92 +537,109 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             end
         end
 
-        function [Eew,E] = pageEnergy(o1,normalized,cumulative,plotVar)
-            %PAGEENERGY Computes and optionally plots the phasor energy in a PhasorArray object.
+        function [Eew, E] = pageEnergy(o1, arg)
+            % PAGEENERGY Compute and optionally plot the per-harmonic energy of a PhasorArray.
             %
-            %   [Eew, E] = pageEnergy(o1, normalized, cumulative, plotVar)
-            %
-            %   This function calculates the energy contributed by each phasor in the
-            %   PhasorArray object "o1", storing the element-wise energy in "Eew" and
-            %   the total energy in "E". When the "normalized" flag is set to true, both
-            %   outputs are normalized by their respective sums. The "cumulative"
-            %   argument specifies whether the energies should be accumulated in forward
-            %   ("cumulative") or reverse ("reverse") order, or left unmodified ("none").
-            %   The "plotVar" argument determines whether to visualize the results in
-            %   linear scale ("linear"), logarithmic scale ("log"), or skip plotting
-            %   ("none").
+            %   [Eew, E] = pageEnergy(o1, Name, Value)
             %
             %   Inputs:
-            %       o1          - PhasorArray object containing phasors
-            %       normalized  - Logical flag to normalize outputs (default: false)
-            %       cumulative  - String indicating cumulative summation mode:
-            %                     'cumulative', 'reverse', or 'none' (default: 'none')
-            %       plotVar     - String for plotting options: 'none', 'linear', or
-            %                     'log' (default: 'none')
+            %     o1           - PhasorArray object
+            %
+            %   Name-Value Arguments:
+            %     'normalized'  - (logical) Normalise outputs by total energy. Default: false.
+            %     'excludeDC'   - (logical) Exclude h=0 (DC) from outputs and plot. Default: false.
+            %     'cumulative'  - (string)  Cumulative summation mode:
+            %                      'none'       — raw per-harmonic values (default)
+            %                      'cumulative' — cumsum from h=0 (or h=1 if excludeDC)
+            %                      'reverse'    — cumsum from h=H down to 0 (or 1)
+            %     'plot'        - (string)  Plot style:
+            %                      'none'     — no plot (default)
+            %                      'linear'   — line plot, linear scale
+            %                      'log'      — line plot, log scale
+            %                      'stem'     — stem plot, linear scale
+            %                      'stem-log' — stem plot, log scale
             %
             %   Outputs:
-            %       Eew         - Element-wise phasor energy (matrix)
-            %       E           - Total energy of each phasor (vector)
+            %     Eew  - (rows × cols × N) per-element energy per harmonic, N = h+1 (or h if excludeDC)
+            %     E    - (1 × N)           total (Frobenius) energy per harmonic
             %
-            %   Example Usage:
-            %       % Compute and plot phasor energies in linear scale:
-            %       [Eew, E] = pageEnergy(o1, false, 'none', 'linear');
+            %   Example:
+            %     [Eew, E] = pageEnergy(A, 'normalized', true, 'excludeDC', true, 'plot', 'stem-log');
             arguments
                 o1
-                normalized = false
-                cumulative {mustBeMember(cumulative,{'cumulative','reverse','none'})} = 'none'
-                plotVar {mustBeMember(plotVar,{'none','linear','log'})} = "none"
+                arg.normalized  logical = false
+                arg.excludeDC   logical = false
+                arg.cumulative  {mustBeMember(arg.cumulative,  {'none','cumulative','reverse'})} = 'none'
+                arg.plot        {mustBeMember(arg.plot, {'none','linear','log','stem','stem-log'})} = 'none'
             end
-            for hi = o1.h:-1:0
-                oi = o1.extract(hi);
-                [Eew(:,:,hi+1),E(hi+1)] = oi.energy;
-            end
-            if normalized
-                [EewTotal,Etotal] = o1.energy;
-                Eew = Eew./EewTotal;
-                E = E./Etotal;
-                E(isnan(E))=0;
-                Eew(isnan(Eew))=0;
-            end
-            switch cumulative
-                case "cumulative"
-                    Eew = cumsum(Eew,3);
-                    E = cumsum(E);
-                case "reverse"
 
-                    Eew = flip(Eew,3);
-                    E = flip(E);
-                    Eew = cumsum(Eew,3);
-                    E = cumsum(E);
-                    Eew = flip(Eew,3);
-                    E = flip(E);
-                case "none"
-                otherwise
-                    error("cumulative must be 'cumulative', 'reverse' or 'none'")
+            % --- 1. Compute per-harmonic energy (one-sided: h=0..H) ---
+            for hi = o1.h : -1 : 0
+                [Eew(:,:,hi+1), E(hi+1)] = energy(o1.extract(hi));
             end
-            if strcmp(plotVar,"linear") || strcmp(plotVar,"log")
-                if normalized
-                    prefix = "Normalized ";
+
+            % --- 2. Exclude DC (h=0) ---
+            if arg.excludeDC
+                Eew = Eew(:,:,2:end);   % drop h=0 slice
+                E   = E(2:end);
+                h_start = 1;
+            else
+                h_start = 0;
+            end
+
+            % --- 3. Normalise ---
+            if arg.normalized
+                Etotal   = sum(E(:));
+                EewTotal = sum(Eew, 3);
+                if Etotal > 0
+                    Eew = Eew ./ EewTotal;
+                    E   = E   ./ Etotal;
+                end
+                Eew(isnan(Eew)) = 0;
+                E(isnan(E))     = 0;
+            end
+
+            % --- 4. Cumulative summation ---
+            switch arg.cumulative
+                case 'cumulative'
+                    Eew = cumsum(Eew, 3);
+                    E   = cumsum(E);
+                case 'reverse'
+                    Eew = flip(cumsum(flip(Eew, 3), 3), 3);
+                    E   = flip(cumsum(flip(E)));
+                % 'none' : nothing to do
+            end
+
+            % --- 5. Plot ---
+            if ~strcmp(arg.plot, 'none')
+                useLog  = ismember(arg.plot, {'log',  'stem-log'});
+                useStem = ismember(arg.plot, {'stem', 'stem-log'});
+
+                norm_lbl = ""; if arg.normalized; norm_lbl = "Normalised "; end
+                dc_lbl   = ""; if arg.excludeDC;  dc_lbl   = " (AC only)"; end
+
+                switch arg.cumulative
+                    case 'cumulative'
+                        Eplot = E;
+                        ttl   = norm_lbl + "Cum(h) = \Sigma_{k\leq h} E_k" + dc_lbl;
+                    case 'reverse'
+                        Eplot = E;
+                        ttl   = norm_lbl + "ReCum(h) = \Sigma_{k\geq h} E_k" + dc_lbl;
+                    otherwise
+                        Eplot = E;
+                        ttl   = norm_lbl + "E(h) — energy per harmonic" + dc_lbl;
+                end
+
+                hx = h_start : h_start + numel(E) - 1;
+                if useStem
+                    stem(hx, Eplot, 'filled');
                 else
-                    prefix = "";
+                    plot(hx, Eplot);
                 end
-                switch cumulative
-                    case "cumulative"
-                        plot(0:o1.h,E(end)-E)
-                        title("Cumulative " +prefix+"energy of each phasor (from 0 to harmonic order), 1-Energy")
-                    case "reverse"
-                        plot(0:o1.h,E)
-                        title("Cumulative " +prefix+"energy of each phasor in reverse order (from end to harmonic order)")
-                    case "none"
-
-                        plot(0:o1.h,E)
-                        title(prefix+" Energy of each phasor")
-                end
-                xlabel("Harmonic order")
-                ylabel("Energy")
-                if strcmp(plotVar,"log")
-                    set(gca,'YScale','log')
-                end
+                title(ttl);
+                xlabel("Harmonic order");
+                ylabel("Energy");
+                if useLog; set(gca, 'YScale', 'log'); end
             end
         end
 
