@@ -3066,6 +3066,10 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %     A2 = PhasorArray(rand(3,3,11));
             %     Tout = stem(A1, A2, 'scale', 'linear', 'display', 'abs');
             %
+            %     % Inline-marker syntax: interleave marker strings between PhasorArray objects
+            %     stem(A1, 'o', A2, '*', A3, 'square');  % A1->"o", A2->"*", A3->"square"
+            %     stem(A1, 'o', A2);                     % A1->"o", A2->default next marker
+            %
             %     % Plot real part of a PhasorArray using custom markers
             %     A = PhasorArray(rand(4,4,11));
             %     stem(A, 'display', 'real', 'marker', {"o", "^"});
@@ -3081,34 +3085,66 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 varopt.scale {mustBeMember(varopt.scale,{'log','linear'})}='log'
                 varopt.explosed = true
                 varopt.display {mustBeMember(varopt.display,{'real','imag','both','abs','absangle'})} = 'abs'
-                varopt.marker ={"o","*","x","square","diamond","^","v",">","<"};
+                varopt.marker = {};   % empty = not user-provided (sentinel)
                 varopt.side {mustBeMember(varopt.side,{'both','oneSided'})} = 'oneSided'
                 varopt.parent = gcf
                 varopt.uniformYLim logical = false;
             end
-            %check if all phasorArray in the cell o1 are real using cellfun and isreal method
-            if ~all(cellfun(@(x) isreal(x),o1))
-                varopt.side='both';
+            
+            
+
+            % --- Inline-marker syntax: stem(A1,'o', A2,'*', ...) ---
+            % Even count: strict alternating PhasorArray / string pairs.
+            % Odd count:  must be all PhasorArray (normal mode).
+            if mod(numel(o1), 2) == 0
+                hasInlineMarkers = all(cellfun(@(x) isa(x,'PhasorArray'), o1(1:2:end))) && ...
+                                   all(cellfun(@(x) ischar(x) || (isstring(x) && isscalar(x)), o1(2:2:end)));
+            else
+                if ~all(cellfun(@(x) isa(x,'PhasorArray'), o1))
+                    error('PhasorArray:stem:badInput', ...
+                        ['Invalid input: when an odd number of arguments is provided, ' ...
+                        'all must be PhasorArray objects.\n' ...
+                        'For inline markers use an even count: stem(A1,''o'', A2,''*'', ...).']);
+                end
+                hasInlineMarkers = false;
+            end
+
+            if hasInlineMarkers
+                % Warn if the 'marker' name-value is also set
+                if ~isempty(varopt.marker)
+                    warning('PhasorArray:stem:markerConflict', ...
+                        ['Markers were specified both inline and via the ''marker'' name-value argument. ' ...
+                        'Inline markers take precedence; ''marker'' is ignored.']);
+                end
+                varopt.marker = o1(2:2:end);
+                o1 = o1(1:2:end);
+            end
+
+            % Apply default marker list if none was provided (neither inline nor name-value)
+            if isempty(varopt.marker)
+                varopt.marker = {"o","*","x","square","diamond","^","v",">","<"};
+            end
+
+            % Check if all PhasorArray objects in o1 are real
+            if ~all(cellfun(@(x) isreal(x), o1))
+                varopt.side = 'both';
             end
 
             if isscalar(o1{1})
                 varopt.explosed = false;
             end
 
-            if ~isa(varopt.marker,"cell")
-                varopt.marker= { varopt.marker};
+            if ~isa(varopt.marker, "cell")
+                varopt.marker = {varopt.marker};
             end
-            varhold=ishold;
-            T = stemPhasor(o1{1},scale=varopt.scale,hold=varhold,explosed=varopt.explosed,display=varopt.display,marker=varopt.marker{1},side=varopt.side,parent=varopt.parent,uniformYLim=varopt.uniformYLim);
-            n=numel(o1);
-            nmarker=numel(varopt.marker);
-            for n_iter=2:n
-                oi=o1{n_iter};
-                ni=mod(n_iter,nmarker);
-                if mod(ni,nmarker)==0
-                    ni=nmarker;
-                end
-                stemPhasor(oi,scale=varopt.scale,hold=true,explosed=varopt.explosed,marker=varopt.marker{ni},display=varopt.display,parent=T,uniformYLim=varopt.uniformYLim);
+            varhold = ishold;
+            T = stemPhasor(o1{1}, scale=varopt.scale, hold=varhold, explosed=varopt.explosed, display=varopt.display, marker=varopt.marker{1}, side=varopt.side, parent=varopt.parent, uniformYLim=varopt.uniformYLim);
+            n = numel(o1);
+            nmarker = numel(varopt.marker);
+            for n_iter = 2:n
+                oi = o1{n_iter};
+                ni = mod(n_iter - 1, nmarker) + 1;   % 1-based cyclic index
+                stemPhasor(oi, scale=varopt.scale, hold=true, explosed=varopt.explosed, marker=varopt.marker{ni}, display=varopt.display, parent=T, uniformYLim=varopt.uniformYLim);
             end
             hold off
             if varhold
@@ -3325,6 +3361,132 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 t=tt;
             end
         end
+
+        function [r,t] = mplot(o1, arg)
+            % MPLOT Plot multiple `PhasorArray` objects on the same axes.
+            %
+            %   MPLOT(A1, A2, ..., Name, Value) is the multi-array companion to PLOT.
+            %   It shares all the same name-value options but accepts multiple PhasorArray
+            %   objects as repeating arguments and supports an inline linestyle syntax.
+            %
+            %   Inline linestyle syntax (even count):
+            %     mplot(A1, '--', A2, '-.')     % explicit per-object linestyles
+            %
+            %   Normal syntax (odd count — all PhasorArray):
+            %     mplot(A1, A2, A3)             % cycles through default linestyles
+            %
+            %   Name-Value Pair Arguments (all forwarded to PLOT):
+            %     'T'           - Period (default: 1).
+            %     't'           - Time vector or [] for auto-grid (default: []).
+            %     'linestyle'   - Cell array of linestyles cycled across objects.
+            %                     Default: {'-','--',':','-.'}. Sentinel {} = not set.
+            %     ...all other PLOT name-value arguments are accepted...
+            %
+            %   Outputs:
+            %     r - Time-domain values from the first object (same as PLOT).
+            %     t - Time vector used for evaluation.
+            %
+            %   Example:
+            %     A1 = PhasorArray.random(2,2,5);
+            %     A2 = PhasorArray.random(2,2,5);
+            %     mplot(A1, '--', A2, '-.');       % inline linestyles
+            %     mplot(A1, A2, 'T', 2*pi);        % same period, default styles
+            %
+            %   See also: plot, PhasorArray2time.
+            arguments (Repeating)
+                o1
+            end
+            arguments
+                arg.T       = 1
+                arg.t       = []
+                arg.linestyle = {}     % empty = sentinel (not user-provided)
+                arg.plot    logical = true
+                arg.explosed logical = true
+                arg.hold    logical = false
+                arg.DispImag logical = []
+                arg.DispReal logical = []
+                arg.ZeroCentered logical = false
+                arg.title   = []
+                arg.GlobalYLim logical = false
+                arg.linkaxes = 'x'
+                arg.forceReal = false
+                arg.grid    = 'on'
+            end
+
+            defaultStyles = {'-'};   % solid line for all objects by default
+
+            % --- Inline linestyle syntax: mplot(A1,'--', A2,'-.', ...) ---
+            if mod(numel(o1), 2) == 0
+                hasInlineStyles = all(cellfun(@(x) isa(x,'PhasorArray'), o1(1:2:end))) && ...
+                                  all(cellfun(@(x) ischar(x) || (isstring(x) && isscalar(x)), o1(2:2:end)));
+            else
+                if ~all(cellfun(@(x) isa(x,'PhasorArray'), o1))
+                    error('PhasorArray:mplot:badInput', ...
+                        ['Invalid input: when an odd number of arguments is provided, ' ...
+                        'all must be PhasorArray objects.\n' ...
+                        'For inline linestyles use an even count: mplot(A1,''--'', A2,''-.'', ...).']);
+                end
+                hasInlineStyles = false;
+            end
+
+            if hasInlineStyles
+                if ~isempty(arg.linestyle)
+                    warning('PhasorArray:mplot:linestyleConflict', ...
+                        ['Linestyles were specified both inline and via the ''linestyle'' name-value argument. ' ...
+                        'Inline linestyles take precedence; ''linestyle'' is ignored.']);
+                end
+                arg.linestyle = o1(2:2:end);
+                o1 = o1(1:2:end);
+            end
+
+            % Apply default linestyle list if none provided
+            if isempty(arg.linestyle)
+                arg.linestyle = defaultStyles;
+            end
+
+            n        = numel(o1);
+            nstyles  = numel(arg.linestyle);
+            varhold  = ishold || arg.hold;
+
+            for k = 1:n
+                oi  = o1{k};
+                ls  = arg.linestyle{mod(k-1, nstyles) + 1};
+                isFirst = (k == 1);
+
+                if nargout > 0 && isFirst
+                    [r, t] = plot(oi, arg.T, arg.t, ...
+                        'plot',         arg.plot, ...
+                        'explosed',     arg.explosed, ...
+                        'hold',         varhold && ~isFirst, ...
+                        'DispImag',     arg.DispImag, ...
+                        'DispReal',     arg.DispReal, ...
+                        'ZeroCentered', arg.ZeroCentered, ...
+                        'title',        arg.title, ...
+                        'linetype',     ls, ...
+                        'GlobalYLim',   arg.GlobalYLim, ...
+                        'linkaxes',     arg.linkaxes, ...
+                        'forceReal',    arg.forceReal, ...
+                        'grid',         arg.grid);
+                else
+                    plot(oi, arg.T, arg.t, ...
+                        'plot',         arg.plot, ...
+                        'explosed',     arg.explosed, ...
+                        'hold',         ~isFirst || (varhold && isFirst), ...
+                        'DispImag',     arg.DispImag, ...
+                        'DispReal',     arg.DispReal, ...
+                        'ZeroCentered', arg.ZeroCentered, ...
+                        'title',        arg.title, ...
+                        'linetype',     ls, ...
+                        'GlobalYLim',   arg.GlobalYLim, ...
+                        'linkaxes',     arg.linkaxes, ...
+                        'forceReal',    arg.forceReal, ...
+                        'grid',         arg.grid);
+                end
+            end
+
+            if varhold; hold on; else; hold off; end
+        end
+
         function r=plot3D(o1,T,t,arg)
             %PLOT3D Produce a 3D plot where x-axis is the real part, y-axis is the imaginary part, and z-axis is time
             %
