@@ -16,7 +16,7 @@ function [Xph,M,M1,M2,colQ,colX] = SylvHarmonic(Ahmad, Bhmad, Chmad, h, omega)
         Bhmad
         Chmad
         h (1,1) double {mustBeInteger, mustBeNonnegative}
-        omega (1,1) double {mustBePositive}
+        omega (1,1) 
     end
 
     % 1. Extract raw values from PhasorArray objects (Bug fix: do this for all inputs)
