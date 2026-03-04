@@ -16,7 +16,7 @@ function [Ainvph,At,norm_err,norm_ref] = PhasorInv(Aph,varg)
 %   [Ainvph, At, norm_err, norm_ref] = PHASORINV(Aph)
 %       Computes the phasors of A⁻¹(t) using default settings.
 %
-%   [Ainvph, At, norm_err, norm_ref] = PHASORINV(Aph, 'nT', nT, 'T', T, 'm', m, 
+%   [Ainvph, At, norm_err, norm_ref] = PHASORINV(Aph, 'nT', nT, 'T', T, 'm', m,
 %                                                      'plot', plotFlag, 'autoTrunc', autoTrunc)
 %       Computes A⁻¹(t) with additional control over truncation, thresholding, and plotting.
 %
@@ -26,12 +26,12 @@ function [Ainvph,At,norm_err,norm_ref] = PhasorInv(Aph,varg)
 %   Name-Value Pair Arguments:
 %   - 'nT' (integer, optional) : Number of periods used in the time-domain evaluation. Default: 1.
 %   - 'T' (double, optional) : The period used for simulation. Default: 1.
-%   - 'm' (integer, optional) : 
+%   - 'm' (integer, optional) :
 %       - Power of two controlling time-domain discretization.
 %       - Can be set to [] for automatic selection based on the number of phasors.
 %   - 'plot' (logical, optional) : If true, plots A⁻¹(t) after computation. Default: false.
-%   - 'autoTrunc' (logical, optional) : 
-%       - true : Uses the derivative of phasors to **automatically detect** 
+%   - 'autoTrunc' (logical, optional) :
+%       - true : Uses the derivative of phasors to **automatically detect**
 %         the significant number of phasors.
 %       - false (default) : Uses a fixed threshold-based reduction method.
 %
@@ -100,18 +100,38 @@ end
 
 n=2^m;
 t=0:T/n:nT*T-T/n;
+
+% Warn for non-trivial periodic matrices, similar to MATLAB's inv() advisory.
+% PhasorInv inverts A(t) on a discrete grid of N points (IFFT -> pageinv -> FFT):
+% the result is exact at those N samples, but behaviour between grid points
+% is unknown and not guaranteed.
+% For a solution optimised in the harmonic domain (best L2 approximation for a
+% prescribed number of harmonics in X), use mlHmcDivide or mrHmcDivide explicitly.
+% Suppress this warning with: warning('off','phasorArray:PhasorInv:useHmcDivide')
+if hA > 0 && size(Aph, 1) > 1
+    warning('phasorArray:PhasorInv:useHmcDivide', ...
+        ['PhasorInv: pointwise time-domain inversion on a grid of %d points.\n' ...
+        '  Result is exact at the N samples; behaviour between grid points is unknown.\n' ...
+        '  For A(t)*X(t)=B(t) optimised in the harmonic domain, consider:\n' ...
+        '    mlHmcDivide(A, B, ''h'', h)               %% fixed h, best L2 approx for that h\n' ...
+        '    mlHmcDivide(A, B, ''autoUpdateh'', true)   %% adaptive h until residual converges\n' ...
+        '  For X(t)*A(t)=B(t), use mrHmcDivide(B, A, ...) with the same options.\n' ...
+        '  Suppress: warning(''off'',''phasorArray:PhasorInv:useHmcDivide'')'], n)
+end
+
 if isa(Aph,"ndsdpvar") || isa(Aph,"sdpvar")
     Aph=value(Aph);
 end
 
+Aph_orig = Aph;   % keep unreduced copy for phasor residual
 Aph=ReduceArray(Aph);
 
 At=PhasorArray2time(Aph,T,t,"plot",false);
-try 
+try
     Ainvt=pageinv(At);
-    catch e1
-        warning(e1.message)
-        warning("pageinv failed, using pagepinv")
+catch e1
+    warning(e1.message)
+    warning("pageinv failed, using pagepinv")
     try
         Ainvt=pagepinv(At);
     catch e2
@@ -143,17 +163,27 @@ end
 % diffPh = diff(log10Ph,1,3);
 % filt_diff= lowpass(diffPh,0.05);
 
-if varg.verbose || varg.plot || varg.evalInv || nargout>2
-    Ait=PhasorArray2time(Ainvph,T,t,"plot",false);
-    Err_recons=Ait-Ainvt;
-    norm_err=norm(Err_recons,"fro");
-    norm_ref=norm(Ainvt,"fro");
+% Phasor-domain inversion residual: ||A * Ainv - I||_F
+% Computed on raw 3D arrays (no PhasorArray objects) to stay lightweight.
+% Cheaper than a second IFFT and captures both truncation and pageinv errors.
+if varg.verbose || varg.evalInv || nargout > 2
+    n_sq     = size(Ainvph, 1);
+    prod_arr = PhasorArrayTimes(Aph_orig, Ainvph);   % convolution in harmonic domain
+    h_prod   = (size(prod_arr, 3) - 1) / 2;
+    I_arr    = zeros(size(prod_arr));
+    I_arr(:, :, h_prod + 1) = eye(n_sq);             % identity: DC slice only
+    err_arr  = prod_arr - I_arr;
+    norm_err = norm(err_arr(:));
+    norm_ref = norm(Ainvph(:));
     if varg.verbose
-    disph("global error energy is ",norm_err/norm_ref)
+        disph("inversion residual ||A*Ainv - I||_F / ||Ainv||_F = ", norm_err / norm_ref)
     end
 end
 
 if varg.plot
+    % Time-domain reconstruction needed only for plotting
+    Ait        = PhasorArray2time(Ainvph, T, t, "plot", false);
+    Err_recons = Ait - Ainvt;
     TL=tiledlayout("flow");
     TTL1=tiledlayout(TL,size(log10Ph,1),size(log10Ph,2));
     TTL1.Layout.Tile=1;
@@ -185,8 +215,8 @@ if varg.plot
             set(gca,'YScale','log')
         end
     end
-
-
-
+    
+    
+    
 end
 

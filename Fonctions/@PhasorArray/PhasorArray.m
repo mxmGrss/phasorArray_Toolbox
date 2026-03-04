@@ -791,10 +791,10 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             r = PhasorArray(PhasorArrayTimes(d1,o2));
         end
         
-        function [r,residual] = mlHmcDivide(o1, o2, optarg)
-            % mlHmcDivide solves A(t)*X(t) = B(t) directly in the harmonic domain.
+        function [r,residual] = mlHmcDivide(A, B, optarg)
+            % mlHmcDivide solves A(t)*X(t) = B(t) (equiv. X(t) = A(t)\B(t)) directly in the harmonic domain.
             %   X = mlHmcDivide(A, B) computes the harmonic division using Toeplitz matrices:
-            %   X_hm = T_tb(A, h) \ F_tb(B, h).
+            %   F_tb(X) = T_tb(A, h) \ F_tb(B, h).
             %
             %   Note: This solves A(t)*X(t) = B(t). It is equivalent to, but much faster than,
             %   lyap(A, 0, -B, "h", h, "T", Inf).
@@ -803,48 +803,108 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %       "h" - Harmonic truncation for the block Toeplitz matrix. Default: max(A.h, B.h)
             
             arguments
-                o1 PhasorArray
-                o2 PhasorArray
-                optarg.h = []
+                A PhasorArray
+                B PhasorArray
+                optarg.h                = []
                 optarg.thresholdResidual = 1e-6
-                optarg.autoUpdateh = false
-                optarg.verbose = 1
+                optarg.autoUpdateh      = false
+                optarg.maxh             = []    % hard upper bound on h (default: h0 * 20)
+                optarg.stagnationWindow = 5     % look-back window for stagnation detection
+                optarg.stagnationRatio  = 0.05  % relative improvement threshold (< 5% = stagnation)
+                optarg.verbose          = 1
             end
             
             if isempty(optarg.h)
-                optarg.h = max(o1.h, o2.h)*2;
+                optarg.h = max(A.h, B.h)*2;
             end
             
             h = optarg.h;
             
             % Solve T_tb(A, h) * F_tb(X, h) = F_tb(B, h)
-            res_tb = o1.T_tb(h) \ o2.F_tb(h);
+            res_tb = A.spTB(h) \ B.F_tb(h);
             
             % Reconstruct PhasorArray from standard block column vector
-            r = PhasorArray(TFTB_2_array(res_tb, size(o2,1), size(o2,2)));
+            r = PhasorArray(TFTB_2_array(res_tb, size(B,1), size(B,2)));
             
             
-            residual.phasor =  o1*r - o2;
+            residual.phasor =  A*r - B;
             residual.resnorm = norm(residual.phasor.value,'fro');
             if optarg.autoUpdateh
-                while residual.resnorm > optarg.thresholdResidual
-                    h = h+1 ;
+                % --- Stagnation-aware adaptive h loop ---
+                % A(t) may be singular at isolated time points, causing the
+                % Toeplitz system to be ill-conditioned for specific values of h.
+                % In that case the residual may not decrease monotonically with h.
+                % We keep the best solution seen, detect stagnation, and exit cleanly.
+                if isempty(optarg.maxh)
+                    maxh = optarg.h * 20;
+                else
+                    maxh = optarg.maxh;
+                end
+                stagnationWindow = optarg.stagnationWindow;
+                stagnationRatio  = optarg.stagnationRatio;
+                res_history      = residual.resnorm;
+                r_best           = r;
+                resnorm_best     = residual.resnorm;
+                
+                while residual.resnorm > optarg.thresholdResidual && h < maxh
+                    h = h + 1;
                     
                     % Solve T_tb(A, h) * F_tb(X, h) = F_tb(B, h)
-                    res_tb = o1.T_tb(h) \ o2.F_tb(h);
+                    res_tb = A.spTB(h) \ B.F_tb(h);
                     
                     % Reconstruct PhasorArray from standard block column vector
-                    r = PhasorArray(TFTB_2_array(res_tb, size(o2,1), size(o2,2)));
+                    r = PhasorArray(TFTB_2_array(res_tb, size(B,1), size(B,2)));
                     
-                    residual.phasor = o1*r - o2;
-                    residual.resnorm = norm(residual.phasor.value,'fro');
+                    residual.phasor  = A*r - B;
+                    residual.resnorm = norm(residual.phasor.value, 'fro');
+                    
+                    % Keep best solution regardless of monotonicity
+                    if residual.resnorm < resnorm_best
+                        r_best       = r;
+                        resnorm_best = residual.resnorm;
+                    end
+                    
+                    res_history(end+1) = residual.resnorm; %#ok<AGROW>
+                    
+                    % Stagnation check over sliding window
+                    if numel(res_history) >= stagnationWindow
+                        window = res_history(end-stagnationWindow+1 : end);
+                        relative_improvement = (window(1) - min(window)) / (window(1) + eps);
+                        if relative_improvement < stagnationRatio
+                            warning('phasorArray:mlHmcDivide:stagnation', ...
+                                ['mlHmcDivide: residual stagnated at %e after h=%d ' ...
+                                '(< %.0f%% improvement over %d steps).\n' ...
+                                '  A(t) may be singular at isolated time points ' ...
+                                'or h is insufficient for the harmonic content.\n' ...
+                                '  Returning best solution found (h=%d, resnorm=%e).'], ...
+                                residual.resnorm, h, stagnationRatio*100, stagnationWindow, ...
+                                (size(r_best.value,3)-1)/2, resnorm_best)
+                            r = r_best;
+                            residual.resnorm = resnorm_best;
+                            break
+                        end
+                    end
                 end
+                
+                if h >= maxh && residual.resnorm > optarg.thresholdResidual
+                    warning('phasorArray:mlHmcDivide:maxhReached', ...
+                        ['mlHmcDivide: reached maxh=%d without convergence (residual=%e).\n' ...
+                        '  Returning best solution found (resnorm=%e).'], ...
+                        maxh, residual.resnorm, resnorm_best)
+                    r = r_best;
+                    residual.resnorm = resnorm_best;
+                end
+                
                 if optarg.verbose
-                    fprintf('mlHmcDivide : solved for h = %d, with residual %e\n',h,residual.resnorm)
+                    fprintf('mlHmcDivide: solved for h=%d, residual=%e\n', ...
+                        (size(r.value,3)-1)/2, residual.resnorm)
                 end
+                
             else
                 if residual.resnorm > optarg.thresholdResidual
-                    warning('phasorArray:mlHmcDivide:residual',"lyap : the residual norm of the lyapunov equation is %d, consider increasing h",residual.resnorm)
+                    warning('phasorArray:mlHmcDivide:residual', ...
+                        'mlHmcDivide: residual norm is %e (threshold: %e), consider increasing h or using autoUpdateh=true.', ...
+                        residual.resnorm, optarg.thresholdResidual)
                 end
             end
             if issquare(r)
@@ -855,33 +915,44 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             
         end
         
-        function [r,residual] = mrHmcDivide(o1, o2, optarg)
-            % mrHmcDivide solves X(t)*A(t) = B(t) directly in the harmonic domain.
+        function [r,residual] = mrHmcDivide(B, A, optarg)
+            % mrHmcDivide solves X(t)*A(t) = B(t) (equiv. X(t) = B(t) / A(t)) directly in the harmonic domain.
             %   X = mrHmcDivide(B, A) computes the harmonic division using Toeplitz matrices:
-            %   X * A = B  <=> A.' * X.' = B.'
+            %   F(X)_tb * T(A)_tb = F(B)_tb
+            %
+            %   Fallback to lrHmcDivide noticing that X*A = B <=> A.'*X.' = B.'
             %
             %   Note: This solves X(t)*A(t) = B(t). It is equivalent to, but much faster than,
             %   lyap(A, 0, -B, "h", h, "T", Inf).
             %
-            %   Name-Value arguments:
-            %       "h" - Harmonic truncation. Default: max(A.h, B.h)
+            %   Name-Value arguments (forwarded to mlHmcDivide):
+            %       "h"                - Harmonic truncation. Default: max(A.h, B.h)
+            %       "thresholdResidual"- Convergence threshold for residual norm. Default: 1e-6
+            %       "autoUpdateh"      - Adaptively increase h until convergence. Default: false
+            %       "maxh"             - Hard upper bound on h when autoUpdateh=true. Default: h0*20
+            %       "stagnationWindow" - Look-back window for stagnation detection. Default: 5
+            %       "stagnationRatio"  - Min relative improvement to avoid stagnation flag. Default: 0.05
+            %       "verbose"          - Print convergence info. Default: 1
             
             arguments
-                o1 PhasorArray
-                o2 PhasorArray
-                optarg.h = []
+                B PhasorArray
+                A PhasorArray
+                optarg.h                = []
                 optarg.thresholdResidual = 1e-6
-                optarg.autoUpdateh = false
-                optarg.verbose = 1
+                optarg.autoUpdateh      = false
+                optarg.maxh             = []    % hard upper bound on h (default: h0 * 20)
+                optarg.stagnationWindow = 5     % look-back window for stagnation detection
+                optarg.stagnationRatio  = 0.05  % relative improvement threshold (< 5% = stagnation)
+                optarg.verbose          = 1
             end
             
             if isempty(optarg.h)
-                optarg.h = max(o1.h, o2.h);
+                optarg.h = max(B.h, A.h);
             end
             
             C = namedargs2cell(optarg);
             
-            [r,residual] = mlHmcDivide(o1.', o2.', C{:});
+            [r,residual] = mlHmcDivide(B.', A.', C{:});
             r = r.';
         end
         
@@ -2033,7 +2104,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             end
         end
         
-        function [oInv, oInvt, norm_err, norm_ref] = inv(o1, varargin)
+        function [oInv, oInvt, norm_err, norm_ref] = inv(o1, varg)
             %INV Compute the phasor representation of the pointwise inverse of A(t).
             %
             %   This function computes the **pointwise inverse** of the time-domain realization
@@ -2052,38 +2123,60 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %       Returns the time-domain realization A⁻¹(t) alongside the phasors.
             %
             %   [r, At, norm_err, norm_ref] = INV(o1)
-            %       Also returns reconstruction error metrics.
+            %       Also returns reconstruction error metrics (triggers additional computation in PhasorInv).
             %
             %   Input Arguments:
             %   - o1 (PhasorArray) : The PhasorArray object representing A(t).
             %
+            %   Name-Value Arguments (forwarded to PhasorInv):
+            %   - 'nT'              (integer, default 1)        : Number of periods for time-domain evaluation.
+            %   - 'T'               (double,  default 1)        : Period used for simulation.
+            %   - 'm'               (integer, default [])       : Log2 of time-domain discretization points.
+            %   - 'plot'            (logical, default false)    : Plot A⁻¹(t) after computation.
+            %   - 'reduceThreshold' (double,  default 4e-15)   : Threshold for phasor reduction.
+            %   - 'reduceMethod'    ('relative'|'absolute', default 'relative') : Reduction strategy.
+            %   - 'autoTrunc'       (logical, default false)    : Auto-detect significant phasors.
+            %   - 'verbose'         (logical, default false)    : Print debug information.
+            %
             %   Output Arguments:
-            %   - oInv (PhasorArray) : The phasor representation of A⁻¹(t).
-            %   - oInvt (array, optional) : The time-domain realization of A⁻¹(t).
-            %   - norm_err (double, optional) : Reconstruction error ||Ainv_ph - Ainv_t||_F.
-            %   - norm_ref (double, optional) : Reference norm ||Ainv_t||_F.
+            %   - oInv     (PhasorArray) : The phasor representation of A⁻¹(t).
+            %   - oInvt    (array)       : The time-domain realization of A⁻¹(t).
+            %   - norm_err (double)      : Reconstruction error ||Ainv_ph - Ainv_t||_F.
+            %   - norm_ref (double)      : Reference norm ||Ainv_t||_F.
+            %
+            %   Note: Requesting norm_err and norm_ref (nargout >= 3) triggers an additional
+            %   PhasorArray2time call inside PhasorInv, which can be expensive for large arrays.
             %
             %   Example:
-            %   % Compute the phasors of the inverse of a given PhasorArray A
             %   r = inv(A);
-            %
-            %   % Compute both the phasors and time-domain representation
             %   [r, At] = inv(A);
+            %   [r, At, err, ref] = inv(A, 'verbose', true, 'reduceMethod', 'absolute');
             %
-            %   % Compute full outputs including reconstruction errors
-            %   [r, At, err, ref] = inv(A);
-            %
-            %   See also: DET, REDUCE.
+            %   See also: PhasorInv, DET, REDUCE.
             
-            % Call PhasorInv with only the required number of outputs
+            arguments
+                o1  PhasorArray
+                varg.nT              = 1
+                varg.T               = 1
+                varg.m               = []
+                varg.plot            = false
+                varg.reduceThreshold = 4e-15
+                varg.reduceMethod    = 'relative'
+                varg.autoTrunc       = false
+                varg.verbose         = false
+            end
+            
+            C = namedargs2cell(varg);
+            
+            % Propagate nargout explicitly: PhasorInv conditionally computes
+            % norm_err / norm_ref only when nargout > 2 (expensive PhasorArray2time call).
             if nargout <= 1
-                Ainvph = PhasorInv(o1, varargin{:});
-                oInv = PhasorArray(Ainvph);
+                oInv = PhasorArray(PhasorInv(o1, C{:}));
             elseif nargout == 2
-                [Ainvph, oInvt] = PhasorInv(o1, varargin{:});
+                [Ainvph, oInvt] = PhasorInv(o1, C{:});
                 oInv = PhasorArray(Ainvph);
             else
-                [Ainvph, oInvt, norm_err, norm_ref] = PhasorInv(o1, varargin{:});
+                [Ainvph, oInvt, norm_err, norm_ref] = PhasorInv(o1, C{:});
                 oInv = PhasorArray(Ainvph);
             end
         end
@@ -2361,10 +2454,16 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         end
         
         function r = T_bt(o1,m)
+            if nargin == 1
+                m = [];
+            end
             r = BT(o1,m);
         end
         
         function r = T_tb(o1,m)
+            if nargin == 1
+                m = [];
+            end
             r = TB(o1,m);
         end
         
