@@ -4905,11 +4905,14 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 o1
                 o2
                 o3 = []
-                optarg.T = 2*pi
-                optarg.h = []
+                optarg.T                = 2*pi
+                optarg.h                = []
                 optarg.thresholdResidual = 1e-6
-                optarg.autoUpdateh = false
-                optarg.verbose = 1
+                optarg.autoUpdateh      = false
+                optarg.maxh             = []    % hard upper bound on h (default: h0 * 20)
+                optarg.stagnationWindow = 5     % look-back window for stagnation detection
+                optarg.stagnationRatio  = 0.05  % relative improvement threshold (< 5% = stagnation)
+                optarg.verbose          = 1
             end
             if isempty(o3)
                 %lyap(A,Q,"h",h,"T",T)
@@ -4977,18 +4980,72 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             residual.phasor = res.d(T) + o1*res + res*o2 + o3;
             residual.resnorm = norm(residual.phasor.value,'fro');
             if optarg.autoUpdateh
-                while residual.resnorm > optarg.thresholdResidual
-                    h = h+1 ;
-                    res = PhasorArray(SylvHarmonic(o1,o2,o3,h,2*pi/T));
-                    residual.phasor = res.d(T) + o1*res + res*o2 + o3;
-                    residual.resnorm = norm(residual.phasor.value,'fro');
+                % --- Stagnation-aware adaptive h loop ---
+                % The Sylvester/Lyapunov equation may be ill-conditioned for specific h
+                % values (e.g. near-singular periodic systems), causing non-monotone
+                % residual convergence. Track the best solution and detect stagnation.
+                if isempty(optarg.maxh)
+                    maxh = h * 20;
+                else
+                    maxh = optarg.maxh;
                 end
+                stagnationWindow = optarg.stagnationWindow;
+                stagnationRatio  = optarg.stagnationRatio;
+                res_history      = residual.resnorm;
+                res_best         = res;
+                resnorm_best     = residual.resnorm;
+                
+                while residual.resnorm > optarg.thresholdResidual && h < maxh
+                    h = h + 1;
+                    res = PhasorArray(SylvHarmonic(o1,o2,o3,h,2*pi/T));
+                    residual.phasor  = res.d(T) + o1*res + res*o2 + o3;
+                    residual.resnorm = norm(residual.phasor.value, 'fro');
+                    
+                    % Keep best solution regardless of monotonicity
+                    if residual.resnorm < resnorm_best
+                        res_best     = res;
+                        resnorm_best = residual.resnorm;
+                    end
+                    
+                    res_history(end+1) = residual.resnorm; %#ok<AGROW>
+                    
+                    % Stagnation check over sliding window
+                    if numel(res_history) >= stagnationWindow
+                        window = res_history(end-stagnationWindow+1 : end);
+                        relative_improvement = (window(1) - min(window)) / (window(1) + eps);
+                        if relative_improvement < stagnationRatio
+                            warning('phasorArray:lyap:stagnation', ...
+                                ['lyap: residual stagnated at %e after h=%d ' ...
+                                '(< %.0f%% improvement over %d steps).\n' ...
+                                '  System may be ill-conditioned or h is insufficient.\n' ...
+                                '  Returning best solution found (h=%d, resnorm=%e).'], ...
+                                residual.resnorm, h, stagnationRatio*100, stagnationWindow, ...
+                                (size(res_best.value,3)-1)/2, resnorm_best)
+                            res = res_best;
+                            residual.resnorm = resnorm_best;
+                            break
+                        end
+                    end
+                end
+                
+                if h >= maxh && residual.resnorm > optarg.thresholdResidual
+                    warning('phasorArray:lyap:maxhReached', ...
+                        ['lyap: reached maxh=%d without convergence (residual=%e).\n' ...
+                        '  Returning best solution found (resnorm=%e).'], ...
+                        maxh, residual.resnorm, resnorm_best)
+                    res = res_best;
+                    residual.resnorm = resnorm_best;
+                end
+                
                 if optarg.verbose
-                    fprintf('lyap : solved for h = %d, with residual %e\n',h,residual.resnorm)
+                    fprintf('lyap: solved for h=%d, residual=%e\n', ...
+                        (size(res.value,3)-1)/2, residual.resnorm)
                 end
             else
                 if residual.resnorm > optarg.thresholdResidual
-                    warning('phasorArray:lyap:residual',"lyap : the residual norm of the lyapunov equation is %d, consider increasing h",residual.resnorm)
+                    warning('phasorArray:lyap:residual', ...
+                        'lyap: residual norm is %e (threshold: %e), consider increasing h or using autoUpdateh=true.', ...
+                        residual.resnorm, optarg.thresholdResidual)
                 end
             end
             if issquare(res)
