@@ -6,13 +6,13 @@ function  T = stemPhasor(Aph,varopt)
 %   `N` and `M` are the dimensions of the matrix and `nh` is the half-length of the harmonic
 %   expansion. The function returns the handle `T` to the tiled layout used for the plot.
 %
-%   This function generates a stem plot to visualize the amplitudes (or other parts) of 
+%   This function generates a stem plot to visualize the amplitudes (or other parts) of
 %   phasors against their order, providing an intuitive representation of harmonic components.
-%   The phasors can be plotted in a single combined plot or as individual plots for each 
+%   The phasors can be plotted in a single combined plot or as individual plots for each
 %   component of the matrix.
 %
 %   Input Arguments:
-%   - Aph (array or PhasorArray): The input phasor array, either as a `PhasorArray` object or 
+%   - Aph (array or PhasorArray): The input phasor array, either as a `PhasorArray` object or
 %     a numeric array of size `N×M×(2nh+1)`.
 %
 %   Name-Value Pair Arguments:
@@ -37,7 +37,7 @@ function  T = stemPhasor(Aph,varopt)
 %   Key Features:
 %   - Allows visualization of the real, imaginary, absolute, or both parts of the phasors.
 %   - Supports logarithmic or linear scaling for the y-axis.
-%   - Handles multi-component phasors (`N×M×(2nh+1)` array) by either combining all components 
+%   - Handles multi-component phasors (`N×M×(2nh+1)` array) by either combining all components
 %     in one plot or plotting each component separately.
 %   - Flexibly integrates with existing figures, axes, or tiled layouts.
 %
@@ -100,8 +100,8 @@ switch varopt.side
         phas_index = 1:(2*nh+1);
 end
 
-%is parent a figure : 
-%   - YES : is it empty ? 
+%is parent a figure :
+%   - YES : is it empty ?
 %      - YES : create a new tiled layout
 %      - NO : is it a tiled layout ?
 %          - YES : is it the right size ?
@@ -125,8 +125,8 @@ ff = ancestor(parent, 'figure'); % Get the figure handle of the parent
 %set(ff, 'Visible', 'off'); % Make the current figure invisible
 
 %if ~ishold % Check if the hold state is off
-    %%clf; % Clear the current figure
-    %T = createTiledLayout(nx, ny); % Create a new tiled layout
+%%clf; % Clear the current figure
+%T = createTiledLayout(nx, ny); % Create a new tiled layout
 %else
 
 if varopt.explosed
@@ -185,27 +185,33 @@ if varopt.explosed
             end
         end
     end
-        try
-            if varopt.uniformYLim
-                allAxes = findall(T, 'Type', 'axes');
-                % Get the current y-limits of all axes
-                yLimits = arrayfun(@(ax) ax.YLim, allAxes, 'UniformOutput', false);
-                % Find the global min and max y-limits
-                minY = min(cellfun(@(yl) yl(1), yLimits));
-                maxY = max(cellfun(@(yl) yl(2), yLimits));
-                % Set the same y-limits for all axes
-                arrayfun(@(ax) set(ax, 'YLim', [minY, maxY]), allAxes);
-            end
-
-            linkaxes(findall(gcf, 'type', 'axes'), 'x')
-            ylim auto
-        catch
+    try
+        if varopt.uniformYLim
+            allAxes = findall(T, 'Type', 'axes');
+            % Get the current y-limits of all axes
+            yLimits = arrayfun(@(ax) ax.YLim, allAxes, 'UniformOutput', false);
+            % Find the global min and max y-limits
+            minY = min(cellfun(@(yl) yl(1), yLimits));
+            maxY = max(cellfun(@(yl) yl(2), yLimits));
+            % Set the same y-limits for all axes
+            arrayfun(@(ax) set(ax, 'YLim', [minY, maxY]), allAxes);
         end
+
+        linkaxes(findall(gcf, 'type', 'axes'), 'x')
+        ylim auto
+    catch
+    end
 else
     toto=reshape(Aph,[nx*ny 2*nh+1]);
     toto=toto(:,phas_index);
     nexttile(T,1)
+    if varopt.hold
+        hold on
+    end
     stem(phas_index-nh-1,abs(toto)',varopt.marker)
+    if varopt.hold
+        hold off
+    end
     xlim(gca,"padded")
     toto = xlim;
     xticks(gca,(ceil(toto(1)):1:floor(toto(2))))
@@ -269,106 +275,106 @@ function T = manageTiledLayout2(parent, nx, ny, Tag)
 %   T = manageTiledLayout2(ax, 2, 2);
 %
 %   See also: TILEDLAYOUT.
-    arguments
-        parent 
-        nx {mustBeInteger}
-        ny {mustBeInteger}
-        Tag string = 'stemPhasor'
-    end
-    
-    % Check if parent is a figure
-    if isa(parent, 'matlab.ui.Figure')
-        boolVec(1) = true; % 1
-        % Check if the figure is empty
-        if isempty(parent.Children)
-            % Create a new tiled layout
-            T = tiledlayout(parent, nx, ny, 'TileSpacing', 'compact', 'Padding', 'compact');
-            T.Tag = Tag;            
-            boolVec(2) = true; % 1 1
-        else
-            boolVec(2) = false; % 1 0
-            % Check if the first child is a tiled layout
-            if isa(parent.Children(1), 'matlab.graphics.layout.TiledChartLayout')
-                boolVec(3) = true; % 1 0 1
-                T = parent.Children(1);
-                % Check if the tiled layout is the right size
-                if all(T.GridSize == [nx, ny])
-                    boolVec(4) = true; % 1 0 1 1
-                    % Use the existing tiled layout
-                    T.Tag = Tag;
-                    boolVec;
-                    return;
-                else
-                    boolVec(4) = false; % 1 0 1 0
-                    % Delete the existing tiled layout and create a new one
-                    delete(T);
-                    T = tiledlayout(parent, nx, ny, 'TileSpacing', 'compact', 'Padding', 'compact');
-                    T.Tag = Tag;
-                end
+arguments
+    parent
+    nx {mustBeInteger}
+    ny {mustBeInteger}
+    Tag string = 'stemPhasor'
+end
+
+% Check if parent is a figure
+if isa(parent, 'matlab.ui.Figure')
+    boolVec(1) = true; % 1
+    % Check if the figure is empty
+    if isempty(parent.Children)
+        % Create a new tiled layout
+        T = tiledlayout(parent, nx, ny, 'TileSpacing', 'compact', 'Padding', 'compact');
+        T.Tag = Tag;
+        boolVec(2) = true; % 1 1
+    else
+        boolVec(2) = false; % 1 0
+        % Check if the first child is a tiled layout
+        if isa(parent.Children(1), 'matlab.graphics.layout.TiledChartLayout')
+            boolVec(3) = true; % 1 0 1
+            T = parent.Children(1);
+            % Check if the tiled layout is the right size
+            if all(T.GridSize == [nx, ny])
+                boolVec(4) = true; % 1 0 1 1
+                % Use the existing tiled layout
+                T.Tag = Tag;
+                boolVec;
+                return;
             else
-                boolVec(3) = false; % 1 0 0
-                % Create a new tiled layout
+                boolVec(4) = false; % 1 0 1 0
+                % Delete the existing tiled layout and create a new one
+                delete(T);
                 T = tiledlayout(parent, nx, ny, 'TileSpacing', 'compact', 'Padding', 'compact');
                 T.Tag = Tag;
+            end
+        else
+            boolVec(3) = false; % 1 0 0
+            % Create a new tiled layout
+            T = tiledlayout(parent, nx, ny, 'TileSpacing', 'compact', 'Padding', 'compact');
+            T.Tag = Tag;
+        end
+    end
+else
+    boolVec(1) = false; % 0
+    % Check if parent is a tiled layout
+    if isa(parent, 'matlab.graphics.layout.TiledChartLayout')
+        boolVec(2) = true; % 0 1
+        % Check if the tiled layout is tagged Tag
+        if strcmp(parent.Tag, Tag) %it is already a "Tag" tiledLayout
+            boolVec(3) = true;   % 0 1 1
+            % Check if the tiled layout is the right size
+            if all(parent.GridSize == [nx, ny])
+                boolVec(4) = true; % 0 1 1 1
+                % Use the existing tiled layout
+                T = parent;
+                T.Tag = Tag;
+            else
+                boolVec(4) = false; % 0 1 1 0
+                %get current layout of parent
+                Layout = parent.Layout;
+                % Create a new tiled layout inside the parent of parent and tag it Tag
+                T = tiledlayout(parent.Parent, nx, ny, 'TileSpacing', 'compact', 'Padding', 'compact');
+                T.Tag = Tag;
+                T.Layout = Layout;
+                % Delete the existing tiled layout
+                delete(parent);
+            end
+        else %parent is a genereic tiledLayout, "Tag" will be a child
+            % Check the number of children and if creating a new child would exceed the number of tiles
+            boolVec(3) = false; % 0 1 0
+            if numel(parent.Children) < prod(parent.GridSize)
+                boolVec(4) = true; % 0 1 0 1
+                % Create a new tiled layout inside the parent in an available space and tag it Tag
+                T = tiledlayout(parent, nx, ny, 'TileSpacing', 'compact', 'Padding', 'compact');
+                T.Tag = Tag;
+                % Move the newly created tiled layout to an available tile
+                T.Layout.Tile = numel(parent.Children);
+            else
+                boolVec(4) = false; % 0 1 0 0
+                error('No available tiles in the current tiled layout.');
             end
         end
     else
-        boolVec(1) = false; % 0
-        % Check if parent is a tiled layout
-        if isa(parent, 'matlab.graphics.layout.TiledChartLayout')
-            boolVec(2) = true; % 0 1
-            % Check if the tiled layout is tagged Tag
-            if strcmp(parent.Tag, Tag) %it is already a "Tag" tiledLayout
-                boolVec(3) = true;   % 0 1 1
-                % Check if the tiled layout is the right size
-                if all(parent.GridSize == [nx, ny])
-                    boolVec(4) = true; % 0 1 1 1
-                    % Use the existing tiled layout
-                    T = parent;
-                    T.Tag = Tag;
-                else
-                    boolVec(4) = false; % 0 1 1 0
-                    %get current layout of parent
-                    Layout = parent.Layout;
-                    % Create a new tiled layout inside the parent of parent and tag it Tag
-                    T = tiledlayout(parent.Parent, nx, ny, 'TileSpacing', 'compact', 'Padding', 'compact');
-                    T.Tag = Tag;
-                    T.Layout = Layout;
-                    % Delete the existing tiled layout
-                    delete(parent);
-                end
-            else %parent is a genereic tiledLayout, "Tag" will be a child
-                % Check the number of children and if creating a new child would exceed the number of tiles
-                boolVec(3) = false; % 0 1 0
-                if numel(parent.Children) < prod(parent.GridSize)
-                    boolVec(4) = true; % 0 1 0 1
-                    % Create a new tiled layout inside the parent in an available space and tag it Tag
-                    T = tiledlayout(parent, nx, ny, 'TileSpacing', 'compact', 'Padding', 'compact');
-                    T.Tag = Tag;
-                    % Move the newly created tiled layout to an available tile
-                    T.Layout.Tile = numel(parent.Children);
-                else
-                    boolVec(4) = false; % 0 1 0 0
-                    error('No available tiles in the current tiled layout.');
-                end
-            end
+        boolVec(2) = false;;
+        % Check if parent is a graphical object able to have a tiled layout as child
+        if isa(parent, 'matlab.graphics.axis.Axes') || isa(parent, 'matlab.graphics.chart.Chart')
+            boolVec(3) = true;
+            % Create a new tiled layout inside the parent and tag it Tag
+            T = tiledlayout(parent, nx, ny, 'TileSpacing', 'compact', 'Padding', 'compact');
+            T.Tag = Tag;
         else
-            boolVec(2) = false;;
-            % Check if parent is a graphical object able to have a tiled layout as child
-            if isa(parent, 'matlab.graphics.axis.Axes') || isa(parent, 'matlab.graphics.chart.Chart')
-                boolVec(3) = true;
-                % Create a new tiled layout inside the parent and tag it Tag
-                T = tiledlayout(parent, nx, ny, 'TileSpacing', 'compact', 'Padding', 'compact');
-                T.Tag = Tag;
-            else
-                boolVec(3) = false;
-                % Create a new figure and a new tiled layout inside it and tag it Tag
-                fig = figure;
-                T = tiledlayout(fig, nx, ny, 'TileSpacing', 'compact', 'Padding', 'compact');
-                T.Tag = Tag;
-                warning('Parent is not a graphical object able to have a tiled layout as child. Created a new figure.');
-            end
+            boolVec(3) = false;
+            % Create a new figure and a new tiled layout inside it and tag it Tag
+            fig = figure;
+            T = tiledlayout(fig, nx, ny, 'TileSpacing', 'compact', 'Padding', 'compact');
+            T.Tag = Tag;
+            warning('Parent is not a graphical object able to have a tiled layout as child. Created a new figure.');
         end
     end
-    boolVec;
+end
+boolVec;
 end
