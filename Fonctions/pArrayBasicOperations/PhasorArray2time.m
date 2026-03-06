@@ -19,7 +19,7 @@ function [Mt,t] = PhasorArray2time(Mph,T,t,arg)
 %              - If `T` is a vector and `t` is empty, then `T` is interpreted as `θ`, and `t = T`.
 %              - If `T` and `t` have matching sizes, `T` is interpreted as `θ(t)`, defining a time-varying phase.
 %              - If empty, a default time grid is computed.
-%     arg  - (struct, optional) Name-value pair arguments:
+%     arg  -  Name-value pair arguments:
 %              - 'plot' (logical): Plot matrix coefficients versus time (default: `false`).
 %              - 'explosed' (logical): Plot each coefficient in a separate subplot (default: `true`).
 %              - 'hold' (logical): Hold the current plot (default: `false`).
