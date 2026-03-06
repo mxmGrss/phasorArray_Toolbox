@@ -809,8 +809,8 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 optarg.thresholdResidual = 1e-6
                 optarg.autoUpdateh      = false
                 optarg.maxh             = []    % hard upper bound on h (default: h0 * 20)
-                optarg.stagnationWindow = 5     % look-back window for stagnation detection
-                optarg.stagnationRatio  = 0.05  % relative improvement threshold (< 5% = stagnation)
+                optarg.stagnationWindow = 15     % look-back window for stagnation detection
+                optarg.stagnationRatio  = 0.02  % relative improvement threshold (< 5% = stagnation)
                 optarg.verbose          = 1
             end
             
@@ -824,7 +824,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             res_tb = A.spTB(h) \ B.F_tb(h);
             
             % Reconstruct PhasorArray from standard block column vector
-            r = PhasorArray(TFTB_2_array(res_tb, size(B,1), size(B,2)));
+            r = PhasorArray(TFTB_2_array(res_tb, size(A,2), size(B,2)));
             
             
             residual.phasor =  A*r - B;
@@ -853,7 +853,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                     res_tb = A.spTB(h) \ B.F_tb(h);
                     
                     % Reconstruct PhasorArray from standard block column vector
-                    r = PhasorArray(TFTB_2_array(res_tb, size(B,1), size(B,2)));
+                    r = PhasorArray(TFTB_2_array(res_tb, size(A,2), size(B,2)));
                     
                     residual.phasor  = A*r - B;
                     residual.resnorm = norm(residual.phasor.value, 'fro');
@@ -941,8 +941,8 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 optarg.thresholdResidual = 1e-6
                 optarg.autoUpdateh      = false
                 optarg.maxh             = []    % hard upper bound on h (default: h0 * 20)
-                optarg.stagnationWindow = 5     % look-back window for stagnation detection
-                optarg.stagnationRatio  = 0.05  % relative improvement threshold (< 5% = stagnation)
+                optarg.stagnationWindow = 15     % look-back window for stagnation detection
+                optarg.stagnationRatio  = 0.02  % relative improvement threshold (< 5% = stagnation)
                 optarg.verbose          = 1
             end
             
@@ -952,7 +952,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             
             C = namedargs2cell(optarg);
             
-            [r,residual] = mlHmcDivide(B.', A.', C{:});
+            [r,residual] = mlHmcDivide(A.', B.', C{:});
             r = r.';
         end
         
@@ -4852,6 +4852,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             else
                 mOut = optarg.mOut;
             end
+            o2 = PhasorArray(o2);
             
             xreal = sym('xreal',[size(o1,1),size(o2,1),mOut+1]);
             ximag = (sym('ximag',[size(o1,1),size(o2,1),mOut],"real"));
@@ -4865,11 +4866,16 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %x = PhasorArray.sym(size(o1,1),size(o2,1),mOut);
             
             xo2 = x*o2;
+            
+            if o1.h < xo2.h
+            %padd o1 with zeros harmonics to match xo2 h
+                o1 = pad(o1,abs(o1.h-xo2.h));
+            else
+            %padd o1 with zeros harmonics to match xo2 h
+                xo2 = pad(xo2,abs(o1.h-xo2.h));
+            end
             XO2 = xo2.value;
             XO2 = XO2(:);
-            
-            %padd o1 with zeros harmonics to match xo2 h
-            o1 = pad(o1,abs(o1.h-xo2.h));
             OO1 = o1.value;
             OO1 = OO1(:);
             

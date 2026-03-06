@@ -104,6 +104,8 @@ if isMATLABReleaseOlderThan("R2022a")
     arg.computationMethod = 3;
 end
 
+
+
 if isempty(arg.forceReal)
     if arg.providedPhasorForm == "exp"
         if isrealp(Mph)
@@ -267,360 +269,276 @@ end
 end
 
 
-function T = manageTiledLayout2(parent, nx, ny, Tag)
-    arguments
-        parent 
-        nx 
-        ny 
-        Tag string = 'plotTimePhasor'
-    end
-    % Check if parent is a figure
-    if isa(parent, 'matlab.ui.Figure')
-        % Check if the figure is empty
-        if isempty(parent.Children)
-            % Create a new tiled layout
-            T = tiledlayout(parent, nx, ny, 'TileSpacing', 'compact', 'Padding', 'compact');
-            T.Tag = Tag;            
-        else
-            % Check if the first child is a tiled layout
-            if isa(parent.Children(1), 'matlab.graphics.layout.TiledChartLayout')
-                T = parent.Children(1);
-                % Check if the tiled layout is the right size
-                if all(T.GridSize == [nx, ny])
-                    % Use the existing tiled layout
-                    T.Tag = Tag;
-                    return;
-                else
-                    % Delete the existing tiled layout and create a new one
-                    delete(T);
-                    T = tiledlayout(parent, nx, ny, 'TileSpacing', 'compact', 'Padding', 'compact');
-                    T.Tag = Tag;
-                end
-            else
-                % Create a new tiled layout
-                T = tiledlayout(parent, nx, ny, 'TileSpacing', 'compact', 'Padding', 'compact');
-                T.Tag = Tag;
-            end
-        end
-    else
-        % Check if parent is a tiled layout
-        if isa(parent, 'matlab.graphics.layout.TiledChartLayout')
-            % Check if the tiled layout is tagged Tag
-            if strcmp(parent.Tag, Tag) %it is already a "Tag" tiledLayout
-                % Check if the tiled layout is the right size
-                if all(parent.GridSize == [nx, ny])
-                    % Use the existing tiled layout
-                    T = parent;
-                    T.Tag = Tag;
-                else
-                    % Create a new tiled layout inside the parent of parent and tag it Tag
-                    T = tiledlayout(parent.Parent, nx, ny, 'TileSpacing', 'compact', 'Padding', 'compact');
-                    T.Tag = Tag;
-                end
-            else %parent is a genereic tiledLayout, "Tag" will be a child
-                % Check the number of children and if creating a new child would exceed the number of tiles
-                try
-                    % Create a new tiled layout inside the parent in an available space and tag it Tag
-                    T = tiledlayout(parent, nx, ny, 'TileSpacing', 'compact', 'Padding', 'compact');
-                    T.Tag = Tag;
-                    % Move the newly created tiled layout to an available tile
-                    T.Layout.Tile = numel(parent.Children);
-                catch e
-                    error('No available tiles in the current tiled layout.');
-                end
-            end
-        else
-            % Check if parent is a graphical object able to have a tiled layout as child
-            if isa(parent, 'matlab.graphics.axis.Axes') || isa(parent, 'matlab.graphics.chart.Chart')
-                % Create a new tiled layout inside the parent and tag it Tag
-                T = tiledlayout(parent, nx, ny, 'TileSpacing', 'compact', 'Padding', 'compact');
-                T.Tag = Tag;
-            else
-                % Create a new figure and a new tiled layout inside it and tag it Tag
-                fig = figure;
-                T = tiledlayout(fig, nx, ny, 'TileSpacing', 'compact', 'Padding', 'compact');
-                T.Tag = Tag;
-                warning('Parent is not a graphical object able to have a tiled layout as child. Created a new figure.');
-            end
-        end
-    end
-end
-
-function t = plot1(arg,t,T,Mt)
-
-
-nx = size(Mt,1);
-ny = size(Mt,2);
-
-if isempty(arg.parent) 
-    % If the parent figure is not specified, use the current figure
-    parent = gcf;
-else
-    % If the parent figure is specified, use it
-    parent = arg.parent;
-end
-
-
-
-if ~arg.hold && arg.explosed
-    clf
-end
-
-% If T is a vector, t must be either empty or have the same number of elements as T for plotting
-if isempty(t) % case of a phase vector over T
-    t=T;
-    xlabelStr= 'angle (rad)';
-elseif numel(T)>1 && numel(t) ~= numel(T)
-    error('If T is a vector, t must be either empty or have the same number of elements as T for plotting')
-else
-    xlabelStr= 'time (sec)';
-end
-
-
-% % Calculate the number of expected subplots based on the display options
-% if xor(arg.DispImag, arg.DispReal) || arg.plot3D
-%     % If only one part is displayed or 3D plot is enabled, one subplot per matrix element
-%     numSubplots = nx * ny;
-%     doublesubplot = 0;
+% function t = plot1(arg,t,T,Mt)
+% 
+% 
+% nx = size(Mt,1);
+% ny = size(Mt,2);
+% 
+% if isempty(arg.parent) 
+%     % If the parent figure is not specified, use the current figure
+%     parent = gcf;
 % else
-%     % If both real and imaginary parts are displayed, two subplots per matrix element
-%     numSubplots = 2 * nx * ny;
-%     doublesubplot = 1;
+%     % If the parent figure is specified, use it
+%     parent = arg.parent;
 % end
+% 
+% 
+% 
+% if ~arg.hold && arg.explosed
+%     clf
+% end
+% 
+% % If T is a vector, t must be either empty or have the same number of elements as T for plotting
+% if isempty(t) % case of a phase vector over T
+%     t=T;
+%     xlabelStr= 'angle (rad)';
+% elseif numel(T)>1 && numel(t) ~= numel(T)
+%     error('If T is a vector, t must be either empty or have the same number of elements as T for plotting')
+% else
+%     xlabelStr= 'time (sec)';
+% end
+% 
+% 
+% % % Calculate the number of expected subplots based on the display options
+% % if xor(arg.DispImag, arg.DispReal) || arg.plot3D
+% %     % If only one part is displayed or 3D plot is enabled, one subplot per matrix element
+% %     numSubplots = nx * ny;
+% %     doublesubplot = 0;
+% % else
+% %     % If both real and imaginary parts are displayed, two subplots per matrix element
+% %     numSubplots = 2 * nx * ny;
+% %     doublesubplot = 1;
+% % end
+% % if arg.explosed
+% %     T = manageTiledLayout32(parent,numSubplots,nx,ny*(1+doublesubplot));
+% % else
+% %     T = manageTiledLayout32(parent,numSubplots,1,1+doublesubplot);
+% % end
+% 
 % if arg.explosed
-%     T = manageTiledLayout2(parent,numSubplots,nx,ny*(1+doublesubplot));
+%     % Find all axes in the current figure to prevent bugs when plotting on top of an old plot
+%     old_ax=findall(gcf,'Type','axes');
+%     if ~isempty(old_ax)
+%         % Unlink all axes to prevent bugs when plotting on top of an old plot
+%         linkaxes(old_ax,'');
+%     end
+%     % numOldA stores the number of old axes in the figure
+%     numOldA=numel(old_ax);
+% 
+%     % arg.explosed checks if the plot should be exploded or not
+%     nx=size(Mt,1);
+%     ny=size(Mt,2);
+%     if xor(arg.DispImag,arg.DispReal) || arg.plot3D
+%         % if only one part is displayed, only one subplot is needed for each coefficient
+%         ax = gobjects(nx,ny);
+%         expectedPlotNumber=nx*ny;
+%         if numOldA==expectedPlotNumber
+%             old_ax=reshape(flip(old_ax),nx,ny);
+%         end
+%     else
+%         % if both parts are displayed, two subplots are needed for each coefficient
+%         ax = gobjects(2*nx,ny);
+%         expectedPlotNumber=nx*ny*2;
+%         if numOldA==expectedPlotNumber
+%             old_ax=reshape(flip(old_ax),nx*2,ny);
+%         end
+%     end
+% 
+% 
+% 
+%     for nxi=1:nx
+%         for nyi=1:ny
+%             %   if only one part is displayed, only one subplot is needed for each coefficient
+%             if xor(arg.DispImag,arg.DispReal) || arg.plot3D
+%                 ax(nxi,nyi)=subplot(nx,ny,(nxi-1)*ny+nyi);
+%                 if arg.hold
+%                     hold on
+%                 end
+%                 if arg.plot3D
+%                     plot3(real(squeeze(Mt(nxi,nyi,:))),imag(squeeze(Mt(nxi,nyi,:))),t,arg.linetype)
+%                     xlabel("Re(a_{"+num2str(nxi)+num2str(nyi)+"})")
+%                     ylabel("Im(a_{"+num2str(nxi)+num2str(nyi)+"})")
+%                     zlabel(xlabelStr)
+% 
+%                     ylim('auto')
+%                     xlim('auto')
+%                     if arg.ZeroCentered
+%                         ylim(max(abs(ylim)).*[-1 1])
+%                         xlim(max(abs(xlim)).*[-1 1])
+%                     end
+%                 else
+%                     if arg.DispImag
+%                         plot(t,imag(squeeze(Mt(nxi,nyi,:))),arg.linetype)
+%                         % ylabel("Im(a_{"+num2str(nxi)+num2str(nyi)+"})")
+%                     else
+%                         plot(t,real(squeeze(Mt(nxi,nyi,:))),arg.linetype)
+%                         % if isreal(Mt)
+%                         %     ylabel("a_{"+num2str(nxi)+num2str(nyi)+"}")
+%                         % else
+%                         %     ylabel("Re(a_{"+num2str(nxi)+num2str(nyi)+"})")
+%                         % end
+%                     end
+%                     if nxi == nx
+%                         xlabel(xlabelStr)
+%                     end
+%                     ylim('auto')
+%                     if arg.ZeroCentered
+%                         ylim(max(abs(ylim)).*[-1 1])
+%                     end
+%                 end
+%                 %  if both parts are displayed, two subplots are needed for each coefficient
+%             else
+%                 % real part
+%                 ax(2*(nxi-1)*ny+nyi)=subplot(2*nx,ny,2*(nxi-1)*ny+nyi);
+%                 if arg.hold
+%                     hold on
+%                 end
+%                 plot(t,real(squeeze(Mt(nxi,nyi,:))),arg.linetype)
+%                 ylabel("Re(a_{"+num2str(nxi)+num2str(nyi)+"})")
+%                 ylim('auto')
+%                 if arg.ZeroCentered
+%                     ylim(max(abs(ylim)).*[-1 1])
+%                 end
+% 
+%                 grid off
+%                 grid(arg.grid)
+% 
+%                 % imaginary part
+%                 ax((2*(nxi-1)+1)*ny+nyi)=subplot(2*nx,ny,(2*(nxi-1)+1)*ny+nyi);
+%                 if arg.hold
+%                     hold on
+%                 end
+%                 plot(t,imag(squeeze(Mt(nxi,nyi,:))),arg.linetype)
+%                 ylabel("Im(a_{"+num2str(nxi)+num2str(nyi)+"})")
+%                 ylim('auto')
+%                 if arg.ZeroCentered
+%                     ylim(max(abs(ylim)).*[-1 1])
+%                 end
+% 
+%                 if nxi == nx
+%                     xlabel(xlabelStr)
+%                 end
+% 
+%             end
+%             grid off
+%             grid(arg.grid)
+% 
+% 
+%         end
+%     end
+%     if isempty(arg.title)
+%         % sgtitle('M(t), vue explosée de la matrice')
+%     else
+%         sgtitle(arg.title)
+%     end
+%     % Link the axes if the user specified it
+%     % Possible values for arg.linkaxes are : 'x', 'y', 'z', 'xy', 'yx', 'yz', 'zy', 'xyz', 'yxz', 'xzy', 'zxy', 'zyx', 'yzx'
+%     uuu_y={'y','xy','yx','yz','zy','xyz','yxz','xzy','zxy','zyx','yzx'};
+%     uuu_x={'x','xy','yx','xz','zx','xyz','yxz','xzy','zxy','zyx','yzx'};
+%     uuu_z={'z','zy','yz','xz','zx','xyz','yxz','xzy','zxy','zyx','yzx'};
+% 
+%     % Set the same y limits for all the subplots if the user specified it or if the user wants to link the y axes
+%     if arg.GlobalYLim || any(strcmp(arg.linkaxes,uuu_y))
+%         uu=max(abs( cell2mat(ylim(ax))),[],'all');
+%         set(ax,'ylim',uu*[-1,1])
+%     end
+% 
+%     % Set the same x limits for all the subplots if the user specified it or if the user wants to link the x axes
+%     if arg.plot3D
+%         if arg.GlobalYLim || any(strcmp(arg.linkaxes,uuu_x))
+%             uu=max(abs( cell2mat(xlim(ax))),[],'all');
+%             set(ax,'xlim',uu*[-1,1])
+%             Link = linkprop(ax(:),{'CameraUpVector', 'CameraPosition', ...
+%                 'CameraTarget', 'ZLim'});
+%             setappdata(gcf, 'StoreTheLink', Link);
+%         end
+%     end
+% 
+%     linkaxes(ax,arg.linkaxes);
 % else
-%     T = manageTiledLayout2(parent,numSubplots,1,1+doublesubplot);
+% 
+%     % If the plot is not exploded, plot the matrix coefficients in a single figure
+%     if xor(arg.DispImag,arg.DispReal)
+%         if arg.hold
+%             hold on
+%         end
+%         if arg.DispImag
+%             plot(t,imag(reshape(Mt,[],numel(t))),arg.linetype)
+%             if isempty(arg.title)
+%                 title('M(t), imag part')
+%             else
+%                 title(arg.title)
+%             end
+%         else
+%             plot(t,real(reshape(Mt,[],numel(t))),arg.linetype)
+%             if isempty(arg.title)
+%                 title('M(t), real part')
+%             else
+%                 title(arg.title)
+%             end
+%         end
+% 
+%         ylim('auto')
+%         if arg.ZeroCentered
+%             %arg.zeroCentered checks if the plot should be centered on 0
+%             ylim(max(abs(ylim)).*[-1 1])
+%         end
+% 
+%     else
+%         ff = gcf; 
+%         if isa(ff.Children(1),"TiledChartLayout")
+%             TOuter = ff.Children(1);
+%         else
+%             TOuter = gcf;
+%         end
+% 
+%         % If both parts are displayed, plot the real and imaginary parts of the matrix coefficients superposed in two subplots
+%         nexttile(TOuter,1)
+%         if arg.hold
+%             % arg.hold checks if the plot should be superposed on the current figure
+%             hold on
+%         end
+%         plot(t,real(reshape(Mt,[],numel(t))),arg.linetype)
+% 
+%         ylim('auto')
+%         if arg.ZeroCentered
+%             ylim(max(abs(ylim)).*[-1 1])
+%         end
+%         title('M(t), real part')
+% 
+%         nexttile(TOuter,2)
+%         if arg.hold
+%             % arg.hold checks if the plot should be superposed on the current figure
+%             hold on
+%         end
+%         plot(t,imag(reshape(Mt,[],numel(t))),arg.linetype)
+% 
+%         ylim('auto')
+%         if arg.ZeroCentered
+%             % make y limits symetric
+%             ylim(max(abs(ylim)).*[-1 1])
+%         end
+%         title('M(t), imag part')
+%     end
 % end
-
-if arg.explosed
-    % Find all axes in the current figure to prevent bugs when plotting on top of an old plot
-    old_ax=findall(gcf,'Type','axes');
-    if ~isempty(old_ax)
-        % Unlink all axes to prevent bugs when plotting on top of an old plot
-        linkaxes(old_ax,'');
-    end
-    % numOldA stores the number of old axes in the figure
-    numOldA=numel(old_ax);
-
-    % arg.explosed checks if the plot should be exploded or not
-    nx=size(Mt,1);
-    ny=size(Mt,2);
-    if xor(arg.DispImag,arg.DispReal) || arg.plot3D
-        % if only one part is displayed, only one subplot is needed for each coefficient
-        ax = gobjects(nx,ny);
-        expectedPlotNumber=nx*ny;
-        if numOldA==expectedPlotNumber
-            old_ax=reshape(flip(old_ax),nx,ny);
-        end
-    else
-        % if both parts are displayed, two subplots are needed for each coefficient
-        ax = gobjects(2*nx,ny);
-        expectedPlotNumber=nx*ny*2;
-        if numOldA==expectedPlotNumber
-            old_ax=reshape(flip(old_ax),nx*2,ny);
-        end
-    end
-
-
-
-    for nxi=1:nx
-        for nyi=1:ny
-            %   if only one part is displayed, only one subplot is needed for each coefficient
-            if xor(arg.DispImag,arg.DispReal) || arg.plot3D
-                ax(nxi,nyi)=subplot(nx,ny,(nxi-1)*ny+nyi);
-                if arg.hold
-                    hold on
-                end
-                if arg.plot3D
-                    plot3(real(squeeze(Mt(nxi,nyi,:))),imag(squeeze(Mt(nxi,nyi,:))),t,arg.linetype)
-                    xlabel("Re(a_{"+num2str(nxi)+num2str(nyi)+"})")
-                    ylabel("Im(a_{"+num2str(nxi)+num2str(nyi)+"})")
-                    zlabel(xlabelStr)
-
-                    ylim('auto')
-                    xlim('auto')
-                    if arg.ZeroCentered
-                        ylim(max(abs(ylim)).*[-1 1])
-                        xlim(max(abs(xlim)).*[-1 1])
-                    end
-                else
-                    if arg.DispImag
-                        plot(t,imag(squeeze(Mt(nxi,nyi,:))),arg.linetype)
-                        % ylabel("Im(a_{"+num2str(nxi)+num2str(nyi)+"})")
-                    else
-                        plot(t,real(squeeze(Mt(nxi,nyi,:))),arg.linetype)
-                        % if isreal(Mt)
-                        %     ylabel("a_{"+num2str(nxi)+num2str(nyi)+"}")
-                        % else
-                        %     ylabel("Re(a_{"+num2str(nxi)+num2str(nyi)+"})")
-                        % end
-                    end
-                    if nxi == nx
-                        xlabel(xlabelStr)
-                    end
-                    ylim('auto')
-                    if arg.ZeroCentered
-                        ylim(max(abs(ylim)).*[-1 1])
-                    end
-                end
-                %  if both parts are displayed, two subplots are needed for each coefficient
-            else
-                % real part
-                ax(2*(nxi-1)*ny+nyi)=subplot(2*nx,ny,2*(nxi-1)*ny+nyi);
-                if arg.hold
-                    hold on
-                end
-                plot(t,real(squeeze(Mt(nxi,nyi,:))),arg.linetype)
-                ylabel("Re(a_{"+num2str(nxi)+num2str(nyi)+"})")
-                ylim('auto')
-                if arg.ZeroCentered
-                    ylim(max(abs(ylim)).*[-1 1])
-                end
-
-                grid off
-                grid(arg.grid)
-
-                % imaginary part
-                ax((2*(nxi-1)+1)*ny+nyi)=subplot(2*nx,ny,(2*(nxi-1)+1)*ny+nyi);
-                if arg.hold
-                    hold on
-                end
-                plot(t,imag(squeeze(Mt(nxi,nyi,:))),arg.linetype)
-                ylabel("Im(a_{"+num2str(nxi)+num2str(nyi)+"})")
-                ylim('auto')
-                if arg.ZeroCentered
-                    ylim(max(abs(ylim)).*[-1 1])
-                end
-
-                if nxi == nx
-                    xlabel(xlabelStr)
-                end
-
-            end
-            grid off
-            grid(arg.grid)
-
-
-        end
-    end
-    if isempty(arg.title)
-        % sgtitle('M(t), vue explosée de la matrice')
-    else
-        sgtitle(arg.title)
-    end
-    % Link the axes if the user specified it
-    % Possible values for arg.linkaxes are : 'x', 'y', 'z', 'xy', 'yx', 'yz', 'zy', 'xyz', 'yxz', 'xzy', 'zxy', 'zyx', 'yzx'
-    uuu_y={'y','xy','yx','yz','zy','xyz','yxz','xzy','zxy','zyx','yzx'};
-    uuu_x={'x','xy','yx','xz','zx','xyz','yxz','xzy','zxy','zyx','yzx'};
-    uuu_z={'z','zy','yz','xz','zx','xyz','yxz','xzy','zxy','zyx','yzx'};
-
-    % Set the same y limits for all the subplots if the user specified it or if the user wants to link the y axes
-    if arg.GlobalYLim || any(strcmp(arg.linkaxes,uuu_y))
-        uu=max(abs( cell2mat(ylim(ax))),[],'all');
-        set(ax,'ylim',uu*[-1,1])
-    end
-
-    % Set the same x limits for all the subplots if the user specified it or if the user wants to link the x axes
-    if arg.plot3D
-        if arg.GlobalYLim || any(strcmp(arg.linkaxes,uuu_x))
-            uu=max(abs( cell2mat(xlim(ax))),[],'all');
-            set(ax,'xlim',uu*[-1,1])
-            Link = linkprop(ax(:),{'CameraUpVector', 'CameraPosition', ...
-                'CameraTarget', 'ZLim'});
-            setappdata(gcf, 'StoreTheLink', Link);
-        end
-    end
-
-    linkaxes(ax,arg.linkaxes);
-else
-
-    % If the plot is not exploded, plot the matrix coefficients in a single figure
-    if xor(arg.DispImag,arg.DispReal)
-        if arg.hold
-            hold on
-        end
-        if arg.DispImag
-            plot(t,imag(reshape(Mt,[],numel(t))),arg.linetype)
-            if isempty(arg.title)
-                title('M(t), imag part')
-            else
-                title(arg.title)
-            end
-        else
-            plot(t,real(reshape(Mt,[],numel(t))),arg.linetype)
-            if isempty(arg.title)
-                title('M(t), real part')
-            else
-                title(arg.title)
-            end
-        end
-
-        ylim('auto')
-        if arg.ZeroCentered
-            %arg.zeroCentered checks if the plot should be centered on 0
-            ylim(max(abs(ylim)).*[-1 1])
-        end
-
-    else
-        ff = gcf; 
-        if isa(ff.Children(1),"TiledChartLayout")
-            TOuter = ff.Children(1);
-        else
-            TOuter = gcf;
-        end
-
-        % If both parts are displayed, plot the real and imaginary parts of the matrix coefficients superposed in two subplots
-        nexttile(TOuter,1)
-        if arg.hold
-            % arg.hold checks if the plot should be superposed on the current figure
-            hold on
-        end
-        plot(t,real(reshape(Mt,[],numel(t))),arg.linetype)
-
-        ylim('auto')
-        if arg.ZeroCentered
-            ylim(max(abs(ylim)).*[-1 1])
-        end
-        title('M(t), real part')
-
-        nexttile(TOuter,2)
-        if arg.hold
-            % arg.hold checks if the plot should be superposed on the current figure
-            hold on
-        end
-        plot(t,imag(reshape(Mt,[],numel(t))),arg.linetype)
-
-        ylim('auto')
-        if arg.ZeroCentered
-            % make y limits symetric
-            ylim(max(abs(ylim)).*[-1 1])
-        end
-        title('M(t), imag part')
-    end
-end
-end
-
+% end
+% 
 
 function t = plot2(arg,t,T,Mt)
 
 
 nx = size(Mt,1);
 ny = size(Mt,2);
-
 if isempty(arg.parent) 
-    % If the parent figure is not specified, use the current figure
-    parent = gcf;
+    % If the parent figure is not specified, use the current axes as start
+    parent = gca; 
 else
     % If the parent figure is specified, use it
     parent = arg.parent;
 end
 
 
-
-if ~arg.hold && arg.explosed
-    clf
-end
 
 % If T is a vector, t must be either empty or have the same number of elements as T for plotting
 if isempty(t) % case of a phase vector over T
@@ -644,9 +562,9 @@ else
     doublesubplot = 1;
 end
 if arg.explosed
-    T = manageTiledLayout2(parent,nx,ny*(1+doublesubplot));
+    T = manageTiledLayout(parent,nx,ny*(1+doublesubplot),"ishold",arg.hold);
 else
-    T = manageTiledLayout2(parent,1,1+doublesubplot);
+    T = manageTiledLayout(parent,1,1+doublesubplot,"ishold",arg.hold);
 end
 
 if arg.explosed
@@ -741,7 +659,7 @@ if arg.explosed
     end
 
 
-    ax = findall(gcf,'Type','axes');
+    ax = findall(T,'Type','axes');
 
     % Link the axes if the user specified it
     % Possible values for arg.linkaxes are : 'x', 'y', 'z', 'xy', 'yx', 'yz', 'zy', 'xyz', 'yxz', 'xzy', 'zxy', 'zyx', 'yzx'
