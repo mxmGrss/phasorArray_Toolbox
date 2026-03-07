@@ -43,7 +43,7 @@ function [Xph,M,M1,M2,colQ,colX] = LyapHarmonic(Ahm, Qhm, h, omega, options)
         if isa(Q, 'PhasorArray'), Q = Q.value; end
         hQ = (size(Q, 3) - 1) / 2;
         if hQ < h
-            dQ = padarray(Q, [0 0 h-hQ], 0, 'both');
+            dQ = phasorPad(Q, [0 0 h-hQ], 0, 'both');
         elseif hQ > h
             dQ = Q(:, :, hQ+1+(-h:h));
         else

@@ -49,9 +49,9 @@ Ib=speye(nb);
 
 
 if hA<hB
-    Aph=padarray(Aph,[0 0 hB-hA]);
+    Aph=phasorPad(Aph,[0 0 hB-hA]);
 elseif hB<hA
-    Bph=padarray(Bph,[0 0 hA-hB]);
+    Bph=phasorPad(Bph,[0 0 hA-hB]);
 end
 
 %More obvious but less efficient implementation

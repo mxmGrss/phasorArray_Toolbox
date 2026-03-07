@@ -8,7 +8,9 @@
 [![Wiki](https://img.shields.io/badge/Documentation-Wiki-green.svg)](https://github.com/mxmGrss/phasorArray_Toolbox/wiki)
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/mxmGrss/phasorArray_Toolbox/graphs/commit-activity)
 
-The **PhasorArray Toolbox** is an object-oriented MATLAB library providing a rigorous framework for the analysis and control of **Linear Time-Periodic (LTP)** and **Bilinear Systems**. 
+The **PhasorArray Toolbox** is an object-oriented MATLAB library providing a rigorous framework for the analysis and control of **Linear Time-Periodic (LTP)** and **Bilinear Systems**.
+
+> **✅ Requirements:** MATLAB R2021b+ only. Optional toolboxes unlock advanced features (LMI, symbolic, LPV). See [REQUIREMENTS.md](REQUIREMENTS.md) for details. 
 
 By establishing a **one-to-one correspondence** (bijection) between time-domain signals ($L^2_{loc}$) and their harmonic representation ($\mathcal{H}$), the toolbox transforms complex periodic differential equations into standard algebraic problems. This enables the application of robust LTI techniques, such as Eigenvalue (Floquet) analysis or $H_\infty$ synthesis, to complex periodic processes (e.g., Grid-tied converters, rotating machinery).
 
@@ -95,6 +97,14 @@ Direct integration with **YALMIP** for convex optimization over periodic systems
     installToolbox
     ```
     This script will set up your path and automatically open the documentation.
+
+4.  **Check your setup** (optional):
+    ```matlab
+    test_PhasorArray_basic       % Core tests (no toolboxes required)
+    test_PhasorArray_advanced    % Advanced tests (YALMIP, Symbolic, etc.)
+    ```
+
+> **📋 Full Requirements:** See [REQUIREMENTS.md](REQUIREMENTS.md) for detailed dependency information, version compatibility, and optional toolbox features.
 
 ---
 
