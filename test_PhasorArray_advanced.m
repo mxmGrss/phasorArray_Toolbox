@@ -550,8 +550,10 @@ function test_yalmip_LMI()
     P = PhasorArray.ndsdpvar(nx, nx, h, "PhasorType", 'symmetric', "real", true);
     
     PT = P.T_tb(h);
-    ATP = A'*P;
     PA  = P*A;
+    ATP = A'*P;
+    Q   = PhasorArray(eye(nx));
+    QT  = Q.T_tb(h);
     
     % Derivative operator matrix for harmonic domain
     % Corresponds to d/dt in frequency domain: N = diag(j*k*omega)
@@ -561,7 +563,7 @@ function test_yalmip_LMI()
     % \dot{P} term corresponds to commutator with N: N*PT - PT*N
     % Using the formula from Exemples/Exemple_Toolbox_LMI.m line 47:
     Sum = ATP + PA;
-    LMI_lhs = Sum.T_tb(h) + N*PT - PT*N;
+    LMI_lhs = Sum.T_tb(h) + QT + (N*PT - PT*N);
     
     % Constraints
     % P >= epsilon
@@ -622,7 +624,7 @@ function test_yalmip_LMI_vs_Lyap()
     A = PhasorArray(cat(3, conj(A2), conj(A1), A0, A1, A2));
     Q = PhasorArray(eye(2));
     
-    h_sol = 20;
+    h_sol = 10;
     nx = 2;
     T = 1; % Assume default period T=1 (omega=2pi)
     

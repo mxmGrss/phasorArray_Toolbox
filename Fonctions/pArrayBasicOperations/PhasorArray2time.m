@@ -133,14 +133,17 @@ if arg.providedPhasorForm == "SinCos"
 
 end
 
-% Convert PhasorArray or symbolic variables to numeric values
-Mph = convertToNumeric(Mph);
-
-% Get the size of Mph
-nx = size(Mph,1);
-ny = size(Mph,2);
-h = size(Mph,3);
-h = (h - 1) / 2;
+    % Get dimensions
+    if isa(Mph, 'PhasorArray')
+        Mph_val = Mph.value;
+    else
+        Mph_val = Mph;
+    end
+    
+    nx = size(Mph_val, 1);
+    ny = size(Mph_val, 2);
+    h_len = size(Mph_val, 3);
+    h = (h_len - 1) / 2;
 
 % Compute the time vector if not provided
 if and(numel(t) < 3 , numel(T) == 1)
@@ -155,22 +158,21 @@ t = reshape(t, 1, []);
 % Compute theta
 theta = computeTheta(T, t);
 
-% Compute the basis a each time
-% case of complex valued matrix
+% Compute the basis for evaluation
 if ~arg.forceReal
-    eit = exp(1i*(-h:h)'*theta);
-    Meval=Mph;
-    %case of real valued matrix
+    % Complex-valued basis
+    eit = exp(1i * (-h:h)' * theta);
+    Meval = Mph_val;
 else
-    %convert to real valued matrix in sin/cos form
+    % Real-valued basis (Sin/Cos representation)
     if arg.providedPhasorForm == "exp"
-        Mphr  = real(Mph + flip(Mph,3))/2 + 1i * imag(Mph - flip(Mph,3))/2;
-        Meval = real(cat(3,1i*(flip(Mphr(:,:,h+2:end),3)-Mphr(:,:,1:h)),Mphr(:,:,h+1),(Mphr(:,:,h+2:end)+flip(Mphr(:,:,1:h),3))));
+        % Convert exponential phasors to real conjugate-symmetric form
+        Mphr  = real(Mph_val + flip(Mph_val, 3)) / 2 + 1i * imag(Mph_val - flip(Mph_val, 3)) / 2;
+        Meval = real(cat(3, 1i * (flip(Mphr(:, :, h+2:end), 3) - Mphr(:, :, 1:h)), Mphr(:, :, h+1), (Mphr(:, :, h+2:end) + flip(Mphr(:, :, 1:h), 3))));
     else
-        Meval = Mph;
+        Meval = Mph_val;
     end
-    eit = [sin((h:-1:1)'*theta);cos((0:h)'*theta)];
-
+    eit = [sin((h:-1:1)' * theta); cos((0:h)' * theta)];
 end
 
 if isa(t,'sym')
@@ -200,16 +202,12 @@ end
 
 % Check if the imaginary part of Mt is negligible
 if arg.checkReal
-    if sum(abs(imag(Mt))>arg.checkRealTol)==0
-        Mt=real(Mt);
+    if all(abs(imag(Mt)) < arg.checkRealTol, 'all')
+        Mt = real(Mt);
     else
-        % if imag part is not negligeable, output is complex valued and a warning is displayed
-        warning('Argument enforce reality of M but imag part is not negligeable, output is complex valued')
-        return
+        warning('PhasorArray2time:notReal', 'Output is complex-valued despite checkReal flag (imaginary part above tolerance).');
     end
 end
-
-% Mt=real(Mt);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

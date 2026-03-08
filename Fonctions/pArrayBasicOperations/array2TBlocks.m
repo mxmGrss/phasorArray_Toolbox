@@ -1,117 +1,118 @@
-function [OutM,N] = array2TBlocks(Aph,m,varg)
-    %ARRAY2TBLOCKS Convert a 3D array into a Toeplitz-blocks matrix
-    %   This function takes a 3D array representing periodic matrices and converts
-    %   it into a matrix of Toeplitz blocks. Each block corresponds to the Toeplitz
-    %   representation of each coefficient of the array.
+function [OutM, N] = array2TBlocks(Aph, m, varg)
+    %ARRAY2TBLOCKS Convert a 3D array into a Toeplitz-blocks (TB) matrix.
     %
-    %   The function allows for padding or truncating the input array to match the 
-    %   specified number of blocks (m), ensuring the output has a length of (nh+1) blocks.
-    %   The method used for matrix construction can be chosen using the 'method' option.
-    %   
     %   Usage:
-    %   [OutM, N] = array2TBlocks(Aph, m, varg)
+    %       [OutM, N] = array2TBlocks(Aph)
+    %       [OutM, N] = array2TBlocks(Aph, m)
+    %       [OutM, N] = array2TBlocks(Aph, [h1, h2])
     %
     %   Inputs:
-    %       Aph       - 3D array [A_{-nh}, ..., A_0, ..., A_{nh}] to convert into a Toeplitz-blocks matrix.
-    %       m         - Optional padding or truncation to define the number of blocks (default: nh*2).
-    %       varg      - Optional name-value arguments for method selection.
+    %       Aph   - Input data. 3D double array or PhasorArray object.
+    %       m     - (Optional) Order of the output block matrix.
+    %               - If scalar h: Square block matrix of size (2*h+1) x (2*h+1).
+    %               - If vector [h1, h2]: Rectangular matrix of size (2*h1+1) x (2*h2+1).
+    %               - Default: Current order of Aph.
+    %       varg  - Name-Value arguments:
+    %               * 'method': 'cell2mat' (fast) or 'cat' (SDP/SYM compatible).
     %
     %   Outputs:
-    %       OutM      - The resulting matrix of Toeplitz blocks.
-    %       N         - Differenciation matrix associated with TB structure and compatible size.
-    %
-    %   Options:
-    %       varg.method  - Method used to create the Toeplitz blocks matrix ('cell2mat' or 'cat'). Default is 'cell2mat'.
-    %
-    %   Notes:
-    %       - The 'cell2mat' method is more efficient and uses `cell2mat` to construct the blocks.
-    %       - The 'cat' method uses concatenation with `toeplitz` to build the blocks, making it compatible with `sdpvar`.
-    %
-    %   See also: toeplitz, mat2cell, sdpvar
-    
-arguments
-    Aph
-    m=[]
-    varg.method='cell2mat';
-end
-if isa(Aph,'PhasorArray')
-    Aph=Aph.Value;
-end
+    %       OutM  - Toeplitz-Blocks matrix.
+    %       N     - Differentiation matrix (only for square case).
 
-if isa(Aph,"ndsdpvar") || isa(Aph,"sdpvar") || isa(Aph,"sym")
-    varg.method='cat';
-end
-
-if ismatrix(Aph)
-    [n1,n2]=size(Aph);
-    nhlenbis=1;
-else
-    [n1,n2,nhlenbis]=size(Aph);
-end
-    nh=(nhlenbis-1)/2;
-
-    
-if isempty(m)
-    m=nh*2;
-
-else 
-    if nh>m
-        Aph=Aph(:,:,(nh+1+(-m:m)));
-        nh=m;
-    elseif nh<m
-%         Aph=padarray(Aph,[0 0 (m-nh)]);
-%             nh=m
+    arguments
+        Aph
+        m = []
+        varg.method {mustBeMember(varg.method, {'cell2mat', 'cat'})} = 'cell2mat';
     end
 
-end
+    % Detect special types
+    is_special = isa(Aph, 'ndsdpvar') || isa(Aph, 'sdpvar') || isa(Aph, 'sym');
 
-switch varg.method
-    case 'cell2mat'
-% OutM=zeros(n1*(m+1),n2*(m+1));
-    c=cell(n1,n2);
-        for xi = 1:n1
-            for yi=1:n2
-                ui=[zeros(m-nh,1) ; squeeze(Aph(xi,yi,:)) ; zeros(m-nh,1)];
-                TAij = toeplitz(ui((m+1):end), ui((m+1):-1:1) );
-%                 TAij
-                c{xi,yi}=TAij;
-%                 OutM((xi-1)*(m+1)+(1:(m+1)),(yi-1)*(m+1)+(1:(m+1)))=TAij;
-            end
-        end
-        % c
-        OutM=cell2mat(c);
+    if isa(Aph, 'PhasorArray')
+        data = Aph.value;
+        is_special = is_special || isa(data, 'ndsdpvar') || isa(data, 'sdpvar') || isa(data, 'sym');
+        Aph = data;
+    end
 
-    case 'cat'
-%         OutM=zeros(n1*(m+1),n2*(m+1));
-        OutM=[];
-        % c=cell(n1,n2);
-        for xi = 1:n1
-            MT1=[];
-            for yi=1:n2
-                try
-                ui=[zeros(m-nh,1) ; squeeze(Aph(xi,yi,:)) ; zeros(m-nh,1)];
-                catch e
-                    xi
-                    yi
-                    Aph
-                    Aph(xi,yi,:)
-                    error(e)
+    if is_special
+        varg.method = 'cat';
+    end
+
+    % Get input dimensions
+    [n1, n2, nh_len] = size(Aph);
+    nh_in = (nh_len - 1) / 2;
+
+    % Resolve output orders [h1, h2]
+    if isempty(m)
+        h1 = nh_in;
+        h2 = nh_in;
+    elseif isscalar(m)
+        h1 = m;
+        h2 = m;
+    else
+        h1 = m(1);
+        h2 = m(2);
+    end
+
+    % Required range: k in [-(h1+h2), h1+h2]
+    h_req = h1 + h2;
+    k_min = -h_req;
+    k_max =  h_req;
+    
+    % Map overlap
+    overlap_k_min = max(k_min, -nh_in);
+    overlap_k_max = min(k_max,  nh_in);
+    
+    if overlap_k_min <= overlap_k_max
+        % Pad/truncate to exactly match [-h_req, h_req]
+        % Use cat to preserve potential special types (ndsdpvar/sdpvar/sym)
+        data_sliced = Aph(:, :, (nh_in + 1 + overlap_k_min) : (nh_in + 1 + overlap_k_max));
+        n_lead = overlap_k_min - k_min;
+        n_trail = k_max - overlap_k_max;
+        
+        z1 = zeros(n1, n2, n_lead);
+        z2 = zeros(n1, n2, n_trail);
+        Aph = cat(3, z1, data_sliced, z2);
+    else
+        Aph = zeros(n1, n2, 2 * h_req + 1);
+    end
+    
+    % Index in Aph is k + h_req + 1
+    
+    switch varg.method
+        case 'cell2mat'
+            c = cell(n1, n2);
+            for xi = 1:n1
+                for yi = 1:n2
+                    val_vec = squeeze(Aph(xi, yi, :));
+                    % Formula idx = i - j + 2h2 + 1
+                    col = val_vec((1 : 2 * h1 + 1) + 2 * h2);
+                    row = val_vec(2 - (1 : 2 * h2 + 1) + 2 * h2);
+                    c{xi, yi} = toeplitz(col, row);
                 end
-                ui1=ui((m+1):end);
-                ui2=ui((m+1):-1:1);
-                TAij = toeplitz(ui1, ui2 );
-%                 TAij
-        %         c{xi,yi}=TAij;
-                MT1=[MT1, TAij];
-%                 OutM((xi-1)*(m+1)+(1:(m+1)),(yi-1)*(m+1)+(1:(m+1)))=TAij;
             end
-            OutM=[OutM; MT1];
+            OutM = cell2mat(c);
+
+        case 'cat'
+            OutM = [];
+            for xi = 1:n1
+                line = [];
+                for yi = 1:n2
+                    val_vec = squeeze(Aph(xi, yi, :));
+                    col = val_vec((1 : 2 * h1 + 1) + 2 * h2);
+                    row = val_vec(2 - (1 : 2 * h2 + 1) + 2 * h2);
+                    line = [line, toeplitz(col, row)];
+                end
+                OutM = [OutM; line];
+            end
+    end
+
+    if nargout == 2
+        if h1 == h2
+            N = N_tb(n1, h1, 1);
+        else
+            warning('N matrix is only defined for square Toeplitz-Blocks truncations.');
+            N = [];
         end
-end
-
-
-if nargout==2
-    N = N_tb(n1,m/2,1);
-end
-
+    end
 end

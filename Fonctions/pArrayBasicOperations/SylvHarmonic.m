@@ -36,8 +36,8 @@ function [Xph,M,M1,M2,colQ,colX] = SylvHarmonic(Ahmad, Bhmad, Chmad, h, omega)
     end
 
     % 1. Convert to Tensor-Block representations (Corrected DEFINITION)
-    A_tb = array2TBlocks(Ahm, 2*h);
-    B_tb = array2TBlocks(Bhm, 2*h);
+    A_tb = array2TBlocks(Ahm, h);
+    B_tb = array2TBlocks(Bhm, h);
 
     % 3. Pad Chm to target h using standard MATLAB concatenation (removes padarray dependency)
     nxA = size(Ahm, 1);

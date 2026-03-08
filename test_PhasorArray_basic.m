@@ -106,6 +106,7 @@ results(end+1) = runTest('Det: detLeibnizHmc 3x3', @() test_detLeibniz_3x3(tol))
 %  11. FREQUENCY BASE
 %  ========================================================================
 results(end+1) = runTest('Base: expandBase / squishBase round-trip', @() test_expandSquish(tol));
+results(end+1) = runTest('Utility: truncationAdvisor smoke test', @() test_truncationAdvisor());
 
 %% ========================================================================
 %  SUMMARY

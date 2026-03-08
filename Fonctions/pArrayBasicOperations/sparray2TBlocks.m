@@ -1,80 +1,108 @@
-function [OutM,N] = sparray2TBlocks(Aph,m,varg)
-% sparray2TBlocks Summary: Converts a 3D array into a sparse Toeplitz-block matrix
-%   Takes a 3D array [A-nh1 ... A0 ... Anh1] and constructs a matrix made of Toeplitz blocks,
-%   each representing the Toeplitz structure of the coefficients.
-%   If specified, nhcible pads/truncates the 3D array with zeros so that the output has (nh+1) blocks.
-arguments
-    Aph
-    m=[]
-    varg.method='cell2mat'
-end
+function [OutM, N] = sparray2TBlocks(Aph, m, varg)
+    %SPARRAY2TBLOCKS Convert a 3D array into a sparse Toeplitz-blocks (TB) matrix.
+    %
+    %   Usage:
+    %       [OutM, N] = sparray2TBlocks(Aph, [h1, h2])
+    %
+    %   Inputs:
+    %       Aph   - Input data (3D array or PhasorArray).
+    %       m     - Output order(s) [h1, h2].
+    %
+    %   See also: array2TBlocks.
 
-if isa(Aph,'PhasorArray')
-    Aph=Aph.Value;
-end
-
-if isa(Aph,"ndsdpvar") || isa(Aph,"sdpvar")
-    varg.method='cat';
-end
-
-if nargin == 1
-    [n1,n2,nhlenbis]=size(Aph);
-    nh=(nhlenbis-1)/2;
-    m=nh;
-
-elseif nargin>1
-    [n1,n2,nhlenbis]=size(Aph);
-    nh=(nhlenbis-1)/2;
-    if nh>m
-        Aph=Aph(:,:,(nh+1+(-m:m)));
-        nh=m;
-    elseif nh<m
-%         Aph=padarray(Aph,[0 0 (m-nh)]);
+    arguments
+        Aph
+        m = []
+        varg.method = 'cell2mat';
     end
 
-end
+    % Detect special types
+    is_special = isa(Aph, 'ndsdpvar') || isa(Aph, 'sdpvar') || isa(Aph, 'sym');
 
-switch varg.method
-    case 'cell2mat'
-        % OutM=zeros(n1*(m+1),n2*(m+1));
-        % OutM=spalloc(n1*(m+1),n2*(m+1),((m+1)*(m+1)-(m-nh)*(m-nh+1))*n1*n2);
-        c=cell(n1,n2);
-        % OutM=[];
-        for xi = 1:n1
-        %     MT1=[];
-            for yi=1:n2
-        %         ui=zeros(2*m+1,1);
-        %         ui(m+1+(-nh:nh))=squeeze(Aph(xi,yi,:));
-                ui = sparse(m+1+(-nh:nh),ones(1,2*nh+1),squeeze(Aph(xi,yi,:)),2*m+1,1);
-        %         uip=sparse(1+(0:nh),1,squeeze(Aph(xi,yi,nh+1:end)),m+1,1);
-        %         uim=sparse(1+(0:nh),1,squeeze(Aph(xi,yi,nh+1:-1:1)),m+1,1);
-        %         TAij = toeplitz(uip, uim);
-                TAij = toeplitz(ui((m+1):end), ui((m+1):-1:1));
-                c{xi,yi}=TAij;
-        %         OutM((xi-1)*(m+1)+(1:(m+1)),(yi-1)*(m+1)+(1:(m+1)))=TAij;
-        %         MT1=[MT1 TAij];
+    if isa(Aph, 'PhasorArray')
+        data = Aph.value;
+        is_special = is_special || isa(data, 'ndsdpvar') || isa(data, 'sdpvar') || isa(data, 'sym');
+        Aph = data;
+    end
+
+    if is_special
+        varg.method = 'cat';
+    end
+
+    % Get input dimensions
+    [n1, n2, nh_len] = size(Aph);
+    nh_in = (nh_len - 1) / 2;
+
+    % Resolve output orders [h1, h2]
+    if isempty(m)
+        h1 = nh_in;
+        h2 = nh_in;
+    elseif isscalar(m)
+        h1 = m;
+        h2 = m;
+    else
+        h1 = m(1);
+        h2 = m(2);
+    end
+
+    % TB Logic: k = i - j - (h1 - h2)
+    % Required range: k in [-(h1+h2), h1+h2]
+    h_req = h1 + h2;
+    k_min = -h_req;
+    k_max =  h_req;
+    
+    % Pad/truncate using cat to preserve special types
+    overlap_k_min = max(k_min, -nh_in);
+    overlap_k_max = min(k_max,  nh_in);
+    
+    if overlap_k_min <= overlap_k_max
+        data_sliced = Aph(:, :, (nh_in + 1 + overlap_k_min) : (nh_in + 1 + overlap_k_max));
+        n_lead = overlap_k_min - k_min;
+        n_trail = k_max - overlap_k_max;
+        
+        z1 = zeros(n1, n2, n_lead);
+        z2 = zeros(n1, n2, n_trail);
+        Aph = cat(3, z1, data_sliced, z2);
+    else
+        Aph = zeros(n1, n2, 2 * h_req + 1);
+    end
+    
+    % harmonic k is at index (k + h_req + 1)
+
+    switch varg.method
+        case 'cell2mat'
+            c = cell(n1, n2);
+            for xi = 1:n1
+                for yi = 1:n2
+                    val_vec = sparse(squeeze(Aph(xi, yi, :)));
+                    % idx = i - j + 2*h2 + 1
+                    col = val_vec((1 : 2 * h1 + 1) + 2 * h2);
+                    row = val_vec(2 - (1 : 2 * h2 + 1) + 2 * h2);
+                    c{xi, yi} = toeplitz(col, row);
+                end
             end
-        %     OutM=[OutM; MT1];
-        end
-        OutM=cell2mat(c);
-
-
-    case 'cat'
-        OutM=[];
-        for xi = 1:n1
-            MT1=[];
-            for yi=1:n2
-                ui = sparse(m+1+(-nh:nh),ones(1,2*nh+1),squeeze(Aph(xi,yi,:)),2*m+1,1);
-                TAij = toeplitz(ui((m+1):end), ui((m+1):-1:1));
-                MT1=[MT1 TAij];
+            OutM = cell2mat(c);
+        otherwise
+            % Safe Assembly for special types (sdpvar, sym, etc.)
+            p1 = 2 * h1 + 1;
+            p2 = 2 * h2 + 1;
+            c = cell(n1, n2);
+            for xi = 1:n1
+                for yi = 1:n2
+                    val_vec = squeeze(Aph(xi, yi, :));
+                    col = val_vec((1 : 2 * h1 + 1) + 2 * h2);
+                    row = val_vec(2 - (1 : 2 * h2 + 1) + 2 * h2);
+                    c{xi, yi} = toeplitz(col, row);
+                end
             end
-            OutM=[OutM; MT1];
+            OutM = cell2mat(c);
+    end
+
+    if nargout == 2
+        if h1 == h2
+            N = N_tb(n1, h1, 1);
+        else
+            N = [];
         end
-end
-
-
-
-if nargout==2
-    N = N_tb(n1,m/2,1);
-end
+    end
 end

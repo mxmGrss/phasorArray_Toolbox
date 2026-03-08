@@ -1,60 +1,35 @@
-function [o2] = PhasorArrayPad(o1,delta_h)
-%PhasorArrayPad Pad a PhasorArray with zeros
-% PhasorArrayPad(A,h) pads the PhasorArray A with h zeros on each side of the third dimension
-% PhasorArrayPad(A,[n1 n2 h]) pads the PhasorArray A with n1 zeros on the first dimension, n2 zeros on the second dimension and h zeros on each side of the third dimension
-
-[n1]=size(o1,1);
-[n2]=size(o1,2);
-[pre_h_old]=size(o1,3);
-h_old=(pre_h_old-1)/2;
-
-if numel(delta_h)==1
-    hp = delta_h;
-    n1p = 0;
-    n2p = 0;
-elseif numel(delta_h)==3
-    hp = delta_h(3);
-    n1p = delta_h(1);
-    n2p = delta_h(2);
-else 
-    error('Invalid input for delta_h in PhasorArrayPad, delta_h must be a scalar or a 3-element vector') 
+function r = PhasorArrayPad(obj, delta_h)
+    %PHASORARRAYPAD Pad a PhasorArray object with zeros in the harmonic domain.
+    %   r = PhasorArrayPad(obj, delta_h) adds delta_h zero harmonics to both
+    %   ends of the harmonic spectrum of the PhasorArray obj.
+    %
+    %   Input Arguments:
+    %   - obj (PhasorArray) : The PhasorArray object to pad.
+    %   - delta_h (integer) : If scalar, adds delta_h zeros at each end of the 
+    %                         harmonic dimension (3rd dimension).
+    %
+    %   Output Arguments:
+    %   - r (PhasorArray)   : The padded PhasorArray object.
+    
+    val = obj.value;
+    [n1, n2, ~] = size(val);
+    
+    if isscalar(delta_h)
+        if delta_h > 0
+            % Add zeros to both ends of the 3rd dimension
+            z = zeros(n1, n2, delta_h);
+            val = cat(3, z, val, z);
+        end
+    elseif length(delta_h) == 3
+        % Specialized padding if delta_h is a vector [h1 h2 h3]
+        % (Legacy support based on PhasorArray.pad comments)
+        if delta_h(1) > 0, val = cat(1, zeros(delta_h(1), n2, size(val,3)), val, zeros(delta_h(1), n2, size(val,3))); end
+        if delta_h(2) > 0, val = cat(2, zeros(size(val,1), delta_h(2), size(val,3)), val, zeros(size(val,1), delta_h(2), size(val,3))); end
+        if delta_h(3) > 0
+            z = zeros(size(val,1), size(val,2), delta_h(3));
+            val = cat(3, z, val, z);
+        end
+    end
+    
+    r = PhasorArray(val);
 end
-
-if isphasor(o1)
-    output_phas=1;
-    o1=o1.value;
-else
-    output_phas=0;
-end
-
-if n1p >0
-o1 = cat(1,zeros(n1p,n2,pre_h_old),o1,zeros(n1p,n2,pre_h_old));
-end
-
-if n2p >0
-o1 = cat(2,zeros(n1+n1p,n2p,pre_h_old),o1,zeros(n1+n1p,n2p,pre_h_old));
-end
-
-if hp >0
-o1 = cat(3,zeros(n1+n1p,n2+n2p,hp),o1,zeros(n1+n1p,n2+n2p,hp));
-end
-
-o2 = o1;
-% switch class(o1)
-%     case "double"
-%         o2=zeros(n1+2*n1p,n2+2*n2p,(2*(h_old+hp)+1));
-%     case {"ndsdpvar","sdpvar"}
-%         o2=ndsdpvar(n1+2*n1p,n2+2*n2p,(2*(h_old+hp)+1),'full');
-%     case "sym"
-%         o2=sym(zeros(n1+2*n1p,n2+2*n2p,(2*(h_old+hp)+1)));
-% end
-% o2(:,:,(1:hp))=0;
-% o2(n1p+1:n1+n1p,n2p+1:n2+n2p,(hp+1):(end-hp))=o1;
-% o2(:,:,(end-hp+1):end)=0;
-
-if output_phas
-    o2=PhasorArray(o2,reduce=false);
-end
-
-end
-
