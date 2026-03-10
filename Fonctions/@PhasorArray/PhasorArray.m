@@ -1037,6 +1037,13 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                     residual.resrelnorm = resrelnorm_best;
                 end
 
+                if residual.resrelnorm > optarg.thresholdResidual
+                    warning('phasorArray:mlHmcDivide:residual', ...
+                        ['mlHmcDivide: autoUpdateh ended without reaching threshold.\n' ...
+                        '  Final relative residual norm=%e (threshold: %e).'], ...
+                        residual.resrelnorm, optarg.thresholdResidual)
+                end
+
                 if optarg.verbose
                     fprintf('mlHmcDivide: solved for h=%d, relative residual=%e, tol=%e\n', ...
                         (size(r.value,3)-1)/2, residual.resrelnorm,optarg.thresholdResidual)
@@ -1093,23 +1100,27 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %
         %   Name-Value arguments (forwarded to mlHmcDivide):
         %       "h"                - Harmonic truncation. Default: max(A.h, B.h)
-        %       "thresholdResidual"- Convergence threshold for residual norm. Default: 1e-6
+        %       "thresholdResidual"- Convergence threshold for residual norm. Default: 5e-4
         %       "autoUpdateh"      - Adaptively increase h until convergence. Default: false
         %       "maxh"             - Hard upper bound on h when autoUpdateh=true. Default: h0*20
-        %       "stagnationWindow" - Look-back window for stagnation detection. Default: 5
-        %       "stagnationRatio"  - Min relative improvement to avoid stagnation flag. Default: 0.05
+        %       "stagnationWindow" - Look-back window for stagnation detection. Default: 15
+        %       "stagnationRatio"  - Min relative improvement to avoid stagnation flag. Default: 0.02
+        %       "updateMethod"     - h update rule: 'adaptive' | 'incremental'
+        %       "plotConvergence"  - Plot h/residual convergence diagnostics
         %       "verbose"          - Print convergence info. Default: 1
 
         arguments
             B PhasorArray
             A PhasorArray
             optarg.h                = []
-            optarg.thresholdResidual = 1e-6
+            optarg.thresholdResidual = 5e-4
             optarg.autoUpdateh      = false
             optarg.maxh             = []    % hard upper bound on h (default: h0 * 20)
             optarg.stagnationWindow = 15     % look-back window for stagnation detection
             optarg.stagnationRatio  = 0.02  % relative improvement threshold (< 5% = stagnation)
             optarg.verbose          = 1
+            optarg.updateMethod    {mustBeMember(optarg.updateMethod,{'adaptive','incremental'})} = 'adaptive'
+            optarg.plotConvergence  = false
         end
 
         C = namedargs2cell(optarg);
@@ -5057,6 +5068,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             stagnationRatio  = optarg.stagnationRatio;
             residual.res_history      = residual.resnorm;
             residual.resrel_history   = residual.resrelnorm;
+            residual.h_history        = h;
             res_best         = res;
             resnorm_best     = residual.resnorm;
             resrelnorm_best  = residual.resrelnorm;
@@ -5067,6 +5079,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 residual.phasor  = res.d(T) + o1*res + res*o2 + o3;
                 residual.resnorm = norm(residual.phasor.value, 'fro');
                 residual.resrelnorm = residual.resnorm / (Bnorm + eps);
+                
 
                 % Keep best solution regardless of monotonicity
                 if residual.resnorm < resnorm_best
@@ -5076,6 +5089,9 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 end
 
                 residual.res_history(end+1) = residual.resnorm; %#ok<AGROW>
+                residual.resrel_history(end+1) = residual.resrelnorm; %#ok<AGROW>
+                residual.h_history(end+1) = h; %#ok<AGROW>
+
 
                 % Stagnation check over sliding window
                 if numel(residual.res_history) >= stagnationWindow

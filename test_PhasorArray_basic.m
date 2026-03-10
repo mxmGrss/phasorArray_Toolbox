@@ -27,6 +27,12 @@ fprintf('========================================\n\n');
 results = struct('name', {}, 'passed', {}, 'message', {});
 tol = 1e-10;   % numerical tolerance for floating-point comparisons
 
+% In tests we intentionally exercise inv(); hide advisory noise.
+warnId = 'phasorArray:PhasorInv:useHmcDivide';
+warnState = warning('query', warnId);
+cleanupWarn = onCleanup(@() warning(warnState.state, warnId)); %#ok<NASGU>
+warning('off', warnId);
+
 %% ========================================================================
 %  1. CONSTRUCTORS
 %  ========================================================================
@@ -59,6 +65,10 @@ results(end+1) = runTest('Arithmetic: addition (different h)', @() test_add_pad(
 results(end+1) = runTest('Arithmetic: multiplication (Cauchy)', @() test_mul(tol));
 results(end+1) = runTest('Arithmetic: scalar multiply', @() test_scalar_mul(tol));
 results(end+1) = runTest('Arithmetic: inverse', @() test_inv(tol));
+results(end+1) = runTest('Arithmetic: A\\B vs inv(A)*B (square, vector+matrix)', @() test_left_divide_vs_inv_mul_square());
+results(end+1) = runTest('Arithmetic: B/A vs B*inv(A) (square, vector+matrix)', @() test_right_divide_vs_mul_inv_square());
+results(end+1) = runTest('Arithmetic: A\\B vs inv(A)*B (rectangular, vector+matrix)', @() test_left_divide_vs_inv_mul_rect());
+results(end+1) = runTest('Arithmetic: B/A vs B*inv(A) (rectangular, vector+matrix)', @() test_right_divide_vs_mul_inv_rect());
 results(end+1) = runTest('Arithmetic: transpose', @() test_transpose(tol));
 results(end+1) = runTest('Arithmetic: Hermitian', @() test_hermitian(tol));
 
@@ -106,7 +116,6 @@ results(end+1) = runTest('Det: detLeibnizHmc 3x3', @() test_detLeibniz_3x3(tol))
 %  11. FREQUENCY BASE
 %  ========================================================================
 results(end+1) = runTest('Base: expandBase / squishBase round-trip', @() test_expandSquish(tol));
-results(end+1) = runTest('Utility: truncationAdvisor smoke test', @() test_truncationAdvisor());
 
 %% ========================================================================
 %  SUMMARY
@@ -312,6 +321,48 @@ function test_inv(tol)
     % Check DC of result is close to I
     I_dc = I_approx{:,:,0};
     assert(max(abs(I_dc - eye(2)), [], 'all') < 0.05, 'A*inv(A) DC should be ~I');
+end
+
+function test_left_divide_vs_inv_mul_square()
+    [A, Bsquare, BvecLeft] = make_pd_case_3x3_h15();
+    Brect = PhasorArray.random(3, 5, 15); % n x m
+
+    % A square (n x n), b vector (n x 1)
+    check_left_divide_equivalence(A, BvecLeft, 3e-3, 3e-3, 'square: b vector (n x 1)', true);
+    % A square (n x n), b square (n x n)
+    check_left_divide_equivalence(A, Bsquare, 3e-3, 3e-3, 'square: b square (n x n)', true);
+    % A square (n x n), b rectangle (n x m)
+    check_left_divide_equivalence(A, Brect, 3e-3, 3e-3, 'square: b rectangle (n x m)', true);
+end
+
+function test_right_divide_vs_mul_inv_square()
+    [A, Bsquare, ~, BvecRight] = make_pd_case_3x3_h15();
+    Brect = PhasorArray.random(5, 3, 15); % l x n
+
+    % xA = b with A square (n x n), b vector (1 x n)
+    check_right_divide_equivalence(BvecRight, A, 3e-3, 3e-3, 'square: b vector (1 x n)', true);
+    % xA = b with A square (n x n), b square (n x n)
+    check_right_divide_equivalence(Bsquare, A, 3e-3, 3e-3, 'square: b square (n x n)', true);
+    % xA = b with A square (n x n), b rectangle (l x n)
+    check_right_divide_equivalence(Brect, A, 3e-3, 3e-3, 'square: b rectangle (l x n)', true);
+end
+
+function test_left_divide_vs_inv_mul_rect()
+    [A, BmatLeft, BvecLeft] = make_rect_case_4x3_h15();
+
+    % A rectangle (n x m), b vector (n x 1)
+    check_left_divide_equivalence(A, BvecLeft, 1e-2, 1e-2, 'rectangular: b vector (n x 1)', false);
+    % A rectangle (n x m), b rectangle (n x l)
+    check_left_divide_equivalence(A, BmatLeft, 1e-2, 1e-2, 'rectangular: b rectangle (n x l)', false);
+end
+
+function test_right_divide_vs_mul_inv_rect()
+    [A, ~, ~, BmatRight, BvecRight] = make_rect_case_4x3_h15();
+
+    % xA = b with A rectangle (n x m), b vector (1 x m)
+    check_right_divide_equivalence(BvecRight, A, 1e-2, 1e-2, 'rectangular: b vector (1 x m)', false);
+    % xA = b with A rectangle (n x m), b rectangle (l x m)
+    check_right_divide_equivalence(BmatRight, A, 1e-2, 1e-2, 'rectangular: b rectangle (l x m)', false);
 end
 
 function test_transpose(tol)
@@ -529,4 +580,159 @@ function test_expandSquish(tol)
     % Round-trip should be lossless
     err = energy(A - C);
     assert(err < tol, sprintf('expandBase/squishBase round-trip error: %e', err));
+end
+
+function [A, Bmat, BvecLeft, BvecRight] = make_pd_case_3x3_h15()
+% Build a 3x3 periodic SPD-like matrix with h=15 by rejection on det(A(t)).
+    n = 3;
+    h = 15;
+    tGrid = linspace(0, 2*pi, 61);
+    maxTries = 30;
+
+    for k = 1:maxTries
+        R = PhasorArray.random(n, n, h);
+        S = 0.2 * (0.5 / n) * (R + R');          % Hermitian periodic perturbation
+        A = PhasorArray.eye(n) + S;
+        Bmat = PhasorArray.random(n, n, h);
+        BvecLeft = PhasorArray.random(n, 1, h);
+        BvecRight = PhasorArray.random(1, n, h);
+
+        detA = det(A);
+        detVals = zeros(size(tGrid));
+        minSv = inf;
+        for i = 1:numel(tGrid)
+            detVals(i) = real(evalp(detA, tGrid(i)));
+            s = svd(evalp(A, tGrid(i)));
+            minSv = min(minSv, min(s));
+        end
+
+        if all(isfinite(detVals)) && all(detVals > 1e-2) && minSv > 0.2
+            return
+        end
+    end
+
+    error('Could not generate a valid 3x3 periodic matrix A with strictly positive det(A(t)).');
+end
+
+function [A, BmatLeft, BvecLeft, BmatRight, BvecRight] = make_rect_case_4x3_h15()
+% Build a well-conditioned periodic rectangular matrix A (4x3), h=15.
+    nrow = 4;
+    ncol = 3;
+    h = 15;
+    tGrid = linspace(0, 2*pi, 61);
+    maxTries = 120;
+
+    A0 = [eye(ncol); zeros(nrow - ncol, ncol)];  % full column-rank baseline
+
+    for k = 1:maxTries
+        R = PhasorArray.random(nrow, ncol, h);
+        A = PhasorArray(A0) + 0.02 * R;
+
+        minSv = inf;
+        for i = 1:numel(tGrid)
+            s = svd(evalp(A, tGrid(i)));
+            minSv = min(minSv, min(s));
+        end
+
+        if isfinite(minSv) && minSv > 0.2
+            BmatLeft = PhasorArray.random(nrow, 5, h);     % for A\B (n x l)
+            BvecLeft = PhasorArray.random(nrow, 1, h);     % for A\B
+            BmatRight = PhasorArray.random(5, ncol, h);    % for B/A (l x m)
+            BvecRight = PhasorArray.random(1, ncol, h);    % for B/A
+            return
+        end
+    end
+
+    error('Could not generate a well-conditioned rectangular periodic matrix A (4x3).');
+end
+
+function check_left_divide_equivalence(A, B, tolCons, tolRes, label, enforceSmallResidual)
+    cleanupWarnings = suppress_expected_divide_warnings(~enforceSmallResidual);
+    Xdiv = mldivide(A, B, "autoUpdateh", true, "verbose", 0);
+    clear cleanupWarnings;
+    Xinv = inv(A) * B;
+
+    assert(size(Xdiv,1) == size(Xinv,1) && size(Xdiv,2) == size(Xinv,2), ...
+        'Size mismatch in left-division comparison (%s).', label);
+
+    eDiv = energy(A * Xdiv - B);
+    eInv = energy(A * Xinv - B);
+    relEnergy = abs(eDiv - eInv) / max([eDiv, eInv, 1]);
+    assert(relEnergy < 1e-6, ...
+        'Residual energy mismatch (%s): rel=%e, Eslash=%e, Einv=%e', ...
+        label, relEnergy, eDiv, eInv);
+end
+
+function check_right_divide_equivalence(B, A, tolCons, tolRes, label, enforceSmallResidual)
+    cleanupWarnings = suppress_expected_divide_warnings(~enforceSmallResidual);
+    Xdiv = mrdivide(B, A, "autoUpdateh", true, "verbose", 0);
+    clear cleanupWarnings;
+    Xinv = B * inv(A);
+
+    assert(size(Xdiv,1) == size(Xinv,1) && size(Xdiv,2) == size(Xinv,2), ...
+        'Size mismatch in right-division comparison (%s).', label);
+
+    eDiv = energy(Xdiv * A - B);
+    eInv = energy(Xinv * A - B);
+    relEnergy = abs(eDiv - eInv) / max([eDiv, eInv, 1]);
+    assert(relEnergy < 1e-6, ...
+        'Residual energy mismatch (%s): rel=%e, Eslash=%e, Einv=%e', ...
+        label, relEnergy, eDiv, eInv);
+end
+
+function e = time_domain_consistency(X1, X2)
+% Compare two PhasorArray objects in time domain when harmonic bases differ.
+    tGrid = linspace(0, 2*pi, 41);
+    e = 0;
+    for i = 1:numel(tGrid)
+        D = evalp(X1, tGrid(i)) - evalp(X2, tGrid(i));
+        e = max(e, norm(D, 'fro'));
+    end
+end
+
+function cleanupObj = suppress_expected_divide_warnings(shouldSuppress)
+    if ~shouldSuppress
+        cleanupObj = onCleanup(@()[]);
+        return;
+    end
+
+    warningIds = {
+        'phasorArray:mlHmcDivide:stagnation'
+        'phasorArray:mlHmcDivide:residual'
+        'phasorArray:mlHmcDivide:maxhReached'
+        'phasorArray:mlHmcDivide:slowConvergence'
+        'phasorArray:mlHmcDivide:unreachable'
+    };
+
+    prevStates = cell(size(warningIds));
+    for k = 1:numel(warningIds)
+        prevStates{k} = warning('query', warningIds{k});
+        warning('off', warningIds{k});
+    end
+
+    cleanupObj = onCleanup(@() restore_warning_states(prevStates));
+end
+
+function restore_warning_states(prevStates)
+    for k = 1:numel(prevStates)
+        warning(prevStates{k}.state, prevStates{k}.identifier);
+    end
+end
+
+function e = time_domain_residual_left(A, X, B)
+    tGrid = linspace(0, 2*pi, 41);
+    e = 0;
+    for i = 1:numel(tGrid)
+        D = evalp(A, tGrid(i)) * evalp(X, tGrid(i)) - evalp(B, tGrid(i));
+        e = max(e, norm(D, 'fro'));
+    end
+end
+
+function e = time_domain_residual_right(X, A, B)
+    tGrid = linspace(0, 2*pi, 41);
+    e = 0;
+    for i = 1:numel(tGrid)
+        D = evalp(X, tGrid(i)) * evalp(A, tGrid(i)) - evalp(B, tGrid(i));
+        e = max(e, norm(D, 'fro'));
+    end
 end

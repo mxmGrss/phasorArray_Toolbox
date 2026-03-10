@@ -13,26 +13,34 @@ function [outM] = PR_In(A,nxB,h)
 %    used
 %
 
+if isscalar(h)
+    hOut = h;
+    hIn = h;
+else
+    hOut = h(1);
+    hIn = h(2);
+end
+
 if isa(A,'PhasorArray')
     A=A.Value;
-    A=sparray2TBlocks(A,2*h);
+    A=sparray2TBlocks(A,[hOut,hIn]);
 end
 
 if ndims(A)==3
-    A=sparray2TBlocks(A,2*h);
+    A=sparray2TBlocks(A,[hOut,hIn]);
 end
 
-nxA=size(A,1)/(2*h+1);
-nyA=size(A,2)/(2*h+1);
+nxA=size(A,1)/(2*hOut+1);
+nyA=size(A,2)/(2*hIn+1);
 % outM = sparse(size(A).*[nxB nxB]);
 outM = spalloc(size(A,1)*nxB,size(A,2)*nxB,numel(A)*nxB);
 nyB=nxB;
-xM=nxB*(2*h+1);
-yM=nyB*(2*h+1);
+xM=nxB*(2*hOut+1);
+yM=nyB*(2*hIn+1);
 
 for nxii=1:nxA
     for nyjj=1:nyA
-        BlocijA = A(((nxii-1)*(2*h+1))+(1:(2*h+1)),((nyjj-1)*(2*h+1))+(1:(2*h+1)));
+        BlocijA = A(((nxii-1)*(2*hOut+1))+(1:(2*hOut+1)),((nyjj-1)*(2*hIn+1))+(1:(2*hIn+1)));
         tmp = repmat({BlocijA},nxB,1);
         dB = blkdiag(tmp{:});
         outM((nxii-1)*xM+(1:xM),(nyjj-1)*yM+(1:yM))=dB;

@@ -116,3 +116,13 @@ current_config_fast_reboot.mat
 .agent_work/
 testCOne.m
 REVIEWER_ACTION_PLAN.md
+
+# Generic local MATLAB/Simulink scratch artifacts
+*.asv
+*.autosave
+*.slxc
+slprj/
+untitled*.mlx
+untitled*.slx.autosave
+current_config_fast_reboot.mat
+scratch/local_tests/

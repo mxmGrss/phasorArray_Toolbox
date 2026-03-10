@@ -71,6 +71,7 @@ arguments
     varg.autoTrunc = false
     varg.verbose = false
     varg.evalInv = false
+    varg.warnOnUseHmcDivide (1,1) logical = true
 end
 
 if isa(Aph,'PhasorArray')
@@ -108,7 +109,7 @@ t=0:T/n:nT*T-T/n;
 % For a solution optimised in the harmonic domain (best L2 approximation for a
 % prescribed number of harmonics in X), use mlHmcDivide or mrHmcDivide explicitly.
 % Suppress this warning with: warning('off','phasorArray:PhasorInv:useHmcDivide')
-if hA > 0 && size(Aph, 1) > 1
+if varg.warnOnUseHmcDivide && hA > 0 && size(Aph, 1) > 1
     warning('phasorArray:PhasorInv:useHmcDivide', ...
         ['PhasorInv: pointwise time-domain inversion on a grid of %d points.\n' ...
         '  Result is exact at the N samples; behaviour between grid points is unknown.\n' ...

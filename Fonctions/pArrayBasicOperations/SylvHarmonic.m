@@ -1,73 +1,99 @@
 function [Xph,M,M1,M2,colQ,colX] = SylvHarmonic(Ahmad, Bhmad, Chmad, h, omega)
-% SYLVHARMONIC Solve Harmonic Sylvester Equations.
+% SYLVHARMONIC Solve harmonic Sylvester equations.
 %
 %   X = SylvHarmonic(Ahmad, Bhmad, Chmad, h, omega) solves:
-%       (Ahmad + Nh) * X + X * Bhmad + Chmad = 0
-%
-%   This matches the internal logic of the legacy Sylv_harmonique.m.
+%       dX/dt + Ahmad*X + X*Bhmad + Chmad = 0
 %
 %   Inputs:
 %       - Ahmad, Bhmad, Chmad: 3D arrays of harmonic components.
-%       - h: Harmonic truncation order.
-%       - omega: Fundamental frequency.
+%       - h: Harmonic truncation order for unknown X (hIn).
+%       - omega: Fundamental pulsation.
 
     arguments
         Ahmad
         Bhmad
         Chmad
         h (1,1) double {mustBeInteger, mustBeNonnegative}
-        omega (1,1) 
+        omega (1,1)
     end
 
-    % 1. Extract raw values from PhasorArray objects (Bug fix: do this for all inputs)
-    % This ensures all matrix operations (permute, reshape, cat) happen on double arrays.
+    % Extract raw values from PhasorArray objects if needed.
     Ahm = Ahmad; if isa(Ahm, 'PhasorArray'), Ahm = Ahm.value; end
     Bhm = Bhmad; if isa(Bhm, 'PhasorArray'), Bhm = Bhm.value; end
     Chm = Chmad; if isa(Chm, 'PhasorArray'), Chm = Chm.value; end
 
-    % 2. Get dimensions and handle harmonic orders
+    % Harmonic orders of inputs.
     hA = (size(Ahm, 3) - 1) / 2;
     hB = (size(Bhm, 3) - 1) / 2;
     hC = (size(Chm, 3) - 1) / 2;
 
-    % Ensure h is at least max(hA, hB, hC) if not specified (though h is required here)
+    % Backward compatibility: requested h must at least represent C.
     if h < hC
         h = hC;
     end
 
-    % 1. Convert to Tensor-Block representations (Corrected DEFINITION)
-    A_tb = array2TBlocks(Ahm, h);
-    B_tb = array2TBlocks(Bhm, h);
+    % Rectangular truncation: unknown on hIn, equations enforced on hOut.
+    hIn = h;
+    hOut = max([hIn + hA, hIn + hB, hC]);
 
-    % 3. Pad Chm to target h using standard MATLAB concatenation (removes padarray dependency)
+    % Rectangular Toeplitz-Blocks for left/right multiplication operators.
+    A_tb = array2TBlocks(Ahm, [hOut, hIn]);
+    B_tb = array2TBlocks(Bhm, [hOut, hIn]);
+
     nxA = size(Ahm, 1);
     nxB = size(Bhm, 1);
-    if h > hC
-        padSize = h - hC;
+
+    % Pad/truncate C to equation order hOut.
+    if hOut > hC
+        padSize = hOut - hC;
         dQraw = cat(3, zeros(nxA, nxB, padSize), Chm, zeros(nxA, nxB, padSize));
-    elseif hC > h
-        dQraw = Chm(:, :, hC+1+(-h:h));
-    else % h == hC
+    elseif hC > hOut
+        dQraw = Chm(:, :, hC + 1 + (-hOut:hOut));
+    else
         dQraw = Chm;
     end
     dQraw = permute(dQraw, [3, 1, 2]);
     colQ = squeeze(reshape(dQraw, [], 1));
 
-    % 3. Build Operator Matrix M to match legacy: M = -M1 - M2 - N
-    % M1 = I ⊗ A_tb
+    % Build operator matrix M = -M1 - M2 - N with rectangular sizes.
     tmp = repmat({A_tb}, nxB, 1);
     M1 = sparse(blkdiag(tmp{:}));
-    
-    % M2 = B_tb' ⊗ I
-    M2 = sparse(PR_In(B_tb', nxA, h));
-    
-    % N = I_spatial ⊗ diag(jk*omega)
-    N_diag = 1i * (-h:h)' * omega;
-    N = kron(speye(nxA * nxB), sparse(diag(N_diag)));
-    
+
+    % Right-multiplication operator for vec convention used in this file.
+    % Keep exact legacy path for square truncation.
+    if hOut == hIn
+        M2 = sparse(PR_In(B_tb', nxA, hIn));
+    else
+        nRowBlock = 2*hOut + 1;
+        nColBlock = 2*hIn + 1;
+        nRows = nxA * nxB * nRowBlock;
+        nCols = nxA * nxB * nColBlock;
+        M2 = spalloc(nRows, nCols, nxA * nxB * nxB * nRowBlock * nColBlock);
+
+        for j = 1:nxB
+            for l = 1:nxB
+                Bij = reshape(Bhm(l,j,:), 1, 1, []);
+                Tlj = array2TBlocks(Bij, [hOut, hIn]);
+                for i = 1:nxA
+                    row0 = ((j-1)*nxA + (i-1)) * nRowBlock;
+                    col0 = ((l-1)*nxA + (i-1)) * nColBlock;
+                    M2(row0 + (1:nRowBlock), col0 + (1:nColBlock)) = ...
+                        M2(row0 + (1:nRowBlock), col0 + (1:nColBlock)) + Tlj;
+                end
+            end
+        end
+    end
+
+    % Derivative term: I_spatial kron D(hOut,hIn), where D maps X_k -> j*k*omega*X_k.
+    k = (-hIn:hIn).';
+    rowIdx = k + hOut + 1;
+    colIdx = k + hIn + 1;
+    Drect = sparse(rowIdx, colIdx, 1i * k * omega, 2*hOut + 1, 2*hIn + 1);
+    N = kron(speye(nxA * nxB), Drect);
+
     M = -M1 - M2 - N;
 
-    % 4. Solve and Reshape
+    % Least-squares solve of rectangular harmonic system.
     colX = (M \ colQ);
     dX = reshape(full(colX), [], nxA, nxB);
     Xph = permute(dX, [2, 3, 1]);
