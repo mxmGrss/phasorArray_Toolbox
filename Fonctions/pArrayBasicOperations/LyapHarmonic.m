@@ -22,7 +22,7 @@ function [Xph,M,M1,M2,colQ,colX] = LyapHarmonic(Ahm, Qhm, h, omega, options)
 
     if isempty(options.B)
         % Lyapunov Mode
-        A_tb = array2TBlocks(Ahm, 2*h);
+        A_tb = array2TBlocks(Ahm, h);
         nxA = size(Ahm, 1);
         
         % Nh = kron(I, diag(jk*omega))

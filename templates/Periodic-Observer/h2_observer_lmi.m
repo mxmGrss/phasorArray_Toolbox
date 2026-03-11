@@ -1,0 +1,73 @@
+% TEMPLATE-HEADER-BEGIN
+% This script is the source of truth for the wiki template.
+% Edit this file and run: python scripts/inject_templates.py
+% The tag <template/...> in the wiki will be replaced by this content.
+% TEMPLATE-HEADER-END HERE. Edit the wiki or regenerate.
+
+%% ── H₂ Observer (Periodic Kalman Filter) ────────────────────────────────
+%  dx/dt = A(t)x + w,    y = C(t)x + v,    e = x - x̂
+%  w ~ N(0, W(t)),       v ~ N(0, V(t))
+
+%% 0. Problem data
+nx = 3;  ny = 2;  ha = 3;
+T = 0.5;
+
+rng(42);
+A = PhasorArray(-5*eye(nx)) + PhasorArray.random(nx, nx, ha)*0.1; % strictly stable open-loop for illustration
+C = PhasorArray.random(ny, nx, ha);
+
+% Process and measurement noise covariances
+W = PhasorArray(0.1 * eye(nx));    
+V = PhasorArray(eye(ny));          
+
+hP = 6;  h = 6;
+
+%% 1. Decision variables 
+% Find P(t) minimizing trace(P) subject to Riccati inequality
+P  = PhasorArray.ndsdpvar(nx, nx, hP, 'PhasorType', 'symmetric', 'real', true);
+
+PT = P.T_tb(h);
+N  = N_tb(nx, h, T);
+
+%% 2. Periodic Riccati LMI for observer
+% A P + P A' - P C' V^-1 C P - dP/dt + W < 0
+% Schur complement:
+% [ A P + P A' - dP/dt + W,  P C' ]
+% [          C P          ,   V   ] >= 0
+
+AP   = T_tb((A * P + P * A'),h);     
+Pdot = N * PT - PT * N;              % lifted d/dt P(t) properly with N*P - P*N
+PC   = T_tb((P * C'),h);             
+WT   = W.T_tb(h);
+VT   = V.T_tb(h);
+
+F11 = AP - Pdot + WT;
+F12 = PC;
+
+LMI_tb = [F11,  F12; 
+          F12', VT];
+LMI_tb = 0.5 * (LMI_tb + LMI_tb'); % Enforce exact symmetry numerically
+
+F = [ PT >= 0 ];
+F = [ F, LMI_tb >= 1e-6*eye(size(LMI_tb)) ];
+
+%% 4. Solve
+% Minimize the mean variance Trace(P_0)
+obj = trace(P{:,:,0});
+sol = optimize(F, obj, sdpsettings('solver', 'mosek', 'verbose', 1));
+
+%% 5. Extract observer gain: L = P C' V⁻¹
+if sol.problem == 0
+    PP = PhasorArray(value(P.value));
+    
+    % Gain calculation (V should be invertible)
+    L  = (PP * C.') / V;
+    L = L.reduce('reduceMethod', 'relative', 'reduceThreshold', 1e-4);
+
+    fprintf('Observer variance (Trace P): %.6f\n', value(obj));
+    figure; stem(L); sgtitle('Observer gain L(\theta)');
+    figure; plot(HmqNEig(A - L*C, h, T), 'o'); title('H₂-optimal observer eig');
+    figure; lsim(A - L*C, 4, [], T);           title('Observer error dynamics');
+else
+    warning('H₂ observer LMI infeasible: %s', sol.info);
+end

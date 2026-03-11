@@ -20,6 +20,7 @@ arguments (Input)
     options.htrunc = []
     options.autoUpdateh logical = false
     options.residualThreshold = 1e-6
+    options.relChangeThreshold = 1e-3
     options.hmax = inf
 end
 
@@ -67,10 +68,14 @@ for kk = 1:max_iter
     % Solve Lyapunov: Ak’*S + S*Ak + (Yk+Q) + dot(S) = 0
     
     warning('off','phasorArray:lyap:residual')
-    [S{kk},res] = lyap(Ak{kk},Yk{kk}+Q,"T",T,"h",htrunc);
-    while res.resnorm >residualThreshold && autoUpdateh && htrunc<options.hmax
+    [S{kk},res] = lyap(reduce(Ak{kk},'reduceMethod','relative','reduceThreshold',1e-12,'exclude0Phasor',false), ...
+        reduce(Yk{kk}+Q,'reduceMethod','relative','reduceThreshold',1e-12,'exclude0Phasor',false), ...
+        "T",T,"h",htrunc);
+    while res.resrelnorm >residualThreshold && autoUpdateh && htrunc<options.hmax
         htrunc = htrunc+1;
-        [S{kk},res] = lyap(Ak{kk},Yk{kk}+Q,"T",T,"h",htrunc);
+        [S{kk},res] = lyap(reduce(Ak{kk},'reduceMethod','relative','reduceThreshold',1e-12,'exclude0Phasor',false), ...
+        reduce(Yk{kk}+Q,'reduceMethod','relative','reduceThreshold',1e-12,'exclude0Phasor',false), ...
+        "T",T,"h",htrunc);
     end
     % M = kron(eye(2), Ak{kk}.' ) + kron(Ak{kk}.' , eye(2));
     % Ss = (-M * T_tb(htrunc) - N_tb(M, htrunc, T)) \ (F_tb(vec(Yk{kk} + Q), htrunc));
@@ -84,8 +89,10 @@ for kk = 1:max_iter
 
     % Check convergence
     if kk > 1
+        riccati_residual = d(S{kk}, T) + A.' * S{kk} + S{kk} * A - S{kk} * B * Rinv * B.' * S{kk} + Q;
+        resRicnorm=norm(value(riccati_residual), 'fro');
         rel_change = norm(value(S{kk} - S{kk-1}), 'fro') / norm(value(S{kk}), 'fro');
-        if rel_change < 1e-8
+        if rel_change < options.relChangeThreshold || residualThreshold> resRicnorm
             fprintf('Converged at iteration %d\n', kk);
             break;
         end
@@ -99,6 +106,6 @@ K_final = Kk{kk};
 
 
 % Verify Riccati equation
-riccati_residual = d(S{kk}, T) + A.' * S{kk} + S{kk} * A - S{kk} * B * Rinv * B.' * S{kk} + Q;
-fprintf('Riccati residual norm: %.2e\n', norm(value(riccati_residual), 'fro'));
+
+fprintf('Riccati residual norm: %.2e\n', resRicnorm);
 end

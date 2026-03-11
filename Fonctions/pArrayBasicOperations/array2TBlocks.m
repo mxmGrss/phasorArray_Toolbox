@@ -39,7 +39,9 @@ function [OutM, N] = array2TBlocks(Aph, m, varg)
     end
 
     % Get input dimensions
-    [n1, n2, nh_len] = size(Aph);
+    [n1] = size(Aph,1);
+    [n2] = size(Aph,2);
+    [ nh_len] = size(Aph,3);
     nh_in = (nh_len - 1) / 2;
 
     % Resolve output orders [h1, h2]

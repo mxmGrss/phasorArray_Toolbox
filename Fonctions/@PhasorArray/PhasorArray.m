@@ -860,6 +860,51 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 optarg.plotConvergence  = false
             end
 
+            % === Guard 1: A is a constant scalar (h=0, 1×1) ===
+            % A(t) = a (constant) => X = B / a (element-wise scaling)
+            if isscalar(A) && A.h == 0
+                scalarVal = A{1,1,0};
+                if scalarVal == 0
+                    error('phasorArray:mlHmcDivide:singularScalar', ...
+                          'Division by zero scalar.');
+                end
+                r = PhasorArray(B.value / scalarVal);
+                residual.phasor     = PhasorArray.zeros(size(B,1), size(B,2));
+                residual.resnorm    = 0;
+                residual.resrelnorm = 0;
+                return
+            end
+
+            % === Guard 2: A is a 1×1 periodic PhasorArray, B is matrix ===
+            % a(t)*X(t) = B(t) => solve n*m independent scalar problems
+            if isscalar(A) && ~isscalar(B)
+                [nB, mB] = size(B, [1 2]);
+                r = PhasorArray(nB, mB);          % empty shell, h=0
+                worst_resrel = 0;
+                for ii = 1:nB
+                    for jj = 1:mB
+                        bij = B{ii, jj};          % scalar PhasorArray (variable h)
+                        C = namedargs2cell(optarg);
+                        [xij, res_ij] = mlHmcDivide(A, bij, C{:});
+                        r{ii, jj} = xij;          % braceAssign handles h-padding
+                        worst_resrel = max(worst_resrel, res_ij.resrelnorm);
+                    end
+                end
+                residual.phasor     = A * r - B;
+                residual.resnorm    = norm(residual.phasor.value,'fro');
+                residual.resrelnorm = residual.resnorm/norm(B.value,'fro');
+                return
+            end
+
+            % === Guard 3: matrix A, scalar B => ill-defined ===
+            % Matches MATLAB behavior: a\b with a matrix, b scalar errors.
+            if ~isscalar(A) && isscalar(B)
+                error('phasorArray:mlHmcDivide:underdetermined', ...
+                      ['A\\B with matrix A (%d×%d) and scalar B is ill-defined. ' ...
+                       'Use A\\(eye(%d)*B) to broadcast B to an identity-scaled matrix.'], ...
+                      size(A,1), size(A,2), size(A,1));
+            end
+
             if isempty(optarg.h)
                 optarg.h = max(A.h, B.h) + A.h;
             end
