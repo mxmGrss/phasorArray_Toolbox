@@ -126,3 +126,5 @@ untitled*.mlx
 untitled*.slx.autosave
 current_config_fast_reboot.mat
 scratch/local_tests/
+/scratch
+/templates_old_2026-03-10

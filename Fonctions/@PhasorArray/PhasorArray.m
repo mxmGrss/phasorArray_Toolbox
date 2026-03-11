@@ -3536,7 +3536,9 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         for n_iter = 2:n
             oi = o1{n_iter};
             ni = mod(n_iter - 1, nmarker) + 1;   % 1-based cyclic index
-            stemPhasor(oi, scale=varopt.scale, hold=true, explosed=varopt.explosed, marker=varopt.marker{ni}, display=varopt.display, parent=T, uniformYLim=varopt.uniformYLim);
+            hold on
+            stemPhasor(oi, scale=varopt.scale, hold=true, explosed=varopt.explosed, ...
+                marker=varopt.marker{ni}, display=varopt.display, parent=gca, uniformYLim=varopt.uniformYLim);
         end
         hold off
         if varhold
