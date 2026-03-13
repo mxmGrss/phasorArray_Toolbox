@@ -3195,6 +3195,75 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
 
         end
     end
+
+    function [true_mu, true_l, stats, ev_m, ev_l] = findTrueFloquet(o1, T, varg)
+        % FINDTRUEFLOQUET Retrieve true Floquet exponents and multipliers with convergence tracking.
+        %
+        %   [true_mu, true_l, stats] = FINDTRUEFLOQUET(o1, T) computes the 
+        %   Floquet exponents (true_mu) and multipliers (true_l) for the
+        %   PhasorArray `o1` with period `T`, iteratively increasing the 
+        %   harmonic truncation order until the trace residual converges.
+        %
+        %   SYNTAX:
+        %       [true_mu, true_l, stats] = findTrueFloquet(o1, T)
+        %       [true_mu, true_l, stats, ev_m, ev_l] = findTrueFloquet(o1, T, 'hinit', h, ...)
+        %
+        %   INPUTS:
+        %       o1       - (PhasorArray) Periodic matrix object.
+        %       T        - (double) Period of the system. Default: 2*pi.
+        %       varg     - Name-Value arguments:
+        %           'hinit' (int)             : Initial harmonic truncation. Default: o1.h.
+        %           'hmax' (int)              : Maximum harmonic truncation. Default: 10*o1.h.
+        %           'thresholdResidual' (double): Convergence threshold for the trace check. Default: 1e-3.
+        %
+        %   OUTPUTS:
+        %       true_mu  - (vector) Recovered true Floquet exponents (N elements).
+        %       true_l   - (vector) Recovered true Floquet multipliers (exp(T*mu)).
+        %       stats    - (struct) Convergence statistics:
+        %           .hhistory : History of truncation orders used.
+        %           .resTrace : History of relative trace residuals.
+        %       ev_m     - (vector) All HSS eigenvalues (exponents).
+        %       ev_l     - (vector) All HSS multipliers.
+        %
+        %   See also: findTruelm, HmqNEig.
+
+        arguments
+            o1
+            T = 2*pi
+            varg.hinit = o1.h
+            varg.hmax  = o1.h*10
+            varg.thresholdResidual = 1e-3;
+        end
+        
+        nx = o1.size(1);
+        assert(o1.size(1) == o1.size(2), 'PhasorArray must be square for eigenvalue analysis.');
+        
+        % Initial computation
+        ev_m = o1.HmqNEig(varg.hinit, T);
+        ev_l = exp(T * ev_m);
+        [true_mu, true_l, stats] = findTruelm(ev_m, T, nx);
+        
+        % Relative trace residual check: |(sum(mu) - tr(A0)) / tr(A0)|
+        % Convergence check based on Hill's determinant trace property.
+        his.resTrace(1) = abs((sum(true_mu) - trace(o1.phas(0)))) / abs(trace(o1.phas(0)));
+        h = varg.hinit;
+        his.history(1) = h;
+        
+        % Iterative refinement
+        while h < varg.hmax && abs(his.resTrace(end)) > varg.thresholdResidual
+            h = h + 1;
+            ev_m = o1.HmqNEig(h, T);
+            ev_l = exp(T * ev_m);
+            [true_mu, true_l, stats] = findTruelm(ev_m, T, nx);
+            
+            his.resTrace(end+1) = abs((sum(true_mu) - trace(o1.phas(0)))) / abs(trace(o1.phas(0)));
+            his.history(end+1) = h; % OKAGROW
+        end
+        
+        stats.hhistory = his.history;
+        stats.resTrace = his.resTrace;
+    end
+
     function r= HmqEig(o1,h)
         % HMQEIG Compute the eigenvalues of the Toeplitz Block (TB) matrix of A(t).
         %
@@ -5650,12 +5719,15 @@ methods (Static, Access=public)
         At = cat(3, At{:});
 
         AtT = func( T);
+        
+        %Redacted : function can be periodic and discontinuous, so first
+        %test is meaningleass
 
         %evaluate the jump between the last and first value
-        if norm(At(:,:,end)-At(:,:,1),'fro')>1e-10
-            warning('The function has discontinuities, or a steep derivative at the end, or has a jump between the last and first value, the result may be incorrect. Increase sampling (m value). Jump value is %d (froebenius norm of f(T-dt)-f(0))',norm(At(:,:,end)-At(:,:,1),'fro'));
-        end
-
+        % if norm(At(:,:,end)-At(:,:,1),'fro')>1e-10
+        %     warning('The function has discontinuities, or a steep derivative at the end, or has a jump between the last and first value, the result may be incorrect. Increase sampling (m value). Jump value is %d (froebenius norm of f(T-dt)-f(0))',norm(At(:,:,end)-At(:,:,1),'fro'));
+        % end
+        % 
         if norm(At(:,:,1)-AtT,'fro')>1e-10
             warning('A(T) is different from A(0), the result may be incorrect A doesnt Appear to be T periodic. Jump value is %d (froebenius norm of f(T)-f(0)), resulting phasorArray is a periodic function with jump at time T',norm(At(:,:,1)-AtT,'fro'));
         end

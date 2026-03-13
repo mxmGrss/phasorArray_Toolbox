@@ -933,7 +933,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
         end
 
 
-        function sys = toLTVss(obj)
+        function sys = toLTVss(obj,verbose)
             %TOLTVSS Convert the PhasorSS object to an LTV state-space system
             %   sys = TOLTVSS(obj) converts the PhasorSS object to a Linear Time-Varying (LTV) state-space system.
             %
@@ -950,9 +950,12 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             if isempty(obj.T)
                 error('phasorSS:noT','Using TOLTVSS : Period T is empty, set a value to use the system as LTV')
             end
+            if nargin <2
+                verbose = false;
+            end
 
             if obj.isReal
-                disp('Real valued LTP ss')
+                if verbose; disp('Real valued LTP ss');end
                 Acs = obj.A.SinCosForm();
                 Bcs = obj.B.SinCosForm();
                 Ccs = obj.C.SinCosForm();
