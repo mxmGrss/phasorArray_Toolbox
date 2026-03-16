@@ -1,244 +1,119 @@
 # PhasorArray Toolbox — Requirements
 
-## Summary
+## Overview
 
-The PhasorArray Toolbox is designed to work on a **wide range of MATLAB versions** with graceful degradation when optional features or toolboxes are not available.
+The PhasorArray Toolbox is designed to operate across a broad range of MATLAB versions, providing core functionality natively and utilizing optional toolboxes for extended capabilities.
 
-| Requirement | Status | Version/Details | Notes |
-|:---|:---:|:---|:---|
-| **MATLAB** | **Required** | **R2021b+** | Core engine; older versions may work with reduced functionality |
-| **Control System Toolbox** | Optional | Any recent | Only for `PhasorSS.toLPVss()` / `toLTVss()` methods |
-| **Symbolic Math Toolbox** | Optional | Any recent | Only for symbolic PhasorArrays (`PhasorArray.sym()`) |
-| **YALMIP** | Optional | Latest | For LMI-based control (`ndsdpvar`, Toeplitz-Block LMIs) |
-| **MOSEK** (or other SDP solver) | Optional | Compatible with YALMIP | For fast SDP solving; YALMIP can use others |
+| Dependency | Status | Version Requirements | Purpose |
+| :--- | :---: | :--- | :--- |
+| **MATLAB** | **Required** | **R2021b or later** | Core engine; foundational operations. |
+| **Control System Toolbox** | Optional | R2022b or later | Export to `lpvss` / `ltvss` native objects. |
+| **Symbolic Math Toolbox** | Optional | Any recent | Symbolic instantiation and derivation (`PhasorArray.sym()`). |
+| **YALMIP** | Optional | Latest | LMI-based synthesis (`ndsdpvar`, Toeplitz-Block LMIs). |
+| **MOSEK** / SDP Solver | Optional | Compatible with YALMIP | Fast numerical resolution of SDP problems. |
 
 ---
 
-## Core Functionality (R2021b+, MATLAB Only)
+## Core Capabilities (R2021b+, MATLAB Only)
 
-The **majority** of the toolbox requires **only base MATLAB** (R2021b or later) and **no additional toolboxes**.
+The foundations of the toolbox require base MATLAB (R2021b or later) with no additional dependencies.
 
-### What Works Without Add-Ons
+### Native Functionality
 
-- **PhasorArray Class**: Create, manipulate, and operate on periodic matrices.
-- **Arithmetic Operations**: Add, multiply, invert PhasorArrays (`+`, `*`, `\`, `/`, etc.).
-- **Time-Domain Evaluation**: `evalTime`, `evalp`, `initial`, `lsim`.
-- **Harmonic Domain Analysis**: Toeplitz formalism (`BT`, `TB`), Fourier operators (`F_tb`, `FvTB`).
-- **Eigenvalue Analysis**: Floquet exponents via `HmqNEig`.
-- **Solvers**: Harmonic Lyapunov (`lyap`), Riccati (`RicHarmonicKlein`), Sylvester (`sylvester`).
-- **Visualization**: `plot`, `stem`, `barsurf`, `spy` for Toeplitz structure.
-- **Examples**: Most scripts in `Exemples/` folder use only base MATLAB.
+- **PhasorArray Class**: Instantiation and manipulation of periodic matrices.
+- **Arithmetic Operations**: Matrix operations (`+`, `*`, `\`, `/`).
+- **Time-Domain Evaluation**: Methods such as `evalTime`, `evalp`, `initial`, `lsim`.
+- **Harmonic Domain Analysis**: Toeplitz formalisms (`BT`, `TB`), Fourier operators (`F_tb`, `FvTB`).
+- **Eigenvalue Analysis**: Computation of Floquet exponents via `HmqNEig`.
+- **Solvers**: Harmonic Lyapunov (`lyap`), Riccati (`RicHarmonicKlein`), and Sylvester (`sylvester`) resolutions.
+- **Visualization**: `plot`, `stem`, `barsurf`, and `spy` for structural analysis.
 
-### MATLAB Version-Specific Optimizations
+### Version-Specific Optimizations
 
-The toolbox automatically adapts to the MATLAB version:
+The computational backend adapts based on the available MATLAB release:
 
 #### R2022a+ (Recommended)
-
-- Uses `tensorprod()` for **fast harmonic convolution** in `PhasorArrayTimes.m` and `PhasorArray2time.m`.
-- ~10× speedup for large harmonic orders.
+- Utilizes `tensorprod()` for accelerated harmonic convolution in `PhasorArrayTimes.m` and `PhasorArray2time.m`.
+- Achieves significant performance improvements for large harmonic truncations.
 
 #### R2021b (Minimum Supported)
-
-- Falls back to **matrix-based convolution** (`PhasorArrayTimes2.m`).
-- Slower but fully functional.
-- **Automatic detection** via `isMATLABReleaseOlderThan("R2022a")`.
+- Defaults to matrix-based convolution (`PhasorArrayTimes2.m`).
+- Numerically equivalent but computationally slower. Automatically detected via `isMATLABReleaseOlderThan("R2022a")`.
 
 ---
 
-## Optional Toolboxes
+## Optional Dependencies
 
 ### 1. Control System Toolbox
 
 **Required For:**
-- `PhasorSS.toLPVss()` — Convert PhasorSS to `lpvss` object.
-- `PhasorSS.toLTVss()` — Convert PhasorSS to `ltvss` object.
+- Object conversion to MathWorks native formats (`PhasorSS.toLPVss()`, `PhasorSS.toLTVss()`).
 
-**Introduced In:** R2022b (for `lpvss` and `ltvss` classes).
-
-**Note:** If you don't need LPV/LTV conversion to MathWorks' native format, you can use:
-- Direct harmonic simulation with `PhasorSS.lsim()`.
-- Manual state-space construction and time-domain evaluation.
-
-**Without It:**
-- Calling `toLPVss()` or `toLTVss()` will throw an error:
-  ```matlab
-  Undefined function 'lpvss' for input arguments of type 'function_handle'.
-  ```
-
----
+**Notes:** Direct harmonic simulation via `PhasorSS.lsim()` or manual state-space evaluations remain functional without this toolbox. Invoking conversion methods without the toolbox will result in standard undefined function errors.
 
 ### 2. Symbolic Math Toolbox
 
 **Required For:**
-- `PhasorArray.sym(n, m, h, name)` — Create symbolic PhasorArrays.
-- Symbolic derivation and formal manipulation of periodic systems.
+- The creation and manipulation of symbolic elements (`PhasorArray.sym(n, m, h, name)`), facilitating formal derivation of periodic systems.
 
-**Test Coverage:**
-- `test_PhasorArray_advanced.m` includes symbolic tests (gracefully skipped if unavailable).
+**Notes:** Numerical workflows, encompassing the vast majority of applications, remain entirely unaffected by the absence of this toolbox.
 
-**Without It:**
-- Symbolic operations are disabled.
-- Numerical workflows (99% of use cases) work perfectly.
-
----
-
-### 3. ~~Signal Processing Toolbox~~ ✅ **No Longer Required**
-
-**Status:** ✅ **Eliminated as of March 2026**
-
-Previously, `padarray()` was used in a few internal functions. This has been replaced by a native `phasorPad()` implementation using only `cat()` and `zeros()`, which is:
-- Compatible with **all MATLAB versions** (R2021b+)
-- Compatible with **symbolic arrays** (`sym`)
-- Compatible with **YALMIP decision variables** (`sdpvar`, `ndsdpvar`)
-
-No action needed — this dependency has been removed.
-
----
-
-### 4. YALMIP
+### 3. YALMIP
 
 **Required For:**
-- `PhasorArray.ndsdpvar(n, m, h)` — Create periodic decision variables.
-- Toeplitz-Block LMI formulation for robust control.
-- Examples: `Exemple_Toolbox_LMI.m`, `SPMSM_template.m`.
+- Instantiating periodic decision variables (`PhasorArray.ndsdpvar(n, m, h)`).
+- Formulating Toeplitz-Block Linear Matrix Inequalities (LMIs) for robust control.
 
-**Installation:**
-```matlab
-% Download from GitHub
-% https://github.com/yalmip/YALMIP
-addpath(genpath('path/to/YALMIP'));
-savepath;
-```
+**Installation:** Available via the [YALMIP GitHub repository](https://github.com/yalmip/YALMIP). Ensure the path is integrated into the MATLAB environment.
 
-**Test Coverage:**
-- `test_PhasorArray_advanced.m` checks for YALMIP availability:
-  ```matlab
-  hasYALMIP = exist('sdpvar', 'file') == 2;
-  ```
+**Notes:** Direct algebraic solutions (Lyapunov, Riccati) remain functional in the absence of YALMIP.
 
-**Without It:**
-- LMI-based synthesis is unavailable.
-- Direct algorithms (Riccati, Lyapunov) still work.
-
----
-
-### 5. MOSEK (or other SDP Solver)
+### 4. SDP Solver (e.g., MOSEK)
 
 **Required For:**
-- **Fast** and **numerically robust** solving of Toeplitz-Block LMIs.
+- Numerical resolution of Toeplitz-Block LMIs formulated via YALMIP.
 
-**Installation:**
-- [MOSEK Academic License](https://www.mosek.com/products/academic-licenses/) (free for research).
-- YALMIP automatically detects installed solvers.
-
-**Alternatives:**
-- **SeDuMi**, **SDPT3**, **SDPA** — All free, but slower for large problems.
-- YALMIP will use whatever is available.
-
-**Test Coverage:**
-- `test_check_solvers()` reports which solvers YALMIP detects.
-
-**Without It:**
-- You can still formulate LMIs, but solving them will fail if no SDP solver is installed.
+**Alternatives:** While [MOSEK](https://www.mosek.com/) is recommended for performance, YALMIP natively supports free alternatives such as SeDuMi, SDPT3, and SDPA.
 
 ---
 
-## Verification Script
+## Verification Suite
 
-Run the built-in dependency checker:
+A built-in test suite is provided to verify the integrity of the installation and detect available capabilities.
 
 ```matlab
-% Basic functionality
+% Base functionality verification
 test_PhasorArray_basic
 
-% Advanced features (symbolic, YALMIP, LMI)
+% Advanced functionality verification (Symbolic, YALMIP integration)
 test_PhasorArray_advanced
 ```
 
-The test suite will:
-- ✅ **Pass** tests that are supported.
-- ⏭️ **Skip** tests for missing optional toolboxes (with clear messages).
-- ❌ **Fail** only if a required dependency (R2021b+) is missing.
-
-**Example Output:**
-```
-  PhasorArray Toolbox — Advanced Test Suite
-════════════════════════════════════════════
-  [SKIP] Symbolic Math Toolbox not found — sym tests will be skipped
-  [SKIP] YALMIP not found — ndsdpvar tests will be skipped
-
-  ✓ Symbolic: Matrix construction — SKIPPED (missing toolbox)
-  ✓ YALMIP: construct ndsdpvar — SKIPPED (missing toolbox)
-  ✓ YALMIP: Lyapunov LMI stability — SKIPPED (missing toolbox)
-
-════════════════════════════════════════════
-  12 passed, 8 skipped, 0 failed
-```
+The test framework categorizes results as follows:
+- **Passed**: Functionality is verified.
+- **Skipped**: Optional toolboxes are absent; dependencies are unmet but non-critical.
+- **Failed**: Core regression or unmet base requirements.
 
 ---
 
-## Minimum Installation (No Toolboxes)
+## Summary of Feature Dependencies
 
-If you only have **MATLAB R2021b+** (no toolboxes), you can still:
-
-1. Create and manipulate `PhasorArray` objects.
-2. Solve Lyapunov and Riccati equations.
-3. Compute Floquet exponents and stability margins.
-4. Simulate LTP systems in time-domain.
-5. Visualize harmonic content.
-6. Run **all examples** in `Exemples/BasicToolbox.m` and `Exemples/MathieuPendulum.m`.
-
-**You cannot:**
-- Use LMI-based control (needs YALMIP + solver).
-- Create symbolic PhasorArrays (needs Symbolic Math Toolbox).
-- Convert to `lpvss`/`ltvss` (needs Control System Toolbox).
-
----
-
-## Recommended Setup for Research Use
-
-For the **full experience** as described in the ECC 2026 paper:
-
-```matlab
-% 1. MATLAB R2022a+ (for tensorprod speedup)
-% 2. Install YALMIP
-addpath(genpath('~/YALMIP'));
-% 3. Install MOSEK (academic license)
-% 4. Optional: Control System Toolbox (for lpvss/ltvss)
-```
-
-**One-Time Check:**
-```matlab
-test_PhasorArray_advanced;  % See what's available
-```
-
----
-
-## Summary Table: What Needs What?
-
-| Feature | MATLAB | Control Toolbox | Symbolic | Signal Proc. | YALMIP | Solver |
-|:---|:---:|:---:|:---:|:---:|:---:|:---:|
-| **PhasorArray basics** | ✅ | — | — | — | — | — |
-| **Arithmetic (+, *, /, \)** | ✅ | — | — | — | — | — |
-| **Time-domain sim** | ✅ | — | — | — | — | — |
-| **Floquet analysis** | ✅ | — | — | — | — | — |
-| **Lyapunov / Riccati** | ✅ | — | — | — | — | — |
-| **Kronecker products** | ✅ | — | — | — | — | — |
-| **Symbolic derivation** | ✅ | — | ✅ | — | — | — |
-| **LPV/LTV export** | ✅ | ✅ | — | — | — | — |
-| **LMI synthesis** | ✅ | — | — | — | ✅ | ✅ |
-
-Legend:
-- ✅ Required
-- ⚠️ Minor dependency (can be worked around)
-- — Not needed
+| Feature | MATLAB Core | Control Toolbox | Symbolic Math | YALMIP | SDP Solver |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **PhasorArray Instantiation** | Required | - | - | - | - |
+| **Arithmetic Operators** | Required | - | - | - | - |
+| **Time-Domain Simulation** | Required | - | - | - | - |
+| **Floquet Analysis** | Required | - | - | - | - |
+| **Lyapunov / Riccati Solvers** | Required | - | - | - | - |
+| **Symbolic Derivation** | Required | - | Required | - | - |
+| **LPV/LTV Export** | Required | Required | - | - | - |
+| **LMI Synthesis** | Required | - | - | Required | Required |
 
 ---
 
 ## Citation & Support
 
-If you use this toolbox in your research, please cite:
+For academic or research utilization, please cite:
 
 ```bibtex
 @software{phasorarray2025,
@@ -250,10 +125,9 @@ If you use this toolbox in your research, please cite:
 }
 ```
 
-For issues or questions:
-- 📧 maxime.grosso@protonmail.com
-- 🐛 [GitHub Issues](https://github.com/mxmGrss/phasorArray_Toolbox/issues)
-- 📖 [Full Documentation (Wiki)](https://github.com/mxmGrss/phasorArray_Toolbox/wiki)
+**Resources:**
+- [Issue Tracker (GitHub)](https://github.com/mxmGrss/phasorArray_Toolbox/issues)
+- [Documentation Wiki](https://github.com/mxmGrss/phasorArray_Toolbox/wiki)
 
 ---
 
