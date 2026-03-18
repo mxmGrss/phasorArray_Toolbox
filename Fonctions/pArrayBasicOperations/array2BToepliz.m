@@ -102,7 +102,7 @@ function [Tmat, N] = array2BToepliz(Aph, m, varg)
         if h1 == h2
             N = N_bt(n1, h1, 1);
         else
-            warning('N matrix is only defined for square Block-Toeplitz truncations.');
+            warning('array2BToepliz:nonSquareN', 'N matrix is only defined for square Block-Toeplitz truncations (h1=%d ~= h2=%d); returning empty N.', h1, h2)
             N = [];
         end
     end

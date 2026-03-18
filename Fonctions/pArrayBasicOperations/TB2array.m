@@ -54,7 +54,7 @@ switch size_type
         ny=nyd/m;
         nx=nxd/m;
     otherwise
-        error('error in TB2array dim spec')
+        error('TB2array:invalidDimSpec', 'Unrecognized dimension specification; expected ''2h+1'' or a valid integer.')
 end
 
 

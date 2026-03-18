@@ -219,7 +219,7 @@ for ii = 1:numel(signals)
     catch e
         e.stack
         NameSignals(ii)
-        error(e.message)
+        rethrow(e)
     end
 end
 
@@ -241,7 +241,7 @@ end
                 elseif size(sig,2)==numel(time)
                     sig=num2cell(sig,2);
                 else
-                    error('error dim of sig')
+                    error('angularsft:invalidSignalDimension', 'Signal size [%dx%d] does not match time vector length (%d).', size(sig,1), size(sig,2), numel(time))
                 end
 
             else
@@ -277,7 +277,7 @@ end
         switch numel(w)
             case 0
                 if numel(theta)~=numel(time)
-                    error('\omega cannot be empty with if provided \theta is not a time vector')
+                    error('angularsft:missingOmega', 'omega must be provided when theta is not a uniformly-sampled time vector.')
                 end
                 for iter_thetha =1:(numel(theta)-1)
                     w(iter_thetha) = (theta(iter_thetha+1)-theta(iter_thetha))/(time(iter_thetha+1)-time(iter_thetha));

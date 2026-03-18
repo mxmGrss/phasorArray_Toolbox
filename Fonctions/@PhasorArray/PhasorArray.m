@@ -240,7 +240,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                     obj = PosPart2PhasorArray(varP0,varPpos);
                 else
                     if numel(varargin) ~= 2
-                        error('PhasorArray:InvalidArgumentCount', 'If 0 and PosPhasor are provided, only 2 argument must be provided');
+                        error('PhasorArray:InvalidArgumentCount', 'If 0 and PosPhasor are provided, only 2 arguments must be provided');
                     end
                     obj = PosPart2PhasorArray(varargin{:});
                 end
@@ -257,7 +257,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 return
             else
                 if mod(size(varargin{1},3),2) ~= 1
-                    error('PhasorArray:dimensionError', 'Dim3 of 3D array cannot be even');
+                    error('PhasorArray:InvalidDimension', 'Third dimension must be odd (2h+1) to encode h harmonics; got even size %d.', size(varargin{1},3));
                 end
                 obj.Phasor3D = varargin{1};
             end
@@ -323,7 +323,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 tol  = []
             end
             if nargin == 1
-                warning("tol is not specified, default to eps, real evaluation of the PhasorArray may be affected")
+                warning('PhasorArray:isReal:defaultTol', 'tol not specified, defaulting to eps. Real-valued evaluation may be inaccurate.')
             end
             %display information about the PhasorArray
             fprintf("PhasorArray of size [%d, %d, %d] with %d harmonics\n", size(o1, 1), size(o1, 2), size(o1, 3), o1.h);
@@ -732,7 +732,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                     o1 = PhasorSS([],[],[],o1);
                     r = o1 * o2;
                 else
-                    error(e.message)
+                    rethrow(e)
                 end
             end
 
@@ -1012,7 +1012,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                                 algebraic_hit_count = algebraic_hit_count + 1;
                                 if algebraic_hit_count >= 2
                                     warning('phasorArray:mlHmcDivide:unreachable', ...
-                                        ['Abandon : convergence algébrique trop lente (pente %.2f). ' ...
+                                        ['Giving up :  algebric convergence too slow (slope %.2f). ' ...
                                         'Cible h=%d inatteignable (maxh=%d).'], s_alg, h_alg, maxhIn);
                                     break;
                                 end
@@ -1042,8 +1042,8 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                     residual.resnorm = norm(residual.phasor.value, 'fro');
                     residual.resrelnorm = residual.resnorm / Bnorm;
 
-                    % Keep best solution
-                    if residual.resnorm < resnorm_best
+                    % Keep best solution (relative residual drives selection)
+                    if residual.resrelnorm < resrelnorm_best
                         r_best       = r;
                         resnorm_best = residual.resnorm;
                         resrelnorm_best = residual.resrelnorm;
@@ -1053,9 +1053,9 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                     residual.resrel_history(end+1) = residual.resrelnorm; %#ok<AGROW>
                     residual.h_history(end+1)   = hIn; %#ok<AGROW>
 
-                    % Stagnation check over sliding window
-                    if numel(residual.res_history) >= stagnationWindow
-                        window = residual.res_history(end-stagnationWindow+1 : end);
+                    % Stagnation check over sliding window (relative residual — scale-invariant)
+                    if numel(residual.resrel_history) >= stagnationWindow
+                        window = residual.resrel_history(end-stagnationWindow+1 : end);
                         relative_improvement = (window(1) - min(window)) / (window(1) + eps);
                         if relative_improvement < stagnationRatio
                             warning('phasorArray:mlHmcDivide:stagnation', ...
@@ -1378,7 +1378,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         end
         if islogical(index)
             if numel(index)~=size(o1,3)
-                error('logical array size must match third dim of phasorArray')
+                error('PhasorArray:neglect:indexSizeMismatch', 'Logical index size (%d) must match size(obj,3)=%d.', numel(index), size(o1,3))
             end
             index=find(index);
             %find complement of index
@@ -1602,7 +1602,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %       If dim is 3, a warning is issued indicating that the flip
         %       along the third dimension produces M(-t).
         if dim==3
-            warning("flip along third dimension, produces M(-t)")
+            warning('PhasorArray:flip:reversesTime', 'Flipping along dim 3 produces M(-t), i.e., a time-reversal.')
         end
         r=PhasorArray(flip(o1.value,dim));
     end
@@ -1822,9 +1822,9 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                         L=1;
                         M=[M N L];
                     case 3
-                        warning("You shouldn't specify a third dimension for repmat with phasorarray, proceed with caution")
+                        warning('PhasorArray:repmat:extraDimIgnored', 'repmat: extra dimension(s) beyond dim 1-2 are not meaningful for PhasorArray. Proceeding with caution.')
                     otherwise
-                        warning("You shouldn't specify more than 2 dimensions for repmat with phasorarray, proceed with caution")
+                        warning('PhasorArray:repmat:extraDimIgnored', 'repmat: extra dimension(s) beyond dim 1-2 are not meaningful for PhasorArray. Proceeding with caution.')
                 end
                 r = PhasorArray(repmat(o1.value,M));
                 return
@@ -1836,7 +1836,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 r = PhasorArray(repmat(o1.value,M,N,L));
                 return
             otherwise
-                warning("You shouldn't specify more than 2 dimensions for repmat with phasorarray, proceed with caution")
+                warning('PhasorArray:repmat:extraDimIgnored', 'repmat: extra dimension(s) beyond dim 1-2 are not meaningful for PhasorArray. Proceeding with caution.')
                 r = PhasorArray(repmat(o1.value,M,N{:}));
                 return
         end
@@ -1919,7 +1919,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                     if numelt(o1)==numel(n1)
                         n1=find(logical(n1));
                     else
-                        error('logical array size %d x %d must match first two dim of phasorArray %d x %d',size(n1,1),size(n1,2),size(o1,1),size(o1,1))
+                        error('PhasorArray:subsasgn:indexSizeMismatch', 'Logical index size %dx%d must match first two dims of PhasorArray %dx%d.', size(n1,1), size(n1,2), size(o1,1), size(o1,2))
                     end
                 end
             end
@@ -2327,11 +2327,11 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 end
                 return
             elseif iscolumn(o1) && iscolumn(angle)
-                error('if o1 is a column, angle must be row and vice versa')
+                error('PhasorArray:phaseShift:invalidAngleShape', 'If o1 is a column vector, angle must be a row vector (and vice versa).')
             elseif isrow(o1) && isrow(angle)
-                error('if o1 is a row, angle must be colmun and vice versa')
+                error('PhasorArray:phaseShift:invalidAngleShape', 'If o1 is a row vector, angle must be a column vector (and vice versa).')
             else
-                error('angle must be a scalar input for matricial PhasorArray')
+                error('PhasorArray:phaseShift:invalidAngleShape', 'angle must be a scalar for a matrix-valued PhasorArray.')
             end
         else
             r=dephase(o1,angle);
@@ -3666,7 +3666,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             boolnan=isnan(o1);
             nnz(boolnan);
             if nnz(boolnan)>0
-                warning("Some sdpvar value are NaN")
+                warning('PhasorArray:double:nanSdpvar', 'Some sdpvar values are NaN; they have been set to 0.')
                 o1(boolnan)=0;
                 o1=ReduceArray(o1);
             end
@@ -4921,7 +4921,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         if isReal
             er = real(r-real(r));
             if norm(double(er),'fro') > realTol
-                error("SinCosForm : Imaginary part of matrix %d is superior to tolerance %d, switch isReal to false or adjust tolerance",norm(double(er),'fro'),realTol)
+                error('PhasorArray:sinCosForm:imagPartExceedsTol', 'Imaginary part norm (%e) exceeds tolerance (%e). Set isReal=false or increase tolerance.', norm(double(er),'fro'), realTol)
             end
             r=real(r);
         end
@@ -5074,7 +5074,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         deleted = o1(:,:,setdiff(1:(2*h+1),1:m:(2*h+1)));
         normDeleted = norm(deleted(:),'fro');
         if normDeleted > 1e-10
-            warning("squishBase : deleted phasors have a norm of %d, the new phasorArray may not accurately represent the original signal",normDeleted)
+            warning('PhasorArray:squishBase:truncationLoss', 'Deleted phasors have a Frobenius norm of %e. The result may not accurately represent the original signal.', normDeleted)
         end
     end
 
@@ -5113,10 +5113,10 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 o2 = PhasorArray(o2);
             end
             if size(o1,1)~=size(o1,2)
-                error("lyap : A must be a square matrix")
+                error('PhasorArray:lyap:nonSquareA', 'A must be a square matrix (got %dx%d).', size(o1,1), size(o1,2))
             end
             if size(o1,1)~=size(o2,1) || size(o1,2)~=size(o2,2)
-                error("lyap : A and Q must be of same size")
+                error('PhasorArray:lyap:dimensionMismatch', 'A (%dx%d) and Q (%dx%d) must be the same size.', size(o1,1), size(o1,2), size(o2,1), size(o2,2))
             end
             if isempty(h)
                 h = max(o1.h,o2.h);
@@ -5142,16 +5142,16 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 o3 = PhasorArray(o3);
             end
             if size(o1,1)~=size(o1,2)
-                error("lyap : sylvester equation, A must be a square matrix")
+                error('PhasorArray:lyap:nonSquareA', 'Sylvester equation: A must be square (got %dx%d).', size(o1,1), size(o1,2))
             end
             if size(o1,1)~=size(o3,1)
-                error("lyap : sylvester equation, A and C must be of same number of rows")
+                error('PhasorArray:lyap:dimensionMismatch', 'Sylvester equation: A (%dx%d) and C (%dx%d) must have the same number of rows.', size(o1,1), size(o1,2), size(o3,1), size(o3,2))
             end
             if size(o2,1)~=size(o2,2)
-                error("lyap : sylvester equation, B must be a square matrix")
+                error('PhasorArray:lyap:nonSquareB', 'Sylvester equation: B must be square (got %dx%d).', size(o2,1), size(o2,2))
             end
             if size(o2,2)~=size(o3,2)
-                error("lyap : sylvester equation, the number of columns of B and C must be the same")
+                error('PhasorArray:lyap:dimensionMismatch', 'Sylvester equation: number of columns of B (%d) and C (%d) must be the same.', size(o2,2), size(o3,2))
             end
 
             if isempty(h)
@@ -5197,8 +5197,8 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 residual.resrelnorm = residual.resnorm / (Bnorm + eps);
                 
 
-                % Keep best solution regardless of monotonicity
-                if residual.resnorm < resnorm_best
+                % Keep best solution regardless of monotonicity (relative residual drives selection)
+                if residual.resrelnorm < resrelnorm_best
                     res_best     = res;
                     resnorm_best = residual.resnorm;
                     resrelnorm_best = residual.resrelnorm;
@@ -5209,9 +5209,9 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 residual.h_history(end+1) = h; %#ok<AGROW>
 
 
-                % Stagnation check over sliding window
-                if numel(residual.res_history) >= stagnationWindow
-                    window = residual.res_history(end-stagnationWindow+1 : end);
+                % Stagnation check over sliding window (relative residual — scale-invariant)
+                if numel(residual.resrel_history) >= stagnationWindow
+                    window = residual.resrel_history(end-stagnationWindow+1 : end);
                     relative_improvement = (window(1) - min(window)) / (window(1) + eps);
                     if relative_improvement < stagnationRatio
                         warning('phasorArray:lyap:stagnation', ...
@@ -5406,7 +5406,7 @@ methods (Access=protected)
                     m=indexOp.Indices{1};
                     if  numel(m)==obj.numelt %numelt out numel (A(t)) is size(A,1) times size(A,2) returns the dimension of the temporal matrix i.e. n1 \times n2, so it would be a logical array as input
                         if any((m ~= 0) & (m ~= 1)) % check m is logical
-                            error('Array indices must be positive integers or logical values.')
+                            error('PhasorArray:subsref:invalidIndex', 'Array indices must be positive integers or logical values.')
                         end
 
                         n1=find(indexOp.Indices{1});
@@ -5619,7 +5619,7 @@ methods (Static, Access=public)
         if ~isempty(optarg.h)
             n1h = size(F_tb,1)/(2*optarg.h+1);
             if ~isempty(n1) && (n1~=n1h || (n1*n2)~=n1h)
-                error('PhasorArray:fromF_tb','n1, n2, and h argument are not compatible with input')
+                error('PhasorArray:fromF_tb:incompatibleArguments', 'n1=%d, n2=%d, h=%d are not compatible with the input dimensions.', n1, n2, optarg.h)
             end
         end
         PA = F_tb_2_PhasorArray(F_tb, n1, n2);
@@ -5729,7 +5729,7 @@ methods (Static, Access=public)
         % end
         % 
         if norm(At(:,:,1)-AtT,'fro')>1e-10
-            warning('A(T) is different from A(0), the result may be incorrect A doesnt Appear to be T periodic. Jump value is %d (froebenius norm of f(T)-f(0)), resulting phasorArray is a periodic function with jump at time T',norm(At(:,:,1)-AtT,'fro'));
+            warning('PhasorArray:fromFun:notPeriodic', 'A(T) ~= A(0): jump Frobenius norm = %e. The function may not be T-periodic; results may be inaccurate.', norm(At(:,:,1)-AtT,'fro'));
         end
 
         % Convert the time-domain function values to a PhasorArray
@@ -5937,7 +5937,7 @@ methods (Static, Access=public)
 
         prop = matchedPoles / numel(E);
         if prop < 1 - varg.badPoleTol
-            warning('randomPhasorArrayWithPole: The generated PhasorArray does not have the desired poles.');
+            warning('PhasorArray:randomWithPole:desiredPolesMissed', 'Generated PhasorArray does not match desired poles (%.1f%% match).', prop*100);
 
             %recall the function with the same parameters
             %convert varg to cell
@@ -6054,7 +6054,7 @@ methods (Static, Access=public)
                     h  = nx(3);
                     nx = nx(1);
                 otherwise
-                    error('cannot specify a dimension input of length >3')
+                    error('PhasorArray:size:invalidDimInput', 'Dimension argument length must be <=3; got %d.', numel(nx))
             end
         end
         if max(ny,nx)==1
@@ -6509,7 +6509,7 @@ methods (Static, Access=public)
         end
         if n1~=n2
             if ismember(varg.PhasorType,{'symmetric'})
-                warning('non square matrix, PhasorType switched to "full"')
+                warning('PhasorArray:randomPhasorArray:phasorTypeFallback', 'Non-square matrix: PhasorType changed from ''symmetric'' to ''full''.')
                 varg.PhasorType='full';
             end
         end

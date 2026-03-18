@@ -87,18 +87,18 @@ if sum(plotTAPRI)>0
             if isempty(TT) || ~isa(TT, 'matlab.graphics.layout.TiledChartLayout') || any(TT.GridSize - [nplot_vert, nplot_hor])
                 %include a detailed warning witch show wich condition is not met
                 if isempty(TT)
-                    warning('No tiled layout exists in figure %d.', ff.Number);
+                    warning('plotAngularSFT:tiledLayoutMissing', 'No tiled layout exists in figure %d.', ff.Number);
                 elseif ~isa(TT, 'matlab.graphics.layout.TiledChartLayout')
-                    warning('Invalid tiled layout exists in figure %d.', ff.Number);
+                    warning('plotAngularSFT:tiledLayoutInvalid', 'Invalid tiled layout in figure %d.', ff.Number);
                 elseif any(TT.GridSize - [nplot_vert, nplot_hor])
-                    warning('Tiled layout in figure %d has dimensions [%d, %d], but [%d, %d] is required.', ff.Number, TT.GridSize(1), TT.GridSize(2), nplot_vert, nplot_hor);
+                    warning('plotAngularSFT:tiledLayoutSizeMismatch', 'Tiled layout in figure %d has dimensions [%d, %d], but [%d, %d] is required.', ff.Number, TT.GridSize(1), TT.GridSize(2), nplot_vert, nplot_hor);
                 end
-                
+
                 clf; % Clear the current figure if no valid tiled layout exists
                 ff.Tag = ''; % Reset the tag of the figure
                 T = createTiledLayout(nplot_vert, nplot_hor); % Create a new tiled layout
                 %display a warning message including figure number and hold state
-                warning('Hold state is off. Creating a new tiled layout in figure %d. Hold state may be lost.', ff.Number);
+                warning('plotAngularSFT:tiledLayoutReplaced', 'Hold state is off. Creating a new tiled layout in figure %d. Hold state may be lost.', ff.Number);
                 
                     
             else
@@ -107,8 +107,7 @@ if sum(plotTAPRI)>0
         catch e
             clf; % Clear the current figure if an error occurs
             ff.Tag = ''; % Reset the tag of the figure
-            warning(e.message); % Display the error message
-            warning('Error occurred while creating tiled layout. Creating a new tiled layout. Hold state may be lost.'); % Display a warning message
+            warning('plotAngularSFT:tiledLayoutFallback', 'Tiled layout creation failed (%s). Creating a new tiled layout. Hold state may be lost.', e.message);
             T = createTiledLayout(nplot_vert, nplot_hor); % Create a new tiled layout
         end
     end

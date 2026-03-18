@@ -24,14 +24,14 @@ funcA =  (size(Aph, 1) ~= size(Aph, 2));
 funcB =  (size(Bph, 1) ~= size(Bph, 2));
 
 if funcB || funcA
-    error('Matrix arguments must be either empty matrix ([]) or 3D array of square matrix')
+    error('PhasorArrayOplus:invalidInput', 'Arguments must be either empty ([]) or 3-D arrays of square matrices.')
 end
 if isempty(Aph)
     Aph=Bph*0;
 elseif isempty(Bph)
     Bph=Aph*0;
 elseif isempty(Aph) && isempty(Bph)
-    error('Function called without argument, at least one matrix must be non empty)')
+    error('PhasorArrayOplus:noInput', 'At least one non-empty matrix argument is required.')
 else 
 end
 

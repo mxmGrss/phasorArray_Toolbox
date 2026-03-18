@@ -82,7 +82,7 @@ if isempty(varg.isRealValued)
         UU = PhasorArray(Uph);
         if isreal(AA) && isreal(UU)
             varg.isRealValued=true;
-            warning('HMQ_SIM:RealValuedMatrix',"In call to hmq_sim, Matrices appears to be real-valued, to enforce complex-valued computation, set 'isRealValued' to false")
+            warning('hmq_sim:appearsRealValued', 'Matrices appear to be real-valued. To enforce complex-valued computation, set ''isRealValued'' to false.')
         else
             varg.isRealValued=false;
         end

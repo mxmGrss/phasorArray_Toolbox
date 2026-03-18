@@ -47,7 +47,7 @@ if size(colX,2)>1
     if n2 == 1
         n2 = size(colX,2);
     elseif n2 ~= size(colX,2)
-        error("n2 should be equal to second dim of colX when colX is matricial")
+        error('TFTB_2_array:n2Mismatch', 'n2 (%d) must equal the second dimension of colX (%d) when colX is a matrix.', n2, size(colX,2))
     end
 
     for iterCol_i = 1:size(colX,2)
@@ -70,7 +70,7 @@ dHp1=m/n1/n2;
 h=(dHp1-1)/2;
 
 if h~=round(h)
-    error('Wrong dimension, non integer number of harmonics, pls check arguments')
+    error('TFTB_2_array:nonIntegerHarmonics', 'Non-integer number of harmonics (h=%.4g); check n1 (%d) and n2 (%d) arguments.', h, n1, n2)
 end
 
 dX=reshape(full(colX),dHp1,n1,n2);

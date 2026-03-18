@@ -251,25 +251,25 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 B = PhasorArray.empty(0,size(D,2));
                 C = PhasorArray.empty(size(D,1),0);
                 else
-                    error('If A is specified empty, B and C must be empty')
+                    error('PhasorSS:constructor:inconsistentEmptyA', 'If A is empty, B and C must also be empty.')
                 end
             end
 
             %finally, check that all dimension are consistent
             if size(A,1) ~= size(A,2)
-                error('A must be a square matrix')
+                error('PhasorSS:constructor:nonSquareA', 'A must be square (got %dx%d).', size(A,1), size(A,2))
             end
             if size(A,1) ~= size(B,1)
-                error('A and B must have the same number of rows')
+                error('PhasorSS:constructor:dimensionMismatch', 'A (%dx%d) and B (%dx%d) must have the same number of rows.', size(A,1), size(A,2), size(B,1), size(B,2))
             end
             if size(C,2) ~= size(A,1)
-                error('C must have the same number of columns as A')
+                error('PhasorSS:constructor:dimensionMismatch', 'C (%dx%d) must have the same number of columns as A (%dx%d).', size(C,1), size(C,2), size(A,1), size(A,2))
             end
             if size(D,1) ~= size(C,1)
-                error('D must have the same number of rows as C')
+                error('PhasorSS:constructor:dimensionMismatch', 'D (%dx%d) must have the same number of rows as C (%dx%d).', size(D,1), size(D,2), size(C,1), size(C,2))
             end
             if size(D,2) ~= size(B,2)
-                error('D must have the same number of columns as B')
+                error('PhasorSS:constructor:dimensionMismatch', 'D (%dx%d) must have the same number of columns as B (%dx%d).', size(D,1), size(D,2), size(B,1), size(B,2))
             end
 
             % fill input, output, state with u, y, x if empty
@@ -294,22 +294,22 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
 
             %check that all dimensions are consistent
             if size(varg.InputName,2) ~= size(B,2)
-                error('InputName must have the same number (%d) of rows as B (%d) ',size(varg.InputName,2),size(B,2))
+                error('PhasorSS:constructor:invalidPortNames', 'InputName has %d entries but B has %d columns.', size(varg.InputName,2), size(B,2))
             end
             if size(varg.InputUnit,2) ~= size(B,2)
-                error('InputUnit must have the same number (%d) of rows as B (%d) ',size(varg.InputUnit,2),size(B,2))
+                error('PhasorSS:constructor:invalidPortNames', 'InputUnit has %d entries but B has %d columns.', size(varg.InputUnit,2), size(B,2))
             end
             if size(varg.OutputName,2) ~= size(C,1)
-                error('OutputName must have the same number (%d) of rows as C (%d) ',size(varg.OutputName,2),size(C,1))
+                error('PhasorSS:constructor:invalidPortNames', 'OutputName has %d entries but C has %d rows.', size(varg.OutputName,2), size(C,1))
             end
             if size(varg.OutputUnit,2) ~= size(C,1)
-                error('OutputUnit must have the same number (%d) of rows as C (%d) ',size(varg.OutputUnit,2),size(C,1))
+                error('PhasorSS:constructor:invalidPortNames', 'OutputUnit has %d entries but C has %d rows.', size(varg.OutputUnit,2), size(C,1))
             end
             if size(varg.StateName,2) ~= size(A,1)
-                error('StateName must have the same number (%d) of rows as A (%d) ',size(varg.StateName,2),size(A,1))
+                error('PhasorSS:constructor:invalidPortNames', 'StateName has %d entries but A has %d rows.', size(varg.StateName,2), size(A,1))
             end
             if size(varg.StateUnit,2) ~= size(A,1)
-                error('StateUnit must have the same number (%d) of rows as A (%d) ',size(varg.StateUnit,2),size(A,1))
+                error('PhasorSS:constructor:invalidPortNames', 'StateUnit has %d entries but A has %d rows.', size(varg.StateUnit,2), size(A,1))
             end
 
 
@@ -338,7 +338,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             else
                 if isempty(obj.T)
                     obj.T = 1;
-                    warning('phasorSS:noT','Using PHASORSS Constructor : Period T is empty, system is set as LTV with period 1')
+                    warning('PhasorSS:constructor:defaultPeriod', 'Period T not specified; defaulting to T=1 (LTV mode).')
                 end
                 obj = setLTV(obj);
             end
@@ -370,7 +370,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 p = []
             end
             if isempty(p)
-                warning('phasorSS:notLPV','LPV parameter is empty, set as LTV system instead')
+                warning('PhasorSS:setLPV:emptyPFallback', 'LPV parameter p is empty; system treated as LTV.')
                 obj = obj.setLTV();
                 return
             end
@@ -399,10 +399,10 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             try
                 ptest = obj.p(0,zeros(size(obj.A,1),1),zeros(size(obj.B,2),1));
                 if ~isscalar(ptest)
-                    error('LPV parameter p must return a scalar')
+                    error('PhasorSS:checkp:nonScalarOutput', 'LPV parameter p must return a scalar.')
                 end
             catch
-                error('LPV parameter p must be a function @(t,x,u) returning a scalar')
+                error('PhasorSS:checkp:invalidPFunction', 'LPV parameter p must be a function handle @(t,x,u) returning a scalar.')
             end
         end
 
@@ -435,7 +435,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             obj.isLPV = false;
             obj.p = [];
             if isempty(obj.T)
-                warning('phasorSS:noT','Using SETLTV : Period T is empty, set a value to use the system as LTV')
+                warning('PhasorSS:setLTV:missingPeriod', 'Period T is not set. Assign obj.T before using the system as LTV.')
             end
         end
 
@@ -482,7 +482,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             if aReal && bReal && cReal && dReal
                 obj.isReal = true;
                 if ~obj.isReal || verbose
-                    warning('phasorSS:appearsToBeReal','The PhasorSS object is real with a tolerance of %e. \n Manually set isReal to false to force complex valued computation (longer simulation time)',tol)
+                    warning('PhasorSS:appearsToBeReal', 'The PhasorSS object appears real (tolerance=%e). Set isReal=false to force complex-valued computation (longer simulation time).', tol)
                 end
                 obj.isReal = true;
             else
@@ -756,7 +756,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             end
             if isempty(newC)
                 if isempty(newD)
-                    error('newC and newD cannot be both empty')
+                    error('PhasorSS:addOutput:emptyOutputMatrices', 'newC and newD cannot both be empty.')
                 end
                 newC = zeros(size(newD,1),size(obj.A,1));
             end
@@ -765,13 +765,13 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             end
 
             if size(newC,2) ~= size(obj.A,1)
-                error('newC must have the same number of columns as A')
+                error('PhasorSS:addOutput:dimensionMismatch', 'newC (%dx%d) must have the same number of columns as A (%dx%d).', size(newC,1), size(newC,2), size(obj.A,1), size(obj.A,2))
             end
             if size(newD,1) ~= size(newC,1)
-                error('newD must have the same number of rows as newC')
+                error('PhasorSS:addOutput:dimensionMismatch', 'newD (%dx%d) must have the same number of rows as newC (%dx%d).', size(newD,1), size(newD,2), size(newC,1), size(newC,2))
             end
             if size(newD,2) ~= size(obj.B,2)
-                error('newD must have the same number of columns as B')
+                error('PhasorSS:addOutput:dimensionMismatch', 'newD (%dx%d) must have the same number of columns as B (%dx%d).', size(newD,1), size(newD,2), size(obj.B,1), size(obj.B,2))
             end
 
             obj.C = [obj.C;PhasorArray(newC)];
@@ -825,7 +825,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             end
             if isempty(newB)
                 if isempty(newD)
-                    error('newB and newD cannot be both empty')
+                    error('PhasorSS:addInput:emptyInputMatrices', 'newB and newD cannot both be empty.')
                 end
                 newB = zeros(size(obj.A,1),size(newD,2));
             end
@@ -834,13 +834,13 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             end
 
             if size(newB,1) ~= size(obj.A,1)
-                error('newB must have the same number of rows as A')
+                error('PhasorSS:addInput:dimensionMismatch', 'newB (%dx%d) must have the same number of rows as A (%dx%d).', size(newB,1), size(newB,2), size(obj.A,1), size(obj.A,2))
             end
             if size(newD,2) ~= size(newB,2)
-                error('newD must have the same number of columns as newB')
+                error('PhasorSS:addInput:dimensionMismatch', 'newD (%dx%d) must have the same number of columns as newB (%dx%d).', size(newD,1), size(newD,2), size(newB,1), size(newB,2))
             end
             if size(newD,1) ~= size(obj.C,1)
-                error('newD must have the same number of rows as C')
+                error('PhasorSS:addInput:dimensionMismatch', 'newD (%dx%d) must have the same number of rows as C (%dx%d).', size(newD,1), size(newD,2), size(obj.C,1), size(obj.C,2))
             end
 
             obj.B = [obj.B PhasorArray(newB)];
@@ -948,7 +948,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             %
             %   See also: TOLPVSS, TOSS
             if isempty(obj.T)
-                error('phasorSS:noT','Using TOLTVSS : Period T is empty, set a value to use the system as LTV')
+                error('PhasorSS:toLTVSS:missingPeriod', 'Period T is not set. Assign obj.T before calling toLTVSS.')
             end
             if nargin <2
                 verbose = false;
@@ -1101,7 +1101,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 [y,tOut,x] = step(sysltv,t,stepOpt);
                     if nargout > 3
                         pOut = tOut*2*pi/sys.T;
-                        warning('phasorSS:noP','No parameter output for non LPV system, pOut is set to t*2*pi/T')
+                        warning('PhasorSS:sim:noPOutput', 'No parameter output for non-LPV system; pOut is set to t*2*pi/T.')
                     end
                 else
                     step(sysltv,t,stepOpt);
@@ -1295,7 +1295,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                     [y,tOut,x] = step(sysltv,t,stepOption);
                     if nargout > 3
                         pOut = tOut*2*pi/sys.T;
-                        warning('phasorSS:noP','No parameter output for non LPV system, pOut is set to t*2*pi/T')
+                        warning('PhasorSS:sim:noPOutput', 'No parameter output for non-LPV system; pOut is set to t*2*pi/T.')
                     end
                 else
                 step(sysltv,t,stepOption)
@@ -1342,7 +1342,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             SSo.p = @(t,x,u) SSo.p(t,x,u)/m;
 
             if SSo.isLPV
-                warning('Base changed, please check the p function')
+                warning('PhasorSS:changeBase:checkPFunction', 'Basis changed: the LPV function p(t,x,u) may need to be updated to match the new basis.')
             end
         end
 
@@ -1508,7 +1508,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 if ischar(input) && ~strcmp(input,':')
                     idx = find(strcmp(inputNames, input));
                     if isempty(idx)
-                        error('Input name "%s" not found in the PhasorSS object.', input);
+                        error('PhasorSS:formatInputRange:unknownInputName', 'Input name "%s" not found. Available names: %s.', input, strjoin(inputNames, ', '));
                     end
                     formattedRange{i} = idx;
                 elseif iscell(input)
@@ -1516,7 +1516,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                     for j = 1:length(input)
                         idx = find(strcmp(inputNames, input{j}));
                         if isempty(idx)
-                            error('Input name "%s" not found in the PhasorSS object.', input{j});
+                            error('PhasorSS:formatInputRange:unknownInputName', 'Input name "%s" not found. Available names: %s.', input{j}, strjoin(inputNames, ', '));
                         end
                         idxList = [idxList, idx];
                     end
@@ -1627,7 +1627,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                     obj = PhasorArray(obj);
                 elseif isa(obj,'PhasorArray')
                 else
-                    error('The first argument must be a PhasorSS, a PhasorArray, a matrix or a scalar')
+                    error('PhasorSS:mtimes:invalidLeftOperand', 'Left operand must be PhasorSS, PhasorArray, matrix, or scalar; got %s.', class(obj))
                 end
                 %convert it to a static PhasorSS
                 obj = PhasorSS([],[],[],obj);
@@ -1640,7 +1640,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                     obj2 = PhasorArray(obj2);
                 elseif isa(obj2,'PhasorArray')
                 else
-                    error('The second argument must be a PhasorSS, a PhasorArray, a matrix or a scalar')
+                    error('PhasorSS:mtimes:invalidRightOperand', 'Right operand must be PhasorSS, PhasorArray, matrix, or scalar; got %s.', class(obj2))
                 end
                 %convert it to a static PhasorSS
                 obj2 = PhasorSS([],[],[],obj2);
@@ -1650,7 +1650,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 if obj.isStatic 
                     % first check compatibility of the dimensions
                     if size(obj.D,2) ~= size(obj2.D,1)
-                        error('The number of input of the first PhasorSS (size %d x %d) must be equal to the number of output of the second PhasorSS (size %d x %d)',size(obj.D,1),size(obj.D,2),size(obj2.D,1),size(obj2.D,2))
+                        error('PhasorSS:mtimes:dimensionMismatch', 'Inputs of first PhasorSS (%d) must equal outputs of second PhasorSS (%d).', size(obj.D,2), size(obj2.D,1))
                     end
 
                     %first one is static, so we multiply the output of obj2 by the D matrix of obj
@@ -1661,13 +1661,13 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                     obj2.OutputGroup = obj.OutputGroup;
                     obj2 = obj2.checkIfReal();
                     objOut = obj2;
-                    warning('p and T are propagated from the non-static PhasorSS, please check the values')
+                    warning('PhasorSS:mtimes:propagationWarning', 'p and T propagated from the non-static PhasorSS; please verify the values.')
                     return
                 end
                 if obj2.isStatic
                     % first check compatibility of the dimensions
                     if size(obj.B,2) ~= size(obj2.D,1)
-                        error('The number of input of the first PhasorSS must be equal to the number of output of the second PhasorSS')
+                        error('PhasorSS:mtimes:dimensionMismatch', 'Inputs of first PhasorSS (%d) must equal outputs of second PhasorSS (%d).', size(obj.B,2), size(obj2.D,1))
                     end
 
                     %second one is static, so we multiply the input of obj by the D matrix of obj2
@@ -1678,13 +1678,13 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                     obj.InputGroup = obj2.InputGroup;
                     obj = obj.checkIfReal();
                     objOut = obj;
-                    warning('p and T are propagated from the non-static PhasorSS, please check the values')
+                    warning('PhasorSS:mtimes:propagationWarning', 'p and T propagated from the non-static PhasorSS; please verify the values.')
                     return
                 end
                 %else we are in full phasorSS case
                 % check dimension compatibility
                 if size(obj.B,2) ~= size(obj2.C,1)
-                    error('The number of inputs of the first PhasorSS (%d) must be equal to the number of outputs of the second PhasorSS (%d)',size(obj.B,2),size(obj2.C,1))
+                    error('PhasorSS:mtimes:dimensionMismatch', 'Inputs of first PhasorSS (%d) must equal outputs of second PhasorSS (%d).', size(obj.B,2), size(obj2.C,1))
                 end
 
                 newA = [obj.A obj.B*obj2.C;...
@@ -1708,7 +1708,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                     'OutputGroup',obj.OutputGroup); 
                 % 'Name',obj.Name,... 'Notes',obj.Notes,... 'UserData',obj.UserData,... 'p',obj.p were not empty in obj or obj2, issue a warning
                 if ~isempty(obj.Name) || ~isempty(obj.Notes) || ~isempty(obj.UserData) || ~isempty(obj.p) || ~isempty(obj2.Name) || ~isempty(obj2.Notes) || ~isempty(obj2.UserData) || ~isempty(obj2.p)
-                    warning('Name, Notes, UserData and p are not propagated from the PhasorSS objects, please check the values')
+                    warning('PhasorSS:mtimes:propagationWarning', 'Name, Notes, UserData and p are not propagated from the PhasorSS objects; please verify the values.')
                 end
 
                 %if one of obj.p or obj2.p is not empty and the other is empty, issue a warning and propagate the non empty one
@@ -1717,9 +1717,9 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                         objOut.p = @(t,x,u) obj2.p(t,x((size(obj.A,1)+1):end),u);
                         objOut.isLPV = obj2.isLPV;
                         checkp(objOut);
-                        warning('p is propagated from right PhasorSS, please check the values')
+                        warning('PhasorSS:mtimes:propagationWarning', 'p propagated from right PhasorSS; please verify the values.')
                     else
-                        warning('Cannot propagate p from left PhasorSS, please check the values and update p manually')
+                        warning('PhasorSS:mtimes:propagationWarning', 'Cannot propagate p from left PhasorSS; please update p manually.')
                     end
                 end
 
@@ -1775,7 +1775,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             switch varg.feedbackInput
                 case 'state'
                     if ~isempty(varg.yIndex)
-                        warning('yIndex is ignored when feedbackInput is set to "state"')
+                        warning('PhasorSS:feedback:yIndexIgnored', 'yIndex is ignored when feedbackInput is ''state''.')
                     end
 
                     %create a copy of phasorSS from obj where the output is the state instead of OG output
@@ -1967,10 +1967,10 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
 
                 %compute the inverse
                 if h(neglect(delta1))>0
-                    warning('Δ₁ is periodic, inversion is involved, the result may be inaccurate')
+                    warning('PhasorSS:feedback:periodicDeltaInversion', 'delta1 is periodic; inversion may introduce inaccuracies.')
                 end
                 if h(neglect(delta2))>0
-                    warning('Δ₂ is periodic, inversion is involved, the result may be inaccurate')
+                    warning('PhasorSS:feedback:periodicDeltaInversion', 'delta2 is periodic; inversion may introduce inaccuracies.')
                 end
                 invDelta1 = reduce(inv(neglect(delta1)));
                 invDelta2 = reduce(inv(neglect(delta2)));
@@ -2374,7 +2374,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             
             if isempty(T)
             T = 1;
-            warning('Using FROMSS : Period T is empty, set a value to use the system as LTV')
+            warning('PhasorSS:fromSS:defaultPeriod', 'Period T not specified; defaulting to T=1.')
             end
             
             obj = PhasorSS(A, B, C, D, T, 'isReal', isreal(sys), ...

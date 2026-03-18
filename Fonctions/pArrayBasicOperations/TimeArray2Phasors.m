@@ -59,7 +59,7 @@ elseif varg.timeDim~=3 %otherwise we check if timeDim is specified
         %all good
     else
         %send a warning, does not respect convention
-        warning('specified timeDim to value ~=3 with non matrix input(3D Array), permuting %d dim with 3rd dim',varg.timeDim)
+        warning('TimeArray2Phasors:timeDimPermutation', 'Non-matrix input with timeDim=%d: permuting dimension %d with dimension 3.', varg.timeDim, varg.timeDim)
     end
     switch varg.timeDim %perform permutation
         case 1
@@ -74,9 +74,9 @@ n=size(At,3);
 testPowerOf2 = log(n)/log(2);
 if abs(round(testPowerOf2)-testPowerOf2)>1e-3
     if varg.procedeWithError
-        warning('it looks like your time series is not of length of the form 2^m, ouput will be unacurrate')
+        warning('TimeArray2Phasors:notPowerOf2', 'Time series length %d is not a power of 2; output accuracy may be reduced.', n)
     else
-        error('it looks like your time series is not of length of the form 2^m (length = %d), ouput would be unacurrate, recheck your data or pass the argument procedeWithError to true',n)
+        error('TimeArray2Phasors:notPowerOf2', 'Time series length %d is not a power of 2; output would be inaccurate. Recheck your data or set procedeWithError to true.', n)
     end
 end
 

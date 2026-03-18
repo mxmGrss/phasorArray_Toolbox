@@ -35,7 +35,7 @@ function sympolar(Z_in, LineSpec, th_init)
     % 1.1 Handle Cartesian to Polar conversion if necessary
     if ~isa(ax, 'matlab.graphics.axis.PolarAxes')
         if ishold(ax)
-            warning('Current axes are Cartesian. Creating a new polar figure.');
+            warning('sympolar:cartesianAxesWithHold', 'Current axes are Cartesian while hold is on; creating a new polar figure.')
             figure;
             ax = polaraxes;
         else

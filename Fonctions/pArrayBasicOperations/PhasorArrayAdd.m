@@ -14,14 +14,14 @@ function [summedPhasors, paddedPhasors] = PhasorArrayAdd(inputPhasors)
     % Check that all arrays have the same size in the first and second dimensions
 
     if range(originalSizes(:,1))~=0 || range(originalSizes(:,2))~=0
-        error("Non compatible dimensions. All arrays must have the same size in the first and second dimensions.")
+        error('PhasorArrayAdd:dimensionMismatch', 'All input arrays must have the same size in dim 1 and 2.')
     end
 
     % Sum all arrays along the fourth dimension to form the output array
     try
     summedPhasors=sum(cat(4,paddedPhasors{:}),4);
     catch e
-        warning('PhasorArrayAdd : error in sum 4, robust basic sum')
+        warning('PhasorArrayAdd:sumFallback', 'Primary summation method failed; falling back to robust summation.')
         
         isPhasorArray=cellfun(@(x) isa(x,'PhasorArray'),paddedPhasors);
         paddedPhasors(isPhasorArray)=cellfun(@(x) x.value,paddedPhasors(isPhasorArray),'UniformOutput',false);

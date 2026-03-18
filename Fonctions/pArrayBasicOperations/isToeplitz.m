@@ -8,7 +8,7 @@ function isT = isToeplitz(A,opt)
 
     % Validate input
     if ~ismatrix(A)
-        error('Input must be a matrix.');
+        error('isToeplitz:invalidInput', 'Input must be a 2-D matrix; got an array of size %s.', mat2str(size(A)))
     end
 
     switch opt 
@@ -27,7 +27,7 @@ function isT = isToeplitz(A,opt)
             % Check if A equals toeplitz(A(:,1), A(1,:)) with manual tolerance % Use a tolerance-based comparison:
             isT = all(abs(A - toeplitz(A(:,1), A(1,:))) < tol);
         otherwise
-        error('Invalid option. Use 0, 1, 2, or 3.');
+        error('isToeplitz:invalidOption', 'Invalid option %d. Use 0 (exact), 1 (NaN-tolerant), 2 (ismembertol), or 3 (manual tolerance).', opt)
     end
 
 

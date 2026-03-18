@@ -121,13 +121,13 @@ if arg.providedPhasorForm == "SinCos"
     % Ensure that the matrix is real valued
     if ~arg.forceReal
         arg.forceReal = true;
-        warning("SinCos phasor form is only compatible with real valued matrices. Forcing real valued computation.")
+        warning('PhasorArray2time:sinCosForceReal', 'SinCos phasor form is only compatible with real-valued matrices. Forcing real-valued computation.')
     end
 
     % Convert the matrix to SinCos form if it is not already
     if isa(Mph, 'PhasorArray')
         Mph = Mph.SinCosForm();
-        warning("Converting PhasorArray to SinCos form.")
+        warning('PhasorArray2time:sinCosConversion', 'Input PhasorArray converted to SinCos form.')
     end
 
 
@@ -543,7 +543,7 @@ if isempty(t) % case of a phase vector over T
     t=T;
     xlabelStr= 'angle (rad)';
 elseif numel(T)>1 && numel(t) ~= numel(T)
-    error('If T is a vector, t must be either empty or have the same number of elements as T for plotting')
+    error('PhasorArray2time:tVectorMismatch', 'If T is a vector, t must be either empty or have the same number of elements as T for plotting.')
 else
     xlabelStr= 'time (sec)';
 end

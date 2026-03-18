@@ -51,7 +51,7 @@ function T = manageTiledLayout(parent, nx, ny, Tag, varg)
             T = T_existing;
             return; 
         else
-            warning('Dimensions mismatch. Replacing layout.');
+            warning('manageTiledLayout:dimensionMismatch', 'Tiled layout dimensions [%d,%d] do not match requested [%d,%d]; replacing layout.', T_existing.GridSize(1), T_existing.GridSize(2), nx, ny)
         end
     end
 

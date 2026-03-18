@@ -7,7 +7,7 @@ if nargin==1
     elseif isa(varargin{1},'double')
         varargout{1}=varargin{1};
     else
-        error('non handled class')
+        error('pvalue:unsupportedClass', 'Input class ''%s'' is not supported; expected PhasorArray or double.', class(varargin{1}))
     end
 else
     varargout=cellfun(@pvalue,varargin,'UniformOutput',0);

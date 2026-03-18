@@ -16,7 +16,7 @@ if isempty(varg.enforce_real)
         AA = PhasorArray(Aph);
         if isreal(AA)
             varg.enforce_real=true;
-            warning('TransitionMatrixOverT:RealValuedMatrix',"In call to TransitionMatrixOverT, Matrix A appears to be real-valued, to enforce complex-valued computation, set 'isRealValued' to false")
+            warning('TransitionMatrixOverT:appearsRealValued', 'Matrix A appears to be real-valued. To enforce complex-valued computation, set ''isRealValued'' to false.')
         else
             varg.enforce_real=false;
         end

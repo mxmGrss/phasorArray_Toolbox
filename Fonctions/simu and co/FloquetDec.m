@@ -86,9 +86,9 @@ pause(0.1)
 
 if nnz(double(N.Ny>1e-2))>0
     N.Ny
-    warning('WARNING in FNC FloquetDec : periodicity deviation >1% ((xsim(T)-xsim(0))/xsim(0)), consider increasing Fs power')
+    warning('FloquetDec:periodicityDeviation', 'Periodicity deviation >1%% ((xsim(T)-xsim(0))/xsim(0)); consider increasing Fs power.')
     if varg.auto_adjust_precision
-        warning(['Increased Fs power to ',num2str(varg.FixedStepInitProbPow+1)])
+        warning('FloquetDec:increasedFsPower', 'Increased Fs power to %d.', varg.FixedStepInitProbPow+1)
         varg.FixedStepInitProbPow=varg.FixedStepInitProbPow+1;
         C=[fieldnames(varg).'; struct2cell(varg).'];
         C=C(:).';

@@ -47,11 +47,11 @@ switch numel(varargin)
         end
         varargin{2}=permute(varargin{2},[2 3 1]);
         if ~varg.isreal
-            warning('two argument provided, switching to z_pos_part=true')
+            warning('ScalarPhasorArray:isrealOverridden', 'Two arguments provided with isreal=false; switching to z_pos_part=true.')
             varg.isreal=true;
         end
     otherwise
-        error("error check size of input")
+        error('ScalarPhasorArray:invalidInputSize', 'Unexpected number of input arguments; check input sizes.')
 end
 C=[fieldnames(varg).'; struct2cell(varg).'];
 C=C(:).';

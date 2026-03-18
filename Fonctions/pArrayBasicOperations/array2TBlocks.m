@@ -113,7 +113,7 @@ function [OutM, N] = array2TBlocks(Aph, m, varg)
         if h1 == h2
             N = N_tb(n1, h1, 1);
         else
-            warning('N matrix is only defined for square Toeplitz-Blocks truncations.');
+            warning('array2TBlocks:nonSquareN', 'N matrix is only defined for square Toeplitz-Blocks truncations (h1=%d ~= h2=%d); returning empty N.', h1, h2)
             N = [];
         end
     end

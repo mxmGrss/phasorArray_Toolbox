@@ -30,7 +30,7 @@ if n3==1 %case Apos is not a 3D array, can be the case for convenience if A(t) i
                 Apos=Apos.';
             elseif iscolumn(Apos)
             else
-                warning('In the scalar case, Apos needs to be a vector')
+                warning('PosPart2PhasorArray:scalarCaseVectorRequired', 'In the scalar case, Apos must be a vector; got a %dx%d array.', size(Apos,1), size(Apos,2))
                 return
             end
             Apos=permute(Apos,[2,3,1]);
@@ -39,7 +39,7 @@ if n3==1 %case Apos is not a 3D array, can be the case for convenience if A(t) i
         elseif isrow(A0) || n2==m2
             Apos=permute(Apos,[3,2,1]);
         else
-            warning('Erreur de dimensions')
+            warning('PosPart2PhasorArray:dimensionMismatch', 'Dimension mismatch between A0 (%dx%d) and Apos (%dx%d); cannot determine permutation.', n1, n2, m1, m2)
             return
         end
     end

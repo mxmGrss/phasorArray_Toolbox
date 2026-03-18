@@ -59,11 +59,13 @@ if hasYALMIP
     results(end+1) = runTest('YALMIP: Lyapunov LMI stability', @() test_yalmip_LMI());
     results(end+1) = runTest('YALMIP: Check Solvers', @() test_check_solvers());
     results(end+1) = runTest('YALMIP: Lyap vs LMI Consistency', @() test_yalmip_LMI_vs_Lyap());
+    results(end+1) = runTest('YALMIP: Riccati LMI vs RicHarmonicKlein', @() test_riccati_lmi_vs_kleinman());
 else
     results(end+1) = skipTest('YALMIP: construct ndsdpvar');
     results(end+1) = skipTest('YALMIP: ndsdpvar addition');
     results(end+1) = skipTest('YALMIP: ndsdpvar diag/blkdiag');
     results(end+1) = skipTest('YALMIP: ndsdpvar detLeibnizHmc 2x2');
+    results(end+1) = skipTest('YALMIP: Riccati LMI vs RicHarmonicKlein');
 end
 
 %% ========================================================================
@@ -678,4 +680,57 @@ function test_yalmip_LMI_vs_Lyap()
         % Consistency should be high if T matches.
         assert(rel_err < 1e-5, sprintf('Mismatch between lyap() and LMI solution. Rel Err: %e', rel_err));
     end
+end
+
+function test_riccati_lmi_vs_kleinman()
+% Verifies that RicHarmonicKlein converges to the same LQR gain as the
+% direct Schur-complement Riccati LMI (YALMIP).
+%
+% ARE:  (A-N)^* P + P(A-N) - P B R^{-1} B^* P + Q = 0
+% Schur LMI:
+%   [ He((A-N)^*P) + Q,  PB ] >= 0,   max tr(PT)
+%   [ B^*P,               R  ]
+%
+% System: stable open-loop (A0 has eigs -3, -2) with periodic perturbation.
+% K0=0 is valid; Lyapunov solver converges cleanly.
+
+    T  = 1;
+    h  = 8;
+    A0 = [-3 0.5; 0 -2];
+    A1 = [0.1 0; 0 0.05];
+    A  = PhasorArray(cat(3, conj(A1), A0, A1));
+    B  = PhasorArray([1; 0.5]);
+    Q  = PhasorArray(diag([10, 1]));
+    R  = PhasorArray(1);
+
+    % --- 1. RicHarmonicKlein (K0=0 valid since A is open-loop stable) ---
+    [K_klein] = RicHarmonicKlein(A, B, Q, R, ...
+        PhasorArray(zeros(1, 2)), T, ...
+        'max_iter', 200, 'residualThreshold', 1e-8, 'autoUpdateh', true);
+
+    % --- 2. Riccati Schur LMI (wiki template §4) ---
+    P  = PhasorArray.ndsdpvar(2, 2, h, 'PhasorType', 'symmetric', 'real', true);
+    PT = P.T_tb(h);
+    N  = N_tb(2, h, T);
+
+    % He((A-N)^* P) + Q  in Toeplitz block
+    % (A-N)^* = A^* + N  since N^* = -N (skew-Hermitian)
+    % => T_tb(A'P + PA) + N*PT - PT*N + Q_tb
+    F11 = T_tb(A'*P + P*A, h) + (N*PT - PT*N) + Q.T_tb(h);
+    F12 = T_tb(P*B, h);
+    F22 = R.T_tb(h);
+
+    F = [PT >= 0, [F11, F12; F12', F22] >= 0];
+    sol = optimize(F, -trace(PT), sdpsettings('solver', 'mosek', 'verbose', 0));
+    assert(sol.problem == 0, sprintf('YALMIP Riccati LMI failed: %s', sol.info));
+
+    P_opt = sdpval(P);
+    K_lmi = R \ (B.' * P_opt);
+
+    % --- 3. Compare at truncation h ---
+    rel_err = norm(K_lmi.T_tb(h) - K_klein.T_tb(h), 'fro') / ...
+              (norm(K_lmi.T_tb(h), 'fro') + eps);
+    fprintf('    [INFO] Riccati LMI vs Kleinman: rel_err = %.2e\n', rel_err);
+    assert(rel_err < 5e-2, ...
+        sprintf('RicHarmonicKlein vs Schur LMI mismatch: %.2e', rel_err));
 end

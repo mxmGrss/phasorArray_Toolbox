@@ -53,7 +53,7 @@ end
 
 if ismatrix(Mph)
     if isempty(varg.harmodim)
-        warning("Warning: 2D object provided as a phasor, interpreted as a 0th phasor of a constant matrix. Specify the storage dimension of harmonics in the case of a vector.")
+        warning('Phasor2CosSin:2DInputAmbiguous', '2D input interpreted as the 0th phasor of a constant matrix. Specify harmodim if the input is a vector of harmonics.')
     elseif varg.harmodim==2
         Mph=permute(Mph,[1 3 2]);
     elseif varg.harmodim==1

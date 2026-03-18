@@ -43,7 +43,7 @@ classdef dSpaceDataExplorer < handle
                 
                 [filename, pathname] = uigetfile('*.mat', 'Select a .mat file');
                 if isequal(filename,0)
-                    error('User selected Cancel');
+                    error('dSpaceDataExplorer:userCancelled', 'File selection cancelled by user.');
                 else
                     s = load(fullfile(pathname, filename));
                     %extract the first variable in the struct
@@ -398,7 +398,7 @@ classdef dSpaceDataExplorer < handle
             maxHarm = (obj.maxOrderField.Value);
 
             if maxHarm <= 10
-                warning('The maximum order is set to 10 or less. Consider increasing the maximum order for better results.');
+                warning('dSpaceDataExplorer:lowHarmonicOrder', 'maxHarm=%d (<=10) may yield inaccurate results. Consider increasing it.', maxHarm);
             end
 
 
@@ -891,12 +891,11 @@ classdef dSpaceDataExplorer < handle
                     return
                     
                     else
-                    error('not a tree')
+                    error('dSpaceDataExplorer:invalidTreeStructure', 'Expected a tree structure but got %s.', class(obj.treeSig))
                     end
                 end
             catch e
-                warning(e.message)
-                warning('rebuilding tree from scratch')
+                warning('dSpaceDataExplorer:treeRebuild', 'Tree build failed (%s). Rebuilding from scratch.', e.message)
             end
 
             
@@ -913,8 +912,7 @@ classdef dSpaceDataExplorer < handle
             %expand the tree
             expand(obj.treeSig,'all');
             catch E
-                warning(E.message)
-                warning('Failed to build or populate the tree')
+                warning('dSpaceDataExplorer:treeRebuild', 'Failed to build or populate the tree (%s).', E.message)
             end
 
 

@@ -96,7 +96,7 @@ end
 
     %finally assert that the size of the two arrays are compatible
     if size(A,2)~=size(B,1)
-        error('The two arrays must have compatible sizes. Left array %s is %d x %d x %d and right array is  %s %d x %d x %d',inputname(1),size(A,1),size(A,2),size(A,3),inputname(2),size(B,1),size(B,2),size(B,3));
+        error('PhasorArrayTimes2:dimensionMismatch', 'Incompatible sizes: left %s is %dx%dx%d, right %s is %dx%dx%d.', inputname(1), size(A,1), size(A,2), size(A,3), inputname(2), size(B,1), size(B,2), size(B,3));
     end
 
 

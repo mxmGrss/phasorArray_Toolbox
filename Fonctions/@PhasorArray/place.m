@@ -72,7 +72,7 @@ P = PhasorArray(Sylv_harmonique(-A,La,(B*varg.G),varg.hLyap,2*pi/varg.T));
 if varg.checkP
     E = P.HmqEig();
     if nnz(abs(E)<varg.tolCheckP)>0
-        error("P is close to non invertible, change G")
+        error('PhasorArray:place:singularP', 'P is nearly singular (min|eig(P)|=%e < tol). Modify gain matrix G or relax the pole placement constraints.', min(abs(E)))
     end
 end
 

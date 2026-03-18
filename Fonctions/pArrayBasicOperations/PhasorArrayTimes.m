@@ -82,7 +82,7 @@ if ~isMATLABReleaseOlderThan("R2022a")
 
     %finally assert that the size of the two arrays are compatible
     if nA2~=nB1
-        error('The two arrays must have compatible sizes. Left array %s is %d x %d x %d and right array is  %s %d x %d x %d',inputname(1),nA1,nA2,size(A,3),inputname(2),nB1,nB2,size(B,3));
+        error('PhasorArrayTimes:dimensionMismatch', 'Incompatible sizes: left %s is %dx%dx%d, right %s is %dx%dx%d.', inputname(1), nA1, nA2, size(A,3), inputname(2), nB1, nB2, size(B,3));
     end
 
     if isempty(m)
@@ -103,7 +103,7 @@ if ~isMATLABReleaseOlderThan("R2022a")
     end
 
 else
-    warning('Error : Switching to legacy matricial convolution')
+    warning('PhasorArrayTimes:legacyFallback', 'Fast convolution unavailable on this MATLAB release; falling back to PhasorArrayTimes2.')
     D=PhasorArrayTimes2(A,B,m);
 end
 
