@@ -27,10 +27,10 @@ function [Xph,M,M1,M2,colQ,colX] = SylvHarmonic(Ahmad, Bhmad, Chmad, h, omega)
     hB = (size(Bhm, 3) - 1) / 2;
     hC = (size(Chm, 3) - 1) / 2;
 
-    % Backward compatibility: requested h must at least represent C.
-    if h < hC
-        h = hC;
-    end
+    % h controls the harmonic order of X (hIn). The system is rectangular:
+    % hOut = max([hIn+hA, hIn+hB, hC]) >= hIn, solved in least-squares.
+    % When h < hC, the solution is the best h-harmonic approximation of X.
+    % The autoUpdateh loop in lyap increases h until the residual is acceptable.
 
     % Rectangular truncation: unknown on hIn, equations enforced on hOut.
     hIn = h;
@@ -95,6 +95,7 @@ function [Xph,M,M1,M2,colQ,colX] = SylvHarmonic(Ahmad, Bhmad, Chmad, h, omega)
 
     % Least-squares solve of rectangular harmonic system.
     colX = (M \ colQ);
+
     dX = reshape(full(colX), [], nxA, nxB);
     Xph = permute(dX, [2, 3, 1]);
 end
