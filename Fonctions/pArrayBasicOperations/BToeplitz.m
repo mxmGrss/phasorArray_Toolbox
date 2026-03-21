@@ -38,8 +38,8 @@ function [Tmat,Mat] = BToeplitz(Lmat1,Lmat2)
         elseif Lmat2==1
             Lmat1(:,:,1)=(Lmat1(:,:,1)+Lmat1(:,:,1)')/2;
         else
-            if Lmat2(:,:,1) ~= Lmat1(:,:,1)
-                disp('Attention : première valeures différentes, premier élément de Lmat2 ignoré')
+            if ~isequal(Lmat2(:,:,1), Lmat1(:,:,1))
+                warning('BToeplitz:Lmat1Mismatch', 'Attention : première valeures différentes, premier élément de Lmat2 ignoré')
             end
             Lmat2=Lmat2(:,:,2:end);
         end

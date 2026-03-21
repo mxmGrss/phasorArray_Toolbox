@@ -224,7 +224,7 @@ if sum(plotTAPRI)>0
     try
         linkaxes(aaa,'x')
     catch ME
-        disp(ME.message)
+        warning('plotAngularSFT:linkaxes', 'Error linking axes: %s', ME.message)
     end
 
 
@@ -311,7 +311,8 @@ end
         % Link axes if possible
         try
             linkaxes(findall(ff, 'type', 'axes'), 'x')
-        catch
+        catch ME
+            warning('plotAngularSFT:linkaxes', 'Error linking axes: %s', ME.message)
         end
 
 

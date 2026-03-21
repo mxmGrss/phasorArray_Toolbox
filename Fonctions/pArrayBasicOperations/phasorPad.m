@@ -83,11 +83,11 @@ if isscalar(padsize)
 elseif length(padsize) < ndim
     % Extend padsize with zeros for missing dimensions
     padsize = [padsize, zeros(1, ndim - length(padsize))];
-elseif length(padsize) > ndim
-    % Truncate or error
-    error('phasorPad:InvalidPadsize', ...
-          'padsize has %d elements but array has %d dimensions.', ...
-          length(padsize), ndim);
+% elseif length(padsize) > ndim
+%     % Truncate or error
+%     error('phasorPad:InvalidPadsize', ...
+%           'padsize has %d elements but array has %d dimensions.', ...
+%           length(padsize), ndim);
 end
 
 % Determine padding for each side

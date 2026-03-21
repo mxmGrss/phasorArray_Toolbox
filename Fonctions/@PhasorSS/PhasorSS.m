@@ -860,7 +860,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             obj.InputGroup = mergeStruct(obj.InputGroup,varg.InputGroup);
         end
 
-        function sys = toLPVss(obj)
+        function sys = toLPVss(obj,verbose)
             %TOLPVSS Convert the PhasorSS object to an LPV state-space system
             %   sys = TOLPVSS(obj) converts the PhasorSS object to a Linear Parameter-Varying (LPV) state-space system.
             %
@@ -874,8 +874,11 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             %       Convert the PhasorSS object to an LPV state-space system
             %
             %   See also: TOLTVSS, TOSS
+            if nargin <2
+                verbose = false;
+            end
             if obj.isReal
-                disp('Real valued LPP ss')
+                if verbose; disp('Real valued LPP ss'); end
                 Acs = obj.A.SinCosForm();
                 Bcs = obj.B.SinCosForm();
                 Ccs = obj.C.SinCosForm();
@@ -884,7 +887,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 ltvFun = @(t,p) lpvFunSC(t,p,Acs,Bcs,Ccs,Dcs);
 
             else
-                disp('Complex valued LPP ss')
+                if verbose; disp('Complex valued LPP ss'); end
                 A = obj.A;
                 B = obj.B;
                 C = obj.C;
@@ -964,7 +967,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 ltvFun = @(t) ltvFunSC(t,Acs,Bcs,Ccs,Dcs);
 
             else
-                disp('Complex valued LTP ss')
+                if verbose; disp('Complex valued LTP ss'); end
                 ltvFun = @(t) ltvFunP(t);
             end
             sys = ltvss(ltvFun,'StateName',obj.StateName,'StateUnit',obj.StateUnit,'InputName',obj.InputName,'InputUnit',obj.InputUnit,'OutputName',obj.OutputName,'OutputUnit',obj.OutputUnit,'InputGroup',obj.InputGroup,'OutputGroup',obj.OutputGroup,'Name',obj.Name,'Notes',obj.Notes,'UserData',obj.UserData);

@@ -722,7 +722,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             try
                 r = PhasorArray(PhasorArrayTimes(o1,o2));
                 try
-                    if ~isreal(r) && isreal(PhasorArray(o1)) && isreal(PhasorArray(o2))
+                    if ~isspecial(r) && ~isreal(r) && isreal(PhasorArray(o1)) && isreal(PhasorArray(o2))
                         r = mreal(r);
                     end
                 catch
