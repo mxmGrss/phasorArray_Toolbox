@@ -104,22 +104,22 @@ try
     if isa(B,'double') %if B is double (hence A sdp or sym), slightly more efficient to use transposed pb
         At = permute(A,[2 1 3]);
         Bt = permute(B,[2 1 3]);
-        A_tb = sparray2TBlocks(Bt,2*m);
+        A_tb = sparray2TBlocks(Bt,m);
         B_ftb = array2TFTB(At,m);
         C_ftb = (A_tb * B_ftb);
         C = F_tb_2_PhasorArray(C_ftb,size(B,2),size(A,1));
         C = permute(C,[2 1  3]);
         D = C;
     else 
-        A_tb = sparray2TBlocks(A,2*m);
+        A_tb  = sparray2TBlocks(A,m);
         B_ftb = array2TFTB(B,m);
         C_ftb = A_tb * B_ftb;
         C = F_tb_2_PhasorArray(C_ftb,size(A,1),size(B,2));
         D = C;
     end
     return
-
-catch
+catch e 
+    warning(e.message)
 % % D=sdpvar(size(A,1),size(B,2),2*m+1);;
 Dd=[];
     %Convolution

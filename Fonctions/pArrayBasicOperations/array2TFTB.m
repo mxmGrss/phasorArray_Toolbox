@@ -53,6 +53,8 @@ if nho<m
     toto = PhasorArrayPad(o1,m-nho);
 elseif nho>m
     toto = o1(:,:,(nho+1)+(-m:m));
+else
+    toto = o1;
 end
 
 titi=permute(toto,[3 1 2]);

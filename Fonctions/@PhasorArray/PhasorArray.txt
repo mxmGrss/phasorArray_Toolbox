@@ -2161,7 +2161,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 o1
                 m=[]
             end
-            r=array2TBlocks(o1,2*m);
+            r=array2TBlocks(o1,m);
         end
         function r = spTB(o1,m)
             %SPTB Construct a sparse Toeplitz Block representation of A.
@@ -2202,7 +2202,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 o1
                 m=[]
             end
-            r=sparray2TBlocks(o1,2*m);
+            r=sparray2TBlocks(o1,m);
         end
         function r = spBT(o1,m)
             %WIP%%%%%%%%%%

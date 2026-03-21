@@ -10,8 +10,11 @@ function r = PhasorArrayPad(obj, delta_h)
     %
     %   Output Arguments:
     %   - r (PhasorArray)   : The padded PhasorArray object.
-    
-    val = obj.value;
+    if isa(obj,'PhasorArray')
+        val = obj.value;
+    else
+        val = obj;
+    end
     [n1, n2, ~] = size(val);
     
     if isscalar(delta_h)
@@ -31,5 +34,9 @@ function r = PhasorArrayPad(obj, delta_h)
         end
     end
     
-    r = PhasorArray(val);
+    if isa(obj,'PhasorArray')
+        r = PhasorArray(val);
+    else
+        r = val;
+    end
 end

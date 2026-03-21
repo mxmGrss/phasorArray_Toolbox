@@ -15,11 +15,11 @@ function [outM] = spPR_In(A,nxB,h)
 
 if isa(A,'PhasorArray')
     A=A.Value;
-    A=sparray2TBlocks(A,2*h);
+    A=sparray2TBlocks(A,h);
 end
 
 if ndims(A)==3
-    A=sparray2TBlocks(A,2*h);
+    A=sparray2TBlocks(A,h);
 end
 
 nxA=size(A,1)/(2*h+1);

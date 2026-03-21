@@ -81,8 +81,8 @@ switch arg.time_structure
        W=rand_phasor(nx,nx,h,"time_structure",'sdp');
        N=N_tb(nx,hbi,arg.T);
 %        N=kron(eye(nx),diag(1i*(-hbi:hbi)));
-       Qhm=array2TBlocks(diag(arg.hurwitzeig),2*hbi);
-       Whm=array2TBlocks(W,2*hbi);
+       Qhm=array2TBlocks(diag(arg.hurwitzeig),hbi);
+       Whm=array2TBlocks(W,hbi);
        Amn=Whm*(Qhm-N)*Whm^-1;
        Ahmd=Amn+N;
        A=TB2array(Ahmd,nx);
@@ -92,8 +92,8 @@ switch arg.time_structure
        W=rand_phasor(nx,nx,h,"time_structure",'sdp');
        N=N_tb(nx,hbi,arg.T);
 %        N=kron(eye(nx),diag(1i*(-hbi:hbi)));
-       Qhm=array2TBlocks(arg.Q,2*hbi);
-       Whm=array2TBlocks(W,2*hbi);
+       Qhm=array2TBlocks(arg.Q,hbi);
+       Whm=array2TBlocks(W,hbi);
        Amn=Whm*(Qhm-N)*Whm^-1;
        Ahmd=Amn+N;
        A=TB2array(Ahmd,nx);
