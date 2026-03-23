@@ -6,12 +6,12 @@
 
 %% ── μ-Analysis via Bisection ────────────────────────────────────────────
 %  Multiplicative uncertainty: (1+δ)(A₀(θ) + ω A₁(θ)),  ω ∈ [ωmin, ωmax]
-
+rng(42)
 %% 0. Problem data (replace with your system)
-nx = 3;  ha = 3;
-A0 = (PhasorArray.random(nx, nx, ha));
-A1 = (PhasorArray.random(nx, nx, ha));
-omega_bornes = [10, 100] * 2*pi;
+nx = 3;  ha = 4;
+A0 = (PhasorArray.random(nx, nx, ha))-eye(nx)*nx*nx;
+A1 = (PhasorArray.random(nx, nx, ha))*0.001;
+omega_bornes = [20, 40] * 2*pi;
 
 hP = 10;  hlmi = 10;
 
@@ -46,24 +46,31 @@ tol = 0.01;
 beta_lo = 0;  beta_hi = 1;
 ops = sdpsettings('solver', 'mosek', 'verbose', 0);
 
+fprintf('ready for bissection\n')
 % Expand upper bound until infeasible
 beta_cur = beta_hi;
 while true
     F = [PTB >= 1e-12*eye(size(PTB)); DTB >= 1e-12*eye(size(DTB)); ...
          LMI_nom{1} + beta_cur * D_beta{1} <= 0; ...
-         LMI_nom{2} + beta_cur * D_beta{2} <= 0];
+         LMI_nom{2} + beta_cur * D_beta{2} <= 0;...
+         trace(DTB)==hlmi];
     s = optimize(F, [], ops);
     if s.problem ~= 0 || beta_hi > 1e6, break; end
     beta_hi = beta_hi * 2;  beta_cur = beta_hi;
 end
 
+fprintf('Robustness margin upper bound: (βupper = %.4f)\n', beta_hi);
+
 % Bisect
 beta_star = 0;
+iterCount =  0;
 while (beta_hi - beta_lo) > tol
+    iterCount = iterCount+1;
     beta_mid = (beta_hi + beta_lo) / 2;
     F = [PTB >= 1e-12*eye(size(PTB)); DTB >= 1e-12*eye(size(DTB)); ...
          LMI_nom{1} + beta_mid * D_beta{1} <= 0; ...
-         LMI_nom{2} + beta_mid * D_beta{2} <= 0];
+         LMI_nom{2} + beta_mid * D_beta{2} <= 0;...
+         trace(DTB)==hlmi];
     s = optimize(F, [], ops);
     if s.problem == 0
         beta_lo   = beta_mid;

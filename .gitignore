@@ -131,3 +131,5 @@ current_config_fast_reboot.mat
 scratch/local_tests/
 /scratch
 disp_warning_audit.md
+/spec
+/+tests

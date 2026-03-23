@@ -37,9 +37,9 @@ N  = N_tb(nx, h, T);
 % [      *          , -gam I,    Dz' ] < 0
 % [      *          ,    *  , -gam I ]
 
-AP   = (A' * P + P * A).T_tb(h);
+AP   = T_tb(A' * P + P * A,h);
 Pdot = N * PT - PT * N;
-PBw  = (P * Bw).T_tb(h);
+PBw  = T_tb(P * Bw,h);
 
 F11 = AP - Pdot;
 F12 = PBw;

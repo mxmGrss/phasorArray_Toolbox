@@ -64,12 +64,12 @@ sol   = optimize(F, gamma, sdpsettings('solver', 'mosek', 'verbose', 1));
 
 %% 5. Extract
 if sol.problem == 0
-    K = sdpval(Y) / sdpval(P);
+    K = -sdpval(Y) / sdpval(P);
     fprintf('Optimal H2 norm: %.4e\n', value(gamma));
 
     figure('Name','polytopic_h2 — Controller gain'); stem(K); sgtitle('Gain-scheduled K(\theta)');
     T1 = 2*pi/omega_bornes(1);
     A_cl = A0 + omega_bornes(1)*A1 + (B0 + omega_bornes(1)*B1)*K;
-    figure('Name','polytopic_h2 — Closed-loop eigenvalues'); plot(HmqNEig(A_cl, hlmi, T1), 'o'); title('Closed-loop eig at \omega_1');
+    figure('Name','polytopic_h2 — Closed-loop eigenvalues'); plot(HmqNEig(A_cl, 80, T1), 'o'); title('Closed-loop eig at \omega_1');
     figure('Name','polytopic_h2 — Closed-loop response'); lsim(A_cl, 2, [], T1); title('Closed-loop response at \omega_1');
 end
