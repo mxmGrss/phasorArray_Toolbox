@@ -44,11 +44,11 @@ sol = optimize(constraints, [], sdpsettings('solver', 'mosek', 'verbose', 0));
 if sol.problem == 0
     fprintf('System is ROBUSTLY STABLE over [%.1f, %.1f] rad/s\n', omega_bornes);
     P_opt = sdpval(P);
-    figure; stem(P_opt); title('Common Lyapunov P(\theta)');    
-    figure; plot(HmqNEig(A0 + omega_bornes(1)*A1, hlmi, 2*pi/omega_bornes(1)), 'o'); legend('Eigenvalues at \omega_1');
+    figure('Name','polytopic_stability — Lyapunov P'); stem(P_opt); title('Common Lyapunov P(\theta)');
+    figure('Name','polytopic_stability — Eigenvalues'); plot(HmqNEig(A0 + omega_bornes(1)*A1, hlmi, 2*pi/omega_bornes(1)), 'o'); legend('Eigenvalues at \omega_1');
     hold on;plot(HmqNEig(A0 + omega_bornes(2)*A1, hlmi, 2*pi/omega_bornes(2)), 'o'); legend('Eigenvalues at \omega_2');
     hold off;
-    figure; lsim(A0 + omega_bornes(1)*A1, 2, [], 2*pi/omega_bornes(1)); title('Response at \omega_1');
+    figure('Name','polytopic_stability — Response'); lsim(A0 + omega_bornes(1)*A1, 2, [], 2*pi/omega_bornes(1)); title('Response at \omega_1');
     hold on;lsim(A0 + omega_bornes(2)*A1, 2, [], 2*pi/omega_bornes(2)); title('Response at \omega_2');
     hold off;
 else

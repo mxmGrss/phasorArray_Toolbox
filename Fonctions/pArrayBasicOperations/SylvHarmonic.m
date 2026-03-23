@@ -1,4 +1,4 @@
-function [Xph,M,M1,M2,colQ,colX] = SylvHarmonic(Ahmad, Bhmad, Chmad, h, omega)
+function [Xph,M,M1,M2,colQ,colX] = SylvHarmonic(Ahmad, Bhmad, Chmad, h, omega, method)
 % SYLVHARMONIC Solve harmonic Sylvester equations.
 %
 %   X = SylvHarmonic(Ahmad, Bhmad, Chmad, h, omega) solves:
@@ -13,8 +13,9 @@ function [Xph,M,M1,M2,colQ,colX] = SylvHarmonic(Ahmad, Bhmad, Chmad, h, omega)
         Ahmad
         Bhmad
         Chmad
-        h (1,1) double {mustBeInteger, mustBeNonnegative}
+        h     (1,1) double {mustBeInteger, mustBeNonnegative}
         omega (1,1)
+        method {mustBeMember(method, {'rectangle','square'})} = 'rectangle'
     end
 
     % Extract raw values from PhasorArray objects if needed.
@@ -32,9 +33,15 @@ function [Xph,M,M1,M2,colQ,colX] = SylvHarmonic(Ahmad, Bhmad, Chmad, h, omega)
     % When h < hC, the solution is the best h-harmonic approximation of X.
     % The autoUpdateh loop in lyap increases h until the residual is acceptable.
 
-    % Rectangular truncation: unknown on hIn, equations enforced on hOut.
+    % Truncation: unknown on hIn, equations enforced on hOut.
+    % 'rectangle': hOut inflated by operator spectral width (overdetermined, default).
+    % 'square':    hOut = hIn = h (Galerkin truncation, border harmonics discarded).
     hIn = h;
-    hOut = max([hIn + hA, hIn + hB, hC]);
+    if strcmp(method, 'square')
+        hOut = hIn;
+    else
+        hOut = max([hIn + hA, hIn + hB, hC]);
+    end
 
     % Rectangular Toeplitz-Blocks for left/right multiplication operators.
     A_tb = array2TBlocks(Ahm, [hOut, hIn]);

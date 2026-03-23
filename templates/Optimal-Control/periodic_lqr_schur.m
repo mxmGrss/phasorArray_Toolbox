@@ -50,9 +50,9 @@ if sol.problem == 0
     K = K.reduce('reduceMethod', 'relative', 'reduceThreshold', 1e-4);
 
     % Verify closed-loop stability
-    figure; stem(K); sgtitle('Controller gain K(\theta)');
-    figure; plot(HmqNEig(A + B*K, h, T), 'o'); title('Closed-loop eigenvalues');
-    figure; lsim(A + B*K, 2, [], T);           title('Closed-loop response');
+    figure('Name','lqr_schur — Controller gain'); stem(K); sgtitle('Controller gain K(\theta)');
+    figure('Name','lqr_schur — Closed-loop eigenvalues'); plot(HmqNEig(A + B*K, h, T), 'o'); title('Closed-loop eigenvalues');
+    figure('Name','lqr_schur — Closed-loop response'); lsim(A + B*K, 2, [], T); title('Closed-loop response');
 else
     warning('LMI infeasible: %s', sol.info);
 end

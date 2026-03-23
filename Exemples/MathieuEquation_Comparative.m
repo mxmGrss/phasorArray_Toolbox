@@ -232,9 +232,9 @@ R_w = PhasorArray(1);
 K0  = PhasorArray(ones(1, 2));
 
 % Harmonic Riccati (iterative fixed-point)
-[K_ric, r, h_final] = RicHarmonicKlein(Ar_ol, B_stab, Q_w, R_w, K0, T, ... %[output:group:3c3de03f] %[output:1cf06d38]
-    'max_iter', 150, 'residualThreshold', 1e-6, 'autoUpdateh', true); %[output:group:3c3de03f] %[output:1cf06d38]
-fprintf('Riccati converged at h = %d\n', h_final); %[output:3c512fe7]
+[K_ric, r, info_ric] = RicHarmonicKlein(Ar_ol, B_stab, Q_w, R_w, K0, T, ... %[output:group:3c3de03f] %[output:1cf06d38]
+    'maxIter', 150, 'thresholdResidual', 1e-6, 'autoUpdateh', true); %[output:group:3c3de03f] %[output:1cf06d38]
+fprintf('Riccati converged at h = %d\n', info_ric.h); %[output:3c512fe7]
 
 % Closed-loop system
 Ar_cl = Ar_ol - B_stab * K_ric;

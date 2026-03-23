@@ -25,8 +25,8 @@ V = PhasorArray(eye(ny));          % measurement noise covariance
 %  R_dual = V    (measurement noise = "control weight" in dual)
 L0 = PhasorArray(zeros(ny, nx));   % initial dual gain (ny × nx)
 
-[L_dual, Sigma, htrunc] = RicHarmonicKlein(A.', C.', W, V, L0, T, ...
-    'max_iter', 100, 'residualThreshold', 1e-3, 'autoUpdateh', true);
+[L_dual, Sigma, info_ric] = RicHarmonicKlein(A.', C.', W, V, L0, T, ...
+    'maxIter', 100, 'thresholdResidual', 1e-3, 'autoUpdateh', true);
 
 %% 2. Observer gain: L = Σ C' V⁻¹
 %  Note: RicHarmonicKlein returns K = R⁻¹B'S in the control sense
@@ -35,9 +35,9 @@ L0 = PhasorArray(zeros(ny, nx));   % initial dual gain (ny × nx)
 L = L_dual.';
 
 %% 3. Verify observer poles
-fprintf('Observer truncation order: h = %d\n', htrunc);
-figure; plot(HmqNEig(A - L*C, htrunc, T), 'o'); title('Observer eigenvalues');
-figure; stem(L); sgtitle('Observer gain L(\theta)');
+fprintf('Observer truncation order: h = %d\n', info_ric.h);
+figure('Name','observer_riccati — Observer eigenvalues'); plot(HmqNEig(A - L*C, info_ric.h, T), 'o'); title('Observer eigenvalues');
+figure('Name','observer_riccati — Observer gain'); stem(L); sgtitle('Observer gain L(\theta)');
 
 %% 4. Simulate estimation error dynamics
-figure; lsim(A - L*C, 2, [], T); title('Observer error dynamics');
+figure('Name','observer_riccati — Error dynamics'); lsim(A - L*C, 2, [], T); title('Observer error dynamics');

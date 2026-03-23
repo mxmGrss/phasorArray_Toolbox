@@ -131,11 +131,11 @@ At=PhasorArray2time(Aph,T,t,"plot",false);
 try
     Ainvt=pageinv(At);
 catch e1
-    warning('PhasorInv:pageinvFailed', 'pageinv failed (%s); falling back to pagepinv.', e1.message)
+    % warning('PhasorInv:pageinvFailed', 'pageinv failed (%s); falling back to pagepinv.', e1.message)
     try
         Ainvt=pagepinv(At);
     catch e2
-        warning('PhasorInv:pagepinvFailed', 'pagepinv failed (%s); falling back to pinv.', e2.message)
+        % warning('PhasorInv:pagepinvFailed', 'pagepinv failed (%s); falling back to pinv.', e2.message)
         for ii = 1:size(At,3)
             Ainvt(:,:,ii)=pinv(At(:,:,ii));
         end

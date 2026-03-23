@@ -59,9 +59,9 @@ if sol.problem == 0
     L = L.reduce('reduceMethod', 'relative', 'reduceThreshold', 1e-4);
 
     % Check observer poles
-    figure; plot(HmqNEig(A - L*C, h, T), 'o'); title('Observer eigenvalues');
-    figure; stem(L); sgtitle('Observer gain L(\theta)');
-    figure; lsim(A - L*C, 2, [], T); title('Observer error dynamics');
+    figure('Name','kalman_lmi — Observer eigenvalues'); plot(HmqNEig(A - L*C, h, T), 'o'); title('Observer eigenvalues');
+    figure('Name','kalman_lmi — Observer gain'); stem(L); sgtitle('Observer gain L(\theta)');
+    figure('Name','kalman_lmi — Error dynamics'); lsim(A - L*C, 2, [], T); title('Observer error dynamics');
 else
     warning('Observer LMI infeasible: %s', sol.info);
 end

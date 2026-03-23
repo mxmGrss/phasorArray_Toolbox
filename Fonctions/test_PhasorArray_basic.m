@@ -647,8 +647,10 @@ function [A, BmatLeft, BvecLeft, BmatRight, BvecRight] = make_rect_case_4x3_h15(
 end
 
 function check_left_divide_equivalence(A, B, tolCons, tolRes, label, enforceSmallResidual)
+
     cleanupWarnings = suppress_expected_divide_warnings(~enforceSmallResidual);
     Xdiv = mldivide(A, B, "autoUpdateh", true, "verbose", 0);
+
     clear cleanupWarnings;
     Xinv = inv(A) * B;
 

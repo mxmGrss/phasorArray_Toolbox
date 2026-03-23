@@ -69,9 +69,9 @@ if sol.problem == 0
     K = sdpval(Y) / sdpval(P);
     fprintf('Optimal γ = %.4e\n', value(gam));
 
-    figure; stem(K); sgtitle('K(\theta)');
+    figure('Name','polytopic_lqr — Controller gain'); stem(K); sgtitle('K(\theta)');
     T1 = 2*pi/omega_bornes(1);
     A_cl = A0 + omega_bornes(1)*A1 + (B0 + omega_bornes(1)*B1)*K;
-    figure; plot(HmqNEig(A_cl, hlmi, T1), 'o'); title('Closed-loop eig at \omega_1');
-    figure; lsim(A_cl, 2, [], T1); title('Closed-loop response at \omega_1');
+    figure('Name','polytopic_lqr — Closed-loop eigenvalues'); plot(HmqNEig(A_cl, hlmi, T1), 'o'); title('Closed-loop eig at \omega_1');
+    figure('Name','polytopic_lqr — Closed-loop response'); lsim(A_cl, 2, [], T1); title('Closed-loop response at \omega_1');
 end

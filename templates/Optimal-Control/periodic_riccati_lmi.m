@@ -43,7 +43,7 @@ if sol.problem == 0
     PP = PhasorArray(value(P.value));
     K  = R_ric \ (B.' * PP + N_ric);
 
-    figure; stem(K); sgtitle('Controller gain K(\theta)');
-    figure; plot(HmqNEig(A - B*K, h, T), '*'); title('Closed-loop eig');
-    figure; lsim(A - B*K, 2, [], T);           title('Closed-loop response');
+    figure('Name','riccati_lmi — Controller gain'); stem(K); sgtitle('Controller gain K(\theta)');
+    figure('Name','riccati_lmi — Closed-loop eigenvalues'); plot(HmqNEig(A - B*K, h, T), '*'); title('Closed-loop eig');
+    figure('Name','riccati_lmi — Closed-loop response'); lsim(A - B*K, 2, [], T); title('Closed-loop response');
 end

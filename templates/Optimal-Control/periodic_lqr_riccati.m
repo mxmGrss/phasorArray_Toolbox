@@ -12,21 +12,21 @@ nx = 3;  nu = 2;  ha = 3;
 T = 0.1;
 
 rng(42);
-A = PhasorArray(-5*eye(nx)) + PhasorArray.random(nx, nx, ha)*0.5; % strictly stable open-loop for illustration
-B = PhasorArray.random(nx, nu, ha);
+A = PhasorArray(5*eye(nx)) + PhasorArray.random(nx, nx, ha)*0.5; % open-loop unstable
+B = PhasorArray.random(nx, nu, ha)+rand(nx,nu)*5;
 
 Q = PhasorArray(10*eye(nx));     % state weight
 R = PhasorArray(eye(nu));        % control weight
-K0 = PhasorArray(zeros(nu,nx));  % initial stabilising gain (zero if A is open-loop stable)
+K0 = [];                         % [] → DC LQR fallback (required when A is open-loop unstable)
 
 %% 1. Solve — automatic harmonic truncation growth
-[K, S, htrunc, H] = RicHarmonicKlein(A, B, Q, R, K0, T, ...
-    'max_iter', 100, 'residualThreshold', 1e-5, 'autoUpdateh', true);
+[K, S, info_ric] = RicHarmonicKlein(A, B, Q, R, K0, T, ...
+    'maxIter', 100, 'thresholdResidual', 1e-5, 'autoUpdateh', true,verbose=2,warmStartFraction=0.7);
 
 %% 2. Inspect result
-fprintf('Final truncation order: h = %d\n', htrunc);
+fprintf('Final truncation order: h = %d\n', info_ric.h);
 fprintf('Gain K has %d harmonics\n', (size(K,3)-1)/2);
 
-figure; stem(K); sgtitle('Controller gain K(\theta)');
-figure; plot(HmqNEig(A - B*K, htrunc, T), 'o'); title('Closed-loop eigenvalues');
-figure; lsim(A - B*K, 2, [], T); title('Closed-loop response');
+figure('Name','lqr_riccati — Controller gain'); stem(K); sgtitle('Controller gain K(\theta)');
+figure('Name','lqr_riccati — Closed-loop eigenvalues'); plot(HmqNEig(A - B*K, info_ric.h, T), 'o'); title('Closed-loop eigenvalues');
+figure('Name','lqr_riccati — Closed-loop response'); lsim(A - B*K, 2, [], T); title('Closed-loop response');

@@ -706,7 +706,7 @@ function test_riccati_lmi_vs_kleinman()
     % --- 1. RicHarmonicKlein (K0=0 valid since A is open-loop stable) ---
     [K_klein] = RicHarmonicKlein(A, B, Q, R, ...
         PhasorArray(zeros(1, 2)), T, ...
-        'max_iter', 200, 'residualThreshold', 1e-8, 'autoUpdateh', true);
+        'maxIter', 200, 'thresholdResidual', 1e-8, 'autoUpdateh', true);
 
     % --- 2. Riccati Schur LMI (wiki template §4) ---
     P  = PhasorArray.ndsdpvar(2, 2, h, 'PhasorType', 'symmetric', 'real', true);

@@ -62,8 +62,8 @@ if sol.problem == 0
     fprintf('Optimal H-infinity norm (γ): %.4f\n', gamma_opt);
     
     P_val = PhasorArray(value(P.value));
-    figure; plot(P_val); sgtitle('Lyapunov Matrix P(t)');
-    figure; plot(HmqNEig(A, h, T), '*'); title('Open-loop eigenvalues');
+    figure('Name','hinf_brl — Lyapunov P(t)'); plot(P_val); sgtitle('Lyapunov Matrix P(t)');
+    figure('Name','hinf_brl — Open-loop eigenvalues'); plot(HmqNEig(A, h, T), '*'); title('Open-loop eigenvalues');
 else
     warning('LMI infeasible: %s', sol.info);
 end

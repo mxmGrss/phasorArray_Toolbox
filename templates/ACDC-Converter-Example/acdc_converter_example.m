@@ -78,7 +78,7 @@ h_out = 10;
 C_TB = T_tb(Cout, h_out);   % Toeplitz-block form
 
 % Visualize sparsity — each T_k contributes only 2 non-zero diagonals
-figure; spy(C_TB); title('Sparsity of \mathcal{C} = \mathcal{T}(C)');
+figure('Name','acdc — Sparsity C_TB'); spy(C_TB); title('Sparsity of \mathcal{C} = \mathcal{T}(C)');
 
 %% 3a. Compute dq equilibrium from steady-state equations
 %   In steady-state dq (Amplitude Invariant Park):
@@ -167,8 +167,8 @@ P = PhasorArray(LyapHarmonic(A_err, Q, h_solve, T));
 
 % Inspect harmonic content of P
 
-figure(); stem(P);   sgtitle('Lyapunov matrix P — harmonic content');
-figure(); plot(P);   sgtitle('Lyapunov matrix P(t)');
+figure('Name','acdc — Lyapunov P harmonics'); stem(P);   sgtitle('Lyapunov matrix P — harmonic content');
+figure('Name','acdc — Lyapunov P(t)'); plot(P);   sgtitle('Lyapunov matrix P(t)');
 
 %% 4d. Tune gain H1 (scalar)
 %   H1 = (1/50) / sigma_max( G(X^e) ^H P )
@@ -210,8 +210,8 @@ O_pa = PhasorArray(zeros(nz));   % O = 0: no oscillator!
 M = PhasorArray(SylvHarmonic(O_pa, A_err, L_pa * Cout, h_solve, T));
 
 % Inspect M
-figure(); stem(M);   sgtitle('Forwarding matrix M — harmonic content (O=0)');
-figure(); plot(M);   sgtitle('M(t) — time domain');
+figure('Name','acdc — Forwarding M harmonics'); stem(M);   sgtitle('Forwarding matrix M — harmonic content (O=0)');
+figure('Name','acdc — Forwarding M(t)'); plot(M);   sgtitle('M(t) — time domain');
 
 %% 5d. Tune H2 (forwarding aggressiveness)
 %   H2 = β * blkdiag(1, 0.1, I_2, I_2)
@@ -256,7 +256,7 @@ x_out = xz_out(:, 1:4);       % states: [i_a, i_b, i_c, v_dc]
 z_out = xz_out(:, 5:4+nz);    % integrator states
 
 %% 6d. Plot results
-figure;
+figure('Name','acdc — Closed-loop simulation');
 subplot(3,1,1);
 plot(t_out, x_out(:,1), t_out, x_out(:,2), t_out, x_out(:,3));
 ylabel('Current [A]'); legend('i_a', 'i_b', 'i_c');

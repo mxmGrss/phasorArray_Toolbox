@@ -58,9 +58,9 @@ if sol.problem == 0
     K = K.reduce('reduceMethod', 'relative', 'reduceThreshold', 1e-4);
 
     fprintf('Optimal H2 norm squared: %.6f\n', value(obj));
-    figure; stem(K); sgtitle('Controller gain K(\theta)');
-    figure; plot(HmqNEig(A + Bu*K, h, T), '*'); title('Closed-loop eig');
-    figure; lsim(A + Bu*K, 2, [], T);           title('Closed-loop response');
+    figure('Name','h2_lmi — Controller gain'); stem(K); sgtitle('Controller gain K(\theta)');
+    figure('Name','h2_lmi — Closed-loop eigenvalues'); plot(HmqNEig(A + Bu*K, h, T), '*'); title('Closed-loop eig');
+    figure('Name','h2_lmi — Closed-loop response'); lsim(A + Bu*K, 2, [], T); title('Closed-loop response');
 else
     warning('LMI infeasible: %s', sol.info);
 end

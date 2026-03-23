@@ -796,9 +796,8 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 optarg.maxh             = []
                 optarg.stagnationWindow = 15
                 optarg.stagnationRatio  = 0.02
-                optarg.verbose          = 1
+                optarg.verbose          (1,1) logical = false
                 optarg.updateMethod    {mustBeMember(optarg.updateMethod,{'adaptive','incremental'})} = 'adaptive'
-                optarg.plotConvergence  = false
             end
             C = namedargs2cell(optarg);
             r = mrHmcDivide(PhasorArray(o1), PhasorArray(o2), C{:});
@@ -827,15 +826,14 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 optarg.maxh             = []
                 optarg.stagnationWindow = 15
                 optarg.stagnationRatio  = 0.02
-                optarg.verbose          = 1
+                optarg.verbose          = false
                 optarg.updateMethod    {mustBeMember(optarg.updateMethod,{'adaptive','incremental'})} = 'adaptive'
-                optarg.plotConvergence  = false
             end
             C = namedargs2cell(optarg);
             r = mlHmcDivide(PhasorArray(o1), PhasorArray(o2), C{:});
         end
 
-        function [r,residual] = mlHmcDivide(A, B, optarg)
+        function [r,residual] = mlHmcDivide_old(A, B, optarg)
             % mlHmcDivide solves A(t)*X(t) = B(t) (equiv. X(t) = A(t)\B(t)) directly in the harmonic domain.
             %   X = mlHmcDivide(A, B) computes the harmonic division using Toeplitz matrices:
             %   F_tb(X) = T_tb(A, h) \ F_tb(B, h).
@@ -1163,9 +1161,8 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             optarg.maxh             = []    % hard upper bound on h (default: h0 * 20)
             optarg.stagnationWindow = 15     % look-back window for stagnation detection
             optarg.stagnationRatio  = 0.02  % relative improvement threshold (< 5% = stagnation)
-            optarg.verbose          = 1
+            optarg.verbose          (1,1) logical = false
             optarg.updateMethod    {mustBeMember(optarg.updateMethod,{'adaptive','incremental'})} = 'adaptive'
-            optarg.plotConvergence  = false
         end
 
         C = namedargs2cell(optarg);
@@ -5080,7 +5077,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
 
     
 
-    function [res,residual] = lyap(o1,o2,o3,optarg)
+    function [res,residual] = lyap_old(o1,o2,o3,optarg)
         %lyap(A,Q,"h",h,"T",T) is the T - periodic Lyapunov dot P + A'(t) P + PA(t) + Q = 0 truncated to h harmonics
         %lyap(A,B,C,h,T) the T - periodic sylverster dot M + A(t) M + MB(t) + C = 0 truncated to h harmonics
         % A,Q,B,C are PhasorArray of appropriate size, or convertible to PhasorArray (eg 3D array of double)

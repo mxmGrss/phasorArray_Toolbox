@@ -65,9 +65,9 @@ if sol.problem == 0
     L = L.reduce('reduceMethod', 'relative', 'reduceThreshold', 1e-4);
 
     fprintf('Observer variance (Trace P): %.6f\n', value(obj));
-    figure; stem(L); sgtitle('Observer gain L(\theta)');
-    figure; plot(HmqNEig(A - L*C, h, T), 'o'); title('H₂-optimal observer eig');
-    figure; lsim(A - L*C, 4, [], T);           title('Observer error dynamics');
+    figure('Name','h2_observer_lmi — Observer gain'); stem(L); sgtitle('Observer gain L(\theta)');
+    figure('Name','h2_observer_lmi — Observer eigenvalues'); plot(HmqNEig(A - L*C, h, T), 'o'); title('H₂-optimal observer eig');
+    figure('Name','h2_observer_lmi — Error dynamics'); lsim(A - L*C, 4, [], T); title('Observer error dynamics');
 else
     warning('H₂ observer LMI infeasible: %s', sol.info);
 end
