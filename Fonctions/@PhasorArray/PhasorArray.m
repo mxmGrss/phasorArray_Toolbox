@@ -3230,6 +3230,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             varg.hinit = o1.h
             varg.hmax  = o1.h*10
             varg.thresholdResidual = 1e-3;
+            varg.verbose = 0
         end
         
         nx = o1.size(1);
@@ -4318,6 +4319,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             arg.forceReal logical    = false
             arg.checkReal logical    = false
             arg.checkRealTol         = 1e-8
+            arg.squeeze              = false
         end
 
         if isreal(o1)
@@ -5026,7 +5028,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         r = PhasorArray(r);
     end
 
-    function r = squishBase(o1,m)
+    function [r, normDeleted,normbase] = squishBase(o1,m)
         % SQUISHBASE Remove phasors to change the frequency base.
         %
         %   r = SQUISHBASE(o1, m) modifies the PhasorArray `o1` by retaining only
@@ -5062,7 +5064,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             o1 = pad(o1,m-mod(h,m));
             h = o1.h;
         end
-
+        normbase = norm(o1(:),'fro');
         r = o1(:,:,1:m:end);
 
         r = PhasorArray(r);
@@ -5070,8 +5072,8 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %evaluate the norm of deleted phasors in original phasorArray
         deleted = o1(:,:,setdiff(1:(2*h+1),1:m:(2*h+1)));
         normDeleted = norm(deleted(:),'fro');
-        if normDeleted > 1e-10
-            warning('PhasorArray:squishBase:truncationLoss', 'Deleted phasors have a Frobenius norm of %e. The result may not accurately represent the original signal.', normDeleted)
+        if normDeleted/normbase > 1e-4
+            warning('PhasorArray:squishBase:truncationLoss', 'Deleted phasors have a Frobenius norm of %e (%.5f pct of total norm). The result may not accurately represent the original signal.', normDeleted, normDeleted/normbase*100)
         end
     end
 

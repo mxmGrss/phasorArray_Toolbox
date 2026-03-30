@@ -97,6 +97,7 @@ arguments
     arg.providedPhasorForm {mustBeMember(arg.providedPhasorForm,["exp","SinCos"])} = "exp"
     arg.parent               = [];
     arg.grid {mustBeMember(arg.grid,["off","on","minor"])}                = 'on'
+    arg.squeeze logical      = false
 end
 
 % Use a less efficient but compatible computation method for older MATLAB releases
@@ -219,6 +220,9 @@ if arg.plot
 
 end
 
+if arg.squeeze
+    Mt = squeeze(Mt);
+end
 
     function Mph = convertToNumeric(Mph)
         if isa(Mph, 'PhasorArray')
