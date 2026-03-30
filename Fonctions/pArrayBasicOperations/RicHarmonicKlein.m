@@ -312,7 +312,7 @@ for kk = 1:maxIter
     %% Convergence
     if resRicnorm < thresholdResidual
         status    = 0;
-        statusMsg = sprintf('Converged (Ric Res) at iter %d: Ric relRes = %.2e.', kk, resRicnorm);
+        statusMsg = sprintf('Converged (Ric relRes) at iter %d: Ric relRes = %.2e.', kk, resRicnorm);
         note      = 'converged (Ric Res)';
     elseif relChange < options.relChangeThreshold
         status    = 1;
