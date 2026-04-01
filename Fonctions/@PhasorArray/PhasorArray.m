@@ -2056,7 +2056,17 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             r = PhasorArray(max(pvalue(d{1}),pvalue(d{2})));
         end
     end
+    
+    function out = dc(o1)
+        out = PhasorArray(o1{:,:,0});
+    end
 
+
+    function out = ac(o1)
+        negp = o1{:,:,-o1.h:-1};
+        posp = o1{:,:,1:o1.h};
+        out = PhasorArray(cat(3,negp,zeros(size(o1,1),size(o1,2)),posp));
+    end
 
     function varargout=phas(o1,h)
         % phas Extract the phasor of order `h` from a PhasorArray.
@@ -5058,7 +5068,6 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         h = o1.h;
         nx = size(o1,1);
         ny = size(o1,2);
-
         %ensure o1.h is a multiple of m, otherwise pad o1 with zeros
         if mod(h,m)~=0
             o1 = pad(o1,m-mod(h,m));
@@ -5273,7 +5282,9 @@ methods (Access=protected)
                 header = sprintf('%dD Array of %dx%dx%d <a href="matlab:helpPopup PhasorArray">PhasorArray</a> of %s',nn-3,size(obj,1),size(obj,2),size(obj,3),classStr);
             end
         end
-        if isa(obj.value,'double') && iszero(obj)
+        if nn>3
+            endHeader = '';
+        elseif isa(obj.value,'double') && iszero(obj)
             endHeader = sprintf(' representing a %dx%d <strong>zero-valued matrix</strong>',size(obj,1),size(obj,2));
         elseif isreal(obj)
             endHeader = sprintf(' representing a %dx%d <strong>real-valued</strong> periodic matrix with %d harmonics',size(obj,1),size(obj,2),obj.h);
@@ -5354,7 +5365,7 @@ methods (Access=protected)
             argou = obj.sub(indexOp(1).Indices{1:2});
             argou = value(argou.phas(indexOp(1).Indices{3}));
             ind = repmat({':'},1,ndims(argou));
-            ind{4:end} = indexOp(1).Indices{4:end};
+            [ind{4:end}] = indexOp(1).Indices{4:end};
             varargout{1} = argou(ind{:});
             if strcmp(indexOp(1).Indices{3},':')
                 varargout{1} = PhasorArray(varargout{1});

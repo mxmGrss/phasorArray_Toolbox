@@ -183,14 +183,23 @@ if options.verbose
     fprintf('%4s | %4s | %11s | %12s | %-12s | %8s | %9s | %s\n', ...
         'h', 'hOut', 'Res norm', 'Rel res norm', 'Regime', 'Step (s)', 'Total (s)', 'Note')
     fprintf('-----|------|-------------|--------------|--------------|----------|-----------|------\n')
-    fprintf('%4d | %4d | %11.4e | %12.4e | %-12s | %8.3f | %9.3f |\n', ...
-        h, hOut_of(h), resnorm, resrelnorm, 'initial', dt_step, toc(t_start))
+    note0 = '';
+    if resrelnorm <= thresholdResidual, note0 = 'converged'; end
+    fprintf('%4d | %4d | %11.4e | %12.4e | %-12s | %8.3f | %9.3f | %s\n', ...
+        h, hOut_of(h), resnorm, resrelnorm, 'initial', dt_step, toc(t_start), note0)
 end
 
-status    = -1;
-statusMsg = '';
+%% --- Check initial-solve convergence before entering the loop ---
 
-while resrelnorm > thresholdResidual && h < maxh
+if resrelnorm <= thresholdResidual
+    status    = 0;
+    statusMsg = sprintf('Converged at h=%d (initial solve, resrel=%.2e).', h, resrelnorm);
+else
+    status    = -1;
+    statusMsg = '';
+end
+
+while status == -1 && h < maxh
     %% --- Adaptive step selection ---
     regime = 'initial';
 
