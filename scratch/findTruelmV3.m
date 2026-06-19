@@ -18,6 +18,7 @@ arguments
     T    (1,1) double
     nx   (1,1) {mustBeInteger, mustBePositive}
     varg.trA0    = []
+    varg.Rmerge  (1,1) double = 0      % 0 = auto (fraction of spectrum scale)
     varg.verbose (1,1) logical = false
 end
 
@@ -38,16 +39,31 @@ for i = 1:N
     dy = wrapToHalf(imF(i) - imF, omega);
     dens(i) = sum(exp(-(dx.^2 + dy.^2) / (2*bw^2)));
 end
-coreReal = reEV(dens > median(dens));
-s_r = max(iqr(coreReal), 10*bw);  % robust real-axis scale, never zero
-s_i = omega;                      % imag scale = one Brillouin period
+% RAW metric in C (real & imag are the same physical unit, 1/time): flat real,
+% circular imag wrapped at omega. NO axis normalisation -- normalising imag by
+% omega distorts the natural geometry and breaks scale invariance. Used for the
+% Voronoi assignment of every point to its nearest peak.
+cdist2 = @(ar,ai,br,bi) (ar-br).^2 + wrapToHalf(ai-bi,omega).^2;
 
-cdist2 = @(ar,ai,br,bi) ((ar-br)/s_r).^2 + (wrapToHalf(ai-bi,omega)/s_i).^2;
-
-% ---- greedy distinct-peak extraction (circular non-max suppression) --------
-R_merge = 0.35;                   % scaled units: < inter-mode gap, > comb spread
-tau     = 0.15;                   % a real comb core exceeds tau*max(density);
-                                  % isolated parasites fall below and are not peaks
+% Adaptive merge radius from the intra-comb spread of the dense cores: a mode's
+% aliases collapse to ~one point, so the nearest-DISTINCT-neighbour distance
+% among core points measures the comb tightness. R_merge = K*sigma stays well
+% below any resolvable inter-mode gap and scales with the data, not omega.
+% merge radius: absolute, raw units. Auto = small fraction of the spectrum's
+% own scale (real-part spread of cores + one period). Modes closer than R_merge
+% are unresolvable at this h and get merged -> Liouville flags it -> raise h.
+if varg.Rmerge > 0
+    R_merge = varg.Rmerge;
+else
+    core    = reEV(dens > 0.2*max(dens));         % dense points; never empty
+    scaleD  = (max(core)-min(core)) + omega;
+    R_merge = max(0.015*scaleD, 5*bw);
+end
+% separate per-axis merge tolerances: real from data scale, imag a fraction of
+% the period (so small-omega zones are not over-merged on the imag axis).
+R_re = R_merge;
+R_im = min(R_merge, 0.15*omega);
+tau     = 0.15;                   % a real comb core exceeds tau*max(density)
 densMax = max(dens);
 pool    = true(N,1);
 peaksR  = []; peaksI = []; peakDens = [];
@@ -57,7 +73,8 @@ while any(pool)
     if dp < tau * densMax, break; end   % remaining pool = outliers/parasites
     p = idxPool(j);
     peaksR(end+1,1) = reEV(p);  peaksI(end+1,1) = imF(p);  peakDens(end+1,1) = dens(p); %#ok<AGROW>
-    near = pool & (cdist2(reEV, imF, reEV(p), imF(p)) <= R_merge^2);
+    near = pool & (abs(reEV - reEV(p)) <= R_re) ...
+                & (abs(wrapToHalf(imF - imF(p), omega)) <= R_im);
     pool(near) = false;
 end
 
