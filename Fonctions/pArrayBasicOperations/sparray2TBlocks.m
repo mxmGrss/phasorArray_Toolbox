@@ -17,11 +17,11 @@ function [OutM, N] = sparray2TBlocks(Aph, m, varg)
     end
 
     % Detect special types
-    is_special = isa(Aph, 'ndsdpvar') || isa(Aph, 'sdpvar') || isa(Aph, 'sym');
+    is_special = isFunny(Aph);
 
     if isa(Aph, 'PhasorArray')
         data = Aph.value;
-        is_special = is_special || isa(data, 'ndsdpvar') || isa(data, 'sdpvar') || isa(data, 'sym');
+        is_special = is_special || isFunny(data);
         Aph = data;
     end
 

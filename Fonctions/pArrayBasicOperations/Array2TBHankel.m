@@ -40,7 +40,7 @@ end
 
 
 
-if isa(Aph,"ndsdpvar") || isa(Aph,"sdpvar") || isa(Aph,"sym")
+if isFunny(Aph)
     varg.method='cat';
 end
 if nargin == 1

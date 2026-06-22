@@ -27,7 +27,7 @@ end
 A_r  = real(A + flip(A,3))*(1/2) + 1i * imag(A - flip(A,3))*(1/2);
 
 %if A is not sym, sdpvar nor ndsdpvar
-if ~(isa(A,"sym") || isa(A,"ndsdpvar") || isa(A,"sdpvar"))
+if ~isFunny(A)
     if isempty(tol)
         r1 = ismembertol(real(A),real(A_r));
         r2 = ismembertol(imag(A),imag(A_r));

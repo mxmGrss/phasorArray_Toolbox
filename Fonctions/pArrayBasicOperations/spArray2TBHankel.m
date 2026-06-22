@@ -86,12 +86,12 @@ cm=cell(n1,n2);
         end
 end
 
-if ~(isa(HpJ, "ndsdpvar") || isa(HpJ, "sdpvar") || isa(HpJ, "sym"))
+if ~isFunny(HpJ)
     [II,JJ]=meshgrid(1:size(HpJ,1),1:size(HpJ,2));
     HpJ=sparse(II(:),JJ(:),HpJ(:));
 end
 
-if ~(isa(JHm, "ndsdpvar") || isa(JHm, "sdpvar") || isa(JHm, "sym"))
+if ~isFunny(JHm)
     [II,JJ]=meshgrid(1:size(JHm,1),1:size(JHm,2));
     JHm=sparse(II(:),JJ(:),JHm(:));
 end

@@ -36,7 +36,7 @@ if ~isMATLABReleaseOlderThan("R2022a")
     end
 
     %switch to function adapted to sdpvar
-    if isa(A,"sdpvar") || isa(A,"ndsdpvar") || isa(B,"sdpvar") || isa(B,"ndsdpvar") || isa(A,"sym")  || isa(B,"sym")
+    if isFunny(A) || isFunny(B)
         D=PhasorArrayTimes2(A,B,m);
         return
     end
