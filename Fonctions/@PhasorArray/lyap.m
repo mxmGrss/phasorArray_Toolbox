@@ -9,6 +9,12 @@ function [res, info] = lyap(o1, o2, o3, options)
 %     Solves:  dM/dt + A(t)M + MB(t) + C = 0
 %     A and B must be square; rows(A)==rows(C), cols(B)==cols(C).
 %
+%   Descriptor (generalized) mode: pass a mass matrix via name-value 'E'
+%   (Lyapunov) or 'Ea'/'Eb' (Sylvester) to solve, e.g.
+%       lyap(A, Q, 'E', E)   ->  d/dt(E'PE) + A'PE + E'PA + Q = 0
+%   together with 'direction' ('backward'|'forward') and 'derivativeForm'
+%   ('product'|'sandwich'). E = [] (default) is the standard equation above.
+%
 %   Options (name-value):
 %     T                   Period of the periodic system (default: 2*pi)
 %     h                   Fixed harmonic truncation order; [] = auto (default: [])
@@ -58,6 +64,31 @@ arguments
     options.storeResidualPhasor (1,1) logical = false
     options.systemType          {mustBeMember(options.systemType,  {'rectangle','square'})}   = 'rectangle'
     options.updateMethod        {mustBeMember(options.updateMethod,{'adaptive','incremental'})} = 'adaptive'
+    options.E                                 = []            % descriptor mass (Lyapunov); [] → standard
+    options.Ea                                = []            % descriptor left mass (Sylvester)
+    options.Eb                                = []            % descriptor right mass (Sylvester)
+    options.derivativeForm      {mustBeMember(options.derivativeForm,{'product','sandwich'})}  = 'product'
+    options.direction           {mustBeMember(options.direction,    {'backward','forward'})}   = 'backward'
+end
+
+% --- Descriptor (generalized) mode: delegate to the lyapG engine -----------
+% E / Ea / Eb supplied via name-value → solve the descriptor equation
+%   Lyapunov : d/dt(E'PE) + A'PE + E'PA + Q = 0
+%   Sylvester: d/dt(Ea X Eb) + A X Eb + Ea X B + C = 0
+% The standard (no E) path falls through to the base solver below.
+if ~isempty(options.E) || ~isempty(options.Ea) || ~isempty(options.Eb)
+    fwd = {'T',options.T, 'h',options.h, 'thresholdResidual',options.thresholdResidual, ...
+           'autoUpdateh',options.autoUpdateh, 'maxh',options.maxh, ...
+           'stagnationWindow',options.stagnationWindow, 'stagnationRatio',options.stagnationRatio, ...
+           'verbose',options.verbose, 'storeResidualPhasor',options.storeResidualPhasor, ...
+           'systemType',options.systemType, 'updateMethod',options.updateMethod, ...
+           'derivativeForm',options.derivativeForm, 'direction',options.direction};
+    if isempty(o3)
+        [res, info] = lyapG(o1, o2, options.E, [], [], fwd{:});   % Lyapunov descriptor
+    else
+        [res, info] = lyapG(o1, o2, o3, options.Ea, options.Eb, fwd{:}); % Sylvester descriptor
+    end
+    return
 end
 
 T                 = options.T;
