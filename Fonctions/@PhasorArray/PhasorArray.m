@@ -4344,6 +4344,12 @@ methods (Static, Access=public)
     Aper = randomWithNPole(J_or_V, h, varargin)
     % Implementation in @PhasorArray/randomSPD.m
     P = randomSPD(nx, h, varargin)
+    % Implementation in @PhasorArray/randomPhasorArrayWithPole.m
+    obj = randomPhasorArrayWithPole(nx, poles, T, varargin)
+    % Implementation in @PhasorArray/sym.m
+    A = sym(nx, ny, h, name, varargin)
+    % Implementation in @PhasorArray/ndsdpvar.m
+    P = ndsdpvar(n1, n2, h, varargin)
 
     function out = builtin(funcName, varargin)
         % Intercepts function-style calls: methodName(obj)
@@ -4700,79 +4706,6 @@ methods (Static, Access=public)
         u=repmat(eye(varargin{1:2}),[1 1 2*varargin{3}+1]);
         obj = PhasorArray(u);
     end
-    function obj = randomPhasorArrayWithPole(nx,poles,T,varg)
-        % RANDOMPHASORARRAYWITHPOLE Generate a PhasorArray with prescribed poles.
-        %
-        %   OBJ = RANDOMPHASORARRAYWITHPOLE(NX, POLES, T, VARG) constructs a
-        %   time-periodic matrix `A(t)` with the specified eigenvalues (`poles`).
-        %   A first random matrix `A` is generated, and a B*G term is computed to
-        %   ensure the desired eigenvalues by performing pole placement.
-        %   The resulting PhasorArray `OBJ` is the difference `A-BK`, where `K` is
-        %   the obtained feedback gain.
-        %
-        %   Inputs:
-        %     NX    - (integer) The size of the square matrix.
-        %     POLES - (vector) Desired eigenvalues for `A(t)`, must have length NX.
-        %     T     - (scalar, optional) Period of the matrix. Default is `2*pi`.
-        %     VARG  - (optional) Name-value pair arguments:
-        %               - 'h'      (integer) Harmonic order (default: `5`).
-        %               - 'BG'     (PhasorArray) Custom B*G term (default: random).
-        %               - 'isReal' (logical) Force a real-valued matrix (default: `true`).
-        %
-        %   Outputs:
-        %     OBJ - (PhasorArray) Generated PhasorArray with specified poles.
-        %
-        %   See also: SylvHarmonic, random
-        arguments
-            nx
-            poles
-            T  = 2*pi
-            varg.h = []
-            varg.BG = []
-            varg.isReal = true
-            varg.badPoleTol = 25/100; % Tolerance for the number of bad poles
-            varg.poleTol = 1e-2; % Tolerance for the pole values compared to the desired poles
-        end
-        if isempty(varg.h) && isempty(varg.BG)
-            varg.h=5;
-            A  = PhasorArray.random(nx,nx,varg.h);
-            BG = PhasorArray.random(nx,nx,varg.h);
-        elseif isempty(varg.BG)
-            A  = PhasorArray.random(nx,nx,varg.h);
-            BG = PhasorArray.random(nx,nx,varg.h);
-        elseif isempty(varg.h)
-            varg.h = varg.BG.h;
-            A  = PhasorArray.random(nx,nx,varg.h);
-        else
-            A  = PhasorArray.random(nx,nx,varg.h);
-        end
-        assert(numel(poles)==nx)
-        La = PhasorArray(diag(poles));
-
-        %Solve the appropriate Sylvester equation
-        P = PhasorArray(SylvHarmonic(-A,La,BG,4*varg.h,2*pi/T));
-        %Compute K
-        K = BG/P;
-        %compute the new A with appropriate eigen values
-        obj = A-K;
-
-        % Check if the generated PhasorArray has the desired poles
-        E = HmqNEig(trunc(obj,varg.h),4*varg.h,T);
-
-        % Check if the eigenvalues match the desired poles
-        matchedPoles = sum(any(abs(real(E) - poles) < varg.poleTol, 2));
-
-        prop = matchedPoles / numel(E);
-        if prop < 1 - varg.badPoleTol
-            warning('PhasorArray:randomWithPole:desiredPolesMissed', 'Generated PhasorArray does not match desired poles (%.1f%% match).', prop*100);
-
-            %recall the function with the same parameters
-            %convert varg to cell
-            varg = namedargs2cell(varg);
-            obj = PhasorArray.randomPhasorArrayWithPole(nx,poles,T,varg{:});
-        end
-    end
-
     function obj = random(nx,ny,h,arg)
         % RANDOM Generate a random PhasorArray with optional structure constraints.
         %
@@ -4827,104 +4760,6 @@ methods (Static, Access=public)
 
         C=namedargs2cell(arg);
         obj = rand_phasor(nx,ny,h,C{:});
-    end
-    function A = sym(nx,ny,h,name,options)
-        % SYM Construct a symbolic PhasorArray with structured harmonic components.
-        %
-        %   A = SYM(NX, NY, H, NAME) creates an NX-by-NY PhasorArray where each
-        %   element is a symbolic expression representing harmonic components.
-        %
-        %   Inputs:
-        %     NX   - (integer) Number of rows (default: 1).
-        %     NY   - (integer) Number of columns (default: NX).
-        %     H    - (integer) Number of harmonics (default: 0).
-        %     NAME - (string or cell) Base name for symbolic variables (default: "a").
-        %
-        %   Outputs:
-        %     A - (PhasorArray) Symbolic PhasorArray with structured harmonics.
-        %
-        %   Notes:
-        %     - Each entry in A has a symbolic expression for phasors:
-        %       `A_0`, `A_plus_k`, `A_minus_k` for k > 0.
-        %     - If NAME is a cell array, it must match the size of NX × NY.
-        %     - For scalar NX × NY, NAME is used as the base for all symbols.
-        %
-        %   See also: sym, ScalarPhasorArray, PhasorArray.
-        arguments
-            nx=1
-            ny=nx
-            h = 0
-            name ="a"
-            options.isreal = false
-        end
-        %determine if an object is calling or class
-
-
-        if isa(nx,'PhasorArray')
-            A = PhasorArray(sym(nx));
-            return
-        end
-        if (nargin == 1) || (nargin==2 && (ischar(ny) || isstring(ny) || iscell(ny)))
-            if ischar(ny) || isstring(ny) || iscell(ny)
-                name = ny;
-            end
-            switch numel(nx)
-                case 1
-                    ny = nx;
-                    h  = 0;
-                case 2
-                    ny = nx(2);
-                    nx = nx(1);
-                    h  = 0;
-                case 3
-                    ny = nx(2);
-                    h  = nx(3);
-                    nx = nx(1);
-                otherwise
-                    error('PhasorArray:size:invalidDimInput', 'Dimension argument length must be <=3; got %d.', numel(nx))
-            end
-        end
-        if max(ny,nx)==1
-            name={name};
-        end
-        if iscell(name)
-            assert(numel(name)==nx*ny);
-            A=PhasorArray.zeros(nx,ny);
-            A.Phasor3D = sym(A.Phasor3D);
-            for ii =  1:numel(name)
-                clear ap am a0 a
-                name_i=name{ii};
-                ap = sym(name_i+"_plus_",[1 h]);
-
-                if options.isreal
-                    a0 = sym(name_i+"_0","real");
-                    a = cat(2,flip(conj(ap)),a0,ap);
-                else
-                    am = sym(name_i+"_minus_",[1 h] );
-                    a0 = sym(name_i+"_0");
-                    a = cat(2,flip(am), a0, ap);
-                end
-                A{ii} = ScalarPhasorArray(a);
-            end
-
-        else
-            if ~options.isreal
-                ap = sym(name+"__%d__%d_plus_%d",[nx ny h]);
-                am = sym(name+"__%d__%d_minus_%d",[nx ny h] );
-                a0 = sym(name+"__%d__%d_0",[nx ny]);
-
-                a = cat(3,flip(am,3), a0, ap);
-
-                A= PhasorArray(a);
-            else
-                ap = sym(name+"__%d__%d_plus_%d",[nx ny h]);
-                a0 = sym(name+"__%d__%d_0",[nx ny],"real");
-
-                a = cat(3,flip(conj(ap),3), a0, ap);
-
-                A= PhasorArray(a);
-            end
-        end
     end
     function out = cos(phas,order)
         % COS Produce PhasorArray representation of cosine function.
@@ -5276,81 +5111,5 @@ methods (Static, Access=public)
         end
     end
 
-    function P = ndsdpvar(n1,n2,h,varg)
-        % NDSPDPVAR Construct an `sdpvar`-based PhasorArray of specified size and structure.
-        %
-        %   P = NDSPDPVAR(N1, N2, H, <name-value arguments>) generates an SDP variable-based
-        %   PhasorArray suitable for optimization in YALMIP.
-        %
-        %   Inputs:
-        %     N1 - (integer) First dimension size.
-        %     N2 - (integer, optional) Second dimension size (default: N1).
-        %     H  - (integer, optional) Number of harmonics (default: 0).
-        %
-        %   Name-Value Arguments:
-        %     'PhasorType' (char) - Defines the structure of the phasor (default: 'symmetric').
-        %                           Options: 'symmetric', 'full', 'diagonal', etc.
-        %                           See YALMIP documentation for the complete list.
-        %     'real' (logical)    - If true, ensures conjugate symmetry for real-valued signals (default: true).
-        %
-        %   Outputs:
-        %     P - (PhasorArray) PhasorArray containing `sdpvar` elements.
-        %
-        %   Notes:
-        %     - The `PhasorType` argument defines **phasor structure**, not time-domain structure.
-        %     - Example: A **Hermitian** phasor structure enforces:
-        %          conj(A_(ij)(t)) = A_(ji)(-t)
-        %       However, for A(t) to be Hermitian in the **time domain**, phasors must satisfy:
-        %          A_k = ctrans(A_-k)
-        %     - If `real=true`, ensures the phasor array represents a real-valued periodic matrix.
-        %     - If `h>0`, higher-order harmonics are created as additional `sdpvar` variables.
-        %
-        %   Example:
-        %     P = PhasorArray.ndsdpvar(4,4,5, 'PhasorType', 'symmetric', 'real', true);
-        %       -> Produces a real-valued P(t), with 5 harmonics (size 11 along the third dimension),
-        %          and enforces symmetry (i.e., P_ij(t) = P_ji(t)).
-        %
-        %     A = PhasorArray.ndsdpvar(4,4,5, 'PhasorType', 'full', 'real', true);
-        %       -> Produces a real-valued A(t) with no additional structure constraints.
-        %
-        %   See also: sdpvar, PhasorArray, PosPart2PhasorArray.
-        arguments
-            n1
-            n2=n1
-            h=0
-            varg.PhasorType='symmetric'
-            varg.real=true
-        end
-        if nargin ==1
-            switch numel(n1)
-                case 1
-                case 2
-                    n2 = n1(2);
-                    n1 = n1(1);
-                    h = 0;
-                case 3
-                    n2 = n1(2);
-                    h = n1(3);
-                    n1 = n1(1);
-            end
-        end
-        if n1~=n2
-            if ismember(varg.PhasorType,{'symmetric'})
-                warning('PhasorArray:randomPhasorArray:phasorTypeFallback', 'Non-square matrix: PhasorType changed from ''symmetric'' to ''full''.')
-                varg.PhasorType='full';
-            end
-        end
-        if varg.real
-            P1=(ndsdpvar(n1,n2,1,varg.PhasorType,'real'));
-            if h>0
-                P2=(ndsdpvar(n1,n2,h,varg.PhasorType,'complex'));
-                P = PosPart2PhasorArray(P1,P2);
-            else
-                P=PhasorArray(P1);
-            end
-        else
-            P=PhasorArray(ndsdpvar(n1,n2,2*h+1,varg.PhasorType,'complex'));
-        end
-    end
 end
 end
