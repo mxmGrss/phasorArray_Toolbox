@@ -103,24 +103,12 @@ switch direction
         pad_post = padsize;
 end
 
-% Create padding template (zeros or specified value)
-% Must handle sym and sdpvar types correctly
-if isa(A, 'sym')
-    % Symbolic: create sym zeros - use manual construction
-    isSymbolic = true;
-    isYalmip = false;
-elseif isa(A, 'sdpvar') || isa(A, 'ndsdpvar')
-    % YALMIP: create sdpvar zeros using arithmetic
-    isSymbolic = false;
-    isYalmip = true;
-else
-    % Numeric: standard zeros
-    isSymbolic = false;
-    isYalmip = false;
-end
-
-% Helper function to create zeros of appropriate type
-createZeros = @(sz_vec) createZerosHelper(A, sz_vec, isSymbolic, isYalmip);
+% Padding template: raw double zeros. The concatenation below (cat) promotes
+% the type automatically for sym/sdpvar/ndsdpvar inputs — the zero pages become
+% constant-zero pages with the correct class, and decision variables in A are
+% preserved untouched. No per-type allocation is therefore needed.
+% ponytail: cat is the type-agnostic constructor — no zerosLike, no isa dispatch.
+createZeros = @(sz_vec) zeros(sz_vec);
 
 % Apply padding dimension by dimension
 Apadded = A;
@@ -195,18 +183,4 @@ if length(padsize) >= 3 && (pad_pre(3) > 0 || pad_post(3) > 0)
     end
 end
 
-end
-
-% Helper function to create zeros with proper type
-function Z = createZerosHelper(A, sz_vec, isSymbolic, isYalmip)
-    if isSymbolic
-        % Symbolic: create using sym(zeros(...))
-        Z = sym(zeros(sz_vec));
-    elseif isYalmip
-        % YALMIP: multiply a scalar element by zero and replicate
-        Z = 0 * A(1,1,1) * ones(sz_vec);
-    else
-        % Numeric: standard zeros
-        Z = zeros(sz_vec);
-    end
 end
