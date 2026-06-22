@@ -38,13 +38,13 @@ function r= array2TFTB(o1,m)
 %   See also: F_bt, TB.
 arguments
     o1
-    m=(size(o1,3)-1)/2;
+    m=nHarm(o1);
 end
 
 
 o1 = pvalue(o1);
 
-nho=(size(o1,3)-1)/2;
+nho=nHarm(o1);
 
 
 if nho<m

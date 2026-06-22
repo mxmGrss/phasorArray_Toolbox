@@ -80,7 +80,7 @@ nT=varg.nT;
 T=varg.T;
 m=varg.m;
 
-hA=(size(Aph,3)-1)/2;
+hA=nHarm(Aph);
 
 m_nyquist  = nextpow2(hA*2);
 m_reco_min = max(nextpow2(hA*4),8);
@@ -147,7 +147,7 @@ else
     Ainvph=Ainvph_compu;
 end
 
-h=(size(Ainvph,3)-1)/2;
+h=nHarm(Ainvph);
 log10Ph=log10(abs(Ainvph(:,:,(h+1):end)));
 toto=numel(find(isnan(log10Ph)));
 if toto>0
@@ -166,7 +166,7 @@ end
 if varg.verbose || varg.evalInv || nargout > 2
     n_sq     = size(Ainvph, 1);
     prod_arr = PhasorArrayTimes(Aph_orig, Ainvph);   % convolution in harmonic domain
-    h_prod   = (size(prod_arr, 3) - 1) / 2;
+    h_prod   = nHarm(prod_arr);
     I_arr    = zeros(size(prod_arr));
     I_arr(:, :, h_prod + 1) = eye(n_sq);             % identity: DC slice only
     err_arr  = prod_arr - I_arr;

@@ -49,7 +49,7 @@ nT=varg.nT;
 T=varg.T;
 m=varg.m;
 
-hA=(size(Aph,3)-1)/2;
+hA=nHarm(Aph);
 
 if isempty(m)
 m=max(ceil(log2(hA+1)+1),8);

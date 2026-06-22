@@ -24,9 +24,9 @@ function [Xph,M,M1,M2,colQ,colX] = SylvHarmonic(Ahmad, Bhmad, Chmad, h, omega, m
     Chm = pvalue(Chmad);
 
     % Harmonic orders of inputs.
-    hA = (size(Ahm, 3) - 1) / 2;
-    hB = (size(Bhm, 3) - 1) / 2;
-    hC = (size(Chm, 3) - 1) / 2;
+    hA = nHarm(Ahm);
+    hB = nHarm(Bhm);
+    hC = nHarm(Chm);
 
     % h controls the harmonic order of X (hIn). The system is rectangular:
     % hOut = max([hIn+hA, hIn+hB, hC]) >= hIn, solved in least-squares.

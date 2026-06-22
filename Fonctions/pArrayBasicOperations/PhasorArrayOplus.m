@@ -35,8 +35,8 @@ nb=size(Bph,1);
 
 
 
-hA=(size(Aph,3)-1)/2;
-hB=(size(Bph,3)-1)/2;
+hA=nHarm(Aph);
+hB=nHarm(Bph);
 h=max(hA,hB);
 Ia=speye(na);
 Ib=speye(nb);

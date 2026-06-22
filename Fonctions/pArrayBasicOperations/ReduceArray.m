@@ -38,7 +38,7 @@ end
 
 Aph = pvalue(Aph);
 
-nhA=(size(Aph,3)-1)/2;
+nhA=nHarm(Aph);
 
 if ~isempty(htrunc)
     htrunc=min(htrunc,nhA);

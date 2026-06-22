@@ -49,8 +49,8 @@ if ~isMATLABReleaseOlderThan("R2022a")
     nB1=nB(1);
     nB2=nB(2);
 
-    mA=(size(A,3)-1)/2;
-    mB=(size(B,3)-1)/2;
+    mA=nHarm(A);
+    mB=nHarm(B);
 
     if isscalar(A)
         D=A*B;
