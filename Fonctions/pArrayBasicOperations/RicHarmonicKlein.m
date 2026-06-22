@@ -433,30 +433,48 @@ if ~isempty(K0)
     LL
 end
 
-% DC LQR fallback
-A_dc = A.phas(0);
-B_dc = B.phas(0);
-Q_dc = PhasorArray(eye(size(A,1))).phas(0);     % placeholder; user Q used in loop
-R_dc = eye(size(B,2));
-try
-    [~, K0_lqr, ~] = icare(A_dc, B_dc, Q_dc, R_dc);
-catch
-    K0_lqr = [];
+% Grow-h LQR-on-Toeplitz fallback.
+% Solve the LQR on the order-h_lqr block-Toeplitz lift (A.T_tb - N) and extract
+% a periodic K0. h_lqr = 0 is the classic DC LQR; growing h_lqr captures the
+% periodic coupling that carries controllability (a system whose stabilising
+% coupling lives at harmonic k needs h_lqr >= k). Stop at the first h_lqr whose
+% K0 actually stabilises the periodic system. Q = I, R = I: any positive-definite
+% weights stabilise when the lift is controllable, and the Floquet check below
+% guards correctness regardless.
+% ponytail: alpha-shift continuation is the documented next-level fallback when
+% controllability hides above h_lqr = hMax — see the lab note
+% "riccati-alpha-continuation"; wire it here if a parametric case needs it.
+n = size(A, 1);
+m = size(B, 2);
+hMax = 6;
+K0 = [];
+for hl = 0:hMax
+    % whole body guarded: any failing order (icare ill-posed, extraction edge
+    % case, Floquet check) is simply skipped so the search continues.
+    Kcand = [];
+    try
+        Al = A.T_tb(hl) - N_tb(n, hl, T);
+        Bl = B.T_tb(hl);
+        Ql = eye(n * (2*hl + 1));
+        Rl = eye(m * (2*hl + 1));
+        [~, Kl, ~] = icare(Al, Bl, Ql, Rl);
+        if ~isempty(Kl) && all(isfinite(Kl(:)))
+            Kc = PhasorArray.fromTBMatrix(Kl, m, 'n1');
+            if outIsReal, Kc = mreal(Kc); end
+            if all(real(findTrueFloquet(A - B*Kc, T)) <= 0)
+                Kcand = Kc;
+            end
+        end
+    catch
+        Kcand = [];
+    end
+    if ~isempty(Kcand)
+        K0  = Kcand;
+        msg = sprintf('LQR-on-Toeplitz(h=%d) fallback used for K0.', hl);
+        return
+    end
 end
-if isempty(K0_lqr) || any(~isfinite(K0_lqr(:)))
-    error('RicHarmonicKlein:noStabilizingK0', ...
-        'DC LQR fallback failed. Provide a stabilising K0 manually.')
-end
-K0 = PhasorArray(K0_lqr);
-if outIsReal, K0 = mreal(K0); end
-
-T_tmp = 2*pi;
-Ak0 = A - B * K0;
-LL  = findTrueFloquet(Ak0,T_tmp);
-if any(real(LL) > 0)
-    LL
-    error('RicHarmonicKlein:noStabilizingK0', ...
-        'DC LQR fallback does not stabilise the periodic system. Provide a stabilising K0 manually.')
-end
-msg = 'DC LQR fallback used for K0.';
+error('RicHarmonicKlein:noStabilizingK0', ...
+    ['No stabilising K0 found by LQR-on-Toeplitz up to h=%d. Provide a ' ...
+     'stabilising K0 manually, or use alpha-shift continuation.'], hMax);
 end
