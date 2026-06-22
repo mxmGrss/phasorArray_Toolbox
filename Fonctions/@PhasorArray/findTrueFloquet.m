@@ -74,7 +74,6 @@ arguments
     varg.verbose           (1,1) {mustBeInteger, mustBeNonnegative} = 0
     varg.method            {mustBeMember(varg.method, {'robust','kde','gap','dbscan','kmeans'})} = 'robust'
 end
-disp('caaaalleds')
 nx = o1.size(1);
 assert(o1.size(1) == o1.size(2), 'PhasorArray must be square for eigenvalue analysis.');
 assert(varg.hmax >= varg.hinit, ...
