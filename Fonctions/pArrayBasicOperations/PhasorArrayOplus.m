@@ -11,13 +11,8 @@ arguments
     Bph=[]
 end
 
-if isa(Aph,'PhasorArray')
-    Aph=Aph.Value;
-end
-
-if isa(Bph,'PhasorArray')
-    Bph=Bph.Value;
-end
+Aph = pvalue(Aph);
+Bph = pvalue(Bph);
 
 
 funcA =  (size(Aph, 1) ~= size(Aph, 2));

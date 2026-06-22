@@ -36,9 +36,7 @@ arguments
 end
 
 
-if isa(Aph,'PhasorArray')
-    Aph=Aph.Value;
-end
+Aph = pvalue(Aph);
 
 nhA=(size(Aph,3)-1)/2;
 

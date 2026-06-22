@@ -7,12 +7,8 @@ arguments
     Apos 
 end
 
-if isa(A0,'PhasorArray')
-    A0=A0.value;
-end
-if isa(Apos,'PhasorArray')
-    Apos=Apos.value;
-end
+A0   = pvalue(A0);
+Apos = pvalue(Apos);
 
 
 n1 =size(Apos,1);

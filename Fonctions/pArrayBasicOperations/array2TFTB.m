@@ -42,9 +42,7 @@ arguments
 end
 
 
-if isa(o1,'PhasorArray')
-    o1=o1.Value;
-end
+o1 = pvalue(o1);
 
 nho=(size(o1,3)-1)/2;
 

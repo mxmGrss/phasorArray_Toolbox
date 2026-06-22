@@ -68,9 +68,7 @@ arguments
 end
 
 % Extract value if input is PhasorArray
-if isa(A, 'PhasorArray')
-    A = A.Value;
-end
+A = pvalue(A);
 
 % Get array dimensions
 sz = size(A);

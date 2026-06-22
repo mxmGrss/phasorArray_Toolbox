@@ -4,12 +4,8 @@ function [Cph] = pagekron(Aph,Bph)
 %   if A or B is a matrix (size(A,3)==1), matrix is duplicated to match
 %   other arg size. 
 %   
-if isa(Bph,'PhasorArray')
-    Bph=Bph.Value;
-end
-if isa(Aph,'PhasorArray')
-    Aph=Aph.Value;
-end
+Bph = pvalue(Bph);
+Aph = pvalue(Aph);
 sa=size(Aph);
 sb=size(Bph);
 

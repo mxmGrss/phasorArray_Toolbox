@@ -39,9 +39,7 @@ varg.plot=false
 end
 
 
-if isa(Aph,'PhasorArray')
-    Aph=Aph.Value;
-end
+Aph = pvalue(Aph);
 
 nT=varg.nT;
 T=varg.T;

@@ -55,8 +55,7 @@ function [Xph, M, M1, M2, colQ, colX] = LyapHarmonic(Ahm, Qhm, h, omega, options
         M = M1 + M2;
 
         % 5. Handle Vectorized Input Q
-        Q = Qhm;
-        if isa(Q, 'PhasorArray'), Q = Q.value; end
+        Q = pvalue(Qhm);
         hQ = (size(Q, 3) - 1) / 2;
         if hQ < h
             dQ = phasorPad(Q, [0 0 h-hQ], 0, 'both');

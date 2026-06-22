@@ -74,9 +74,7 @@ arguments
     varg.warnOnUseHmcDivide (1,1) logical = true
 end
 
-if isa(Aph,'PhasorArray')
-    Aph=Aph.Value;
-end
+Aph = pvalue(Aph);
 
 nT=varg.nT;
 T=varg.T;

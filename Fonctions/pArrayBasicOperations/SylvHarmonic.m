@@ -19,9 +19,9 @@ function [Xph,M,M1,M2,colQ,colX] = SylvHarmonic(Ahmad, Bhmad, Chmad, h, omega, m
     end
 
     % Extract raw values from PhasorArray objects if needed.
-    Ahm = Ahmad; if isa(Ahm, 'PhasorArray'), Ahm = Ahm.value; end
-    Bhm = Bhmad; if isa(Bhm, 'PhasorArray'), Bhm = Bhm.value; end
-    Chm = Chmad; if isa(Chm, 'PhasorArray'), Chm = Chm.value; end
+    Ahm = pvalue(Ahmad);
+    Bhm = pvalue(Bhmad);
+    Chm = pvalue(Chmad);
 
     % Harmonic orders of inputs.
     hA = (size(Ahm, 3) - 1) / 2;

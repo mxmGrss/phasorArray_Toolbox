@@ -14,9 +14,7 @@ arguments
     varg.method='cell2mat'
 end
 
-if isa(Aph,'PhasorArray')
-    Aph=Aph.Value;
-end
+Aph = pvalue(Aph);
 
 if isa(Aph,"ndsdpvar") || isa(Aph,"sdpvar")
     varg.method='cat';

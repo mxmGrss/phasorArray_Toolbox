@@ -20,13 +20,8 @@ arguments
     m=[]
 end
 
-if isa(A,'PhasorArray')
-    A=A.Value;
-end
-
-if isa(B,'PhasorArray')
-    B=B.Value;
-end
+A = pvalue(A);
+B = pvalue(B);
 
 
 nA=size(A);
