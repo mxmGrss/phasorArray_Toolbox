@@ -49,42 +49,20 @@ if isscalar(B)
 end
 
 if nA1==1 && nA2==1 && mA>0
-    if isa(A,'sdpvar') || isa(A,'ndsdpvar')
-        Ad=ndsdpvar(size(B,1),size(B,1),2*mA+1)*0;
-        % Ad =  zero(size(B,1),size(B,1),2*mA+1);
-        for ii=-mA:mA
-            Ad(:,:,ii+mA+1)= Ad(:,:,ii+mA+1) + eye(size(B,1))*A(1,1,ii+mA+1);
-        end
-        A=Ad;
-    elseif isa(A,'sym') 
-        Ad=sym('Ad',[size(B,1),size(B,1),2*mA+1]);
-        for ii=-mA:mA
-            Ad(:,:,ii+mA+1)=eye(size(B,1))*A(1,1,ii+mA+1);
-        end
-        A=Ad;
-    else
-    A=pagemtimes(A,eye(size(B,1)));
-    end
+    % scalar phasor -> diagonal broadcast, built slice-by-slice then cat'd.
+    % cat() promotes double/sym/sdpvar/ndsdpvar uniformly (no per-type alloc).
+    % ponytail: cat is the type-agnostic constructor (was 3 isa branches).
+    mrows   = size(B,1);
+    Aslices = arrayfun(@(k) eye(mrows)*A(1,1,k), 1:2*mA+1, 'UniformOutput', false);
+    A = cat(3, Aslices{:});
 end
 
 if nB1==1 && nB2==1 && mB>0
-    if isa(B,'sdpvar') || isa(B,'ndsdpvar')
-       Bd=ndsdpvar(size(A,2),size(A,2),1+2*mB)*0;
-        % Bd =  zero(size(A,2),size(A,2),1+2*mB);
-        for ii=-mB:mB
-            Bd(:,:,ii+mB+1)=Bd(:,:,ii+mB+1)+eye(size(A,2))*B(1,1,ii+mB+1);
-        end
-        B=Bd;
-    elseif isa(B,'sym') 
-        Bd=sym('Bd',[size(A,2),size(A,2),1+2*mB]);
-        for ii=-mB:mB
-            Bd(:,:,ii+mB+1)=eye(size(A,2))*B(1,1,ii+mB+1);
-        end
-        B=Bd;
-    else
-    
-    B=pagemtimes(B,eye(size(A,2)));
-    end
+    % scalar phasor -> diagonal broadcast (see block above). size(A,2) is read
+    % after the A-broadcast so the inner dimension stays consistent.
+    ncols   = size(A,2);
+    Bslices = arrayfun(@(k) eye(ncols)*B(1,1,k), 1:2*mB+1, 'UniformOutput', false);
+    B = cat(3, Bslices{:});
 end
 
 
