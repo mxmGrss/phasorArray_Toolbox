@@ -135,3 +135,9 @@ disp_warning_audit.md
 /spec
 /+tests
 CLAUDE.md
+
+# Private dev tests & audits — throwaway, never commit (kept on disk for running).
+# The shipped verification suite (test_PhasorArray_basic/advanced, test.m) stays tracked.
+/Fonctions/test_PhasorArray_lyapLMI.m
+/Fonctions/test_PhasorArray_solverFamily.m
+/docs/audit/
