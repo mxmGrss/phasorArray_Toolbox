@@ -1,6 +1,42 @@
 function [K, S, info] = RicHarmonicKlein(A, B, Q, R, K0, T, options)
 %RICHARMONICKLEIN  Periodic Riccati solver via Kleinman iteration.
 %
+%   Solves the periodic (LTP) algebraic Riccati equation in the harmonic
+%   domain, for both optimal CONTROL (LQR, backward) and optimal
+%   OBSERVATION (Kalman filter, forward via duality).
+%
+%   ======================================================================
+%   RECIPE 1 — Optimal control (periodic LQR)
+%   ======================================================================
+%   System:    dx/dt = A(t)*x + B(t)*u,   cost  J = int( x'Qx + u'Ru )dt
+%   Call:
+%       [K, S, info] = RicHarmonicKlein(A, B, Q, R)
+%   Solves the CONTROL GARE (backward / cost-to-go, the default):
+%       dS/dt + A'*S + S*A - S*B*R^-1*B'*S + Q = 0
+%   Returns:
+%       K : optimal state feedback,  u = -K(t)*x,  K = R^-1*B'*S
+%       S : periodic cost-to-go matrix,  J*(x0,t0) = x0'*S(t0)*x0
+%   Closed loop A - B*K is Floquet-stable on exit (status 0/1).
+%
+%   ======================================================================
+%   RECIPE 2 — Optimal observation (periodic Kalman filter)
+%   ======================================================================
+%   System:    dx/dt = A(t)*x + w,   y = C(t)*x + v
+%              with process noise cov W = E[ww'] and measurement noise
+%              cov V = E[vv'].
+%   Call (note the TRANSPOSED inputs and direction='forward'):
+%       [Kd, Y, info] = RicHarmonicKlein(A', C', W, V, direction='forward')
+%       L = Kd';                       % observer (Kalman) gain
+%   Solves the FILTER GARE (forward / covariance type):
+%       dY/dt = A*Y + Y*A' - Y*C'*V^-1*C*Y + W
+%   Returns (after transposition):
+%       L : Kalman gain for the observer
+%           dxhat/dt = A*xhat + L*( y - C*xhat )
+%       Y : periodic state-error covariance,  Y = E[(x-xhat)(x-xhat)']
+%   The estimator loop A - L*C is Floquet-stable on exit.
+%
+%   ======================================================================
+%
 %   Algorithm (pseudocode):
 %
 %     given K0 stabilising A-B*K0
@@ -36,19 +72,26 @@ function [K, S, info] = RicHarmonicKlein(A, B, Q, R, K0, T, options)
 %
 %     end
 %
-%   Full Riccati equation solved:
-%     dS/dt + A''*S + S*A - S*B*R^-1*B''*S + Q = 0
+%   Full Riccati equation solved (in solver variables A, B, Q, R):
+%     dS/dt + A''*S + S*A - S*B*R^-1*B''*S + Q = 0     (direction='backward', default)
+%     dS/dt = A''*S + S*A - S*B*R^-1*B''*S + Q         (direction='forward')
 %
 %   Usage:
 %     [K, S, info] = RicHarmonicKlein(A, B, Q, R)
 %     [K, S, info] = RicHarmonicKlein(A, B, Q, R, K0)
 %     [K, S, info] = RicHarmonicKlein(A, B, Q, R, K0, T)
 %     [K, S, info] = RicHarmonicKlein(A, B, Q, R, K0, T, 'maxIter', 50, ...)
+%     [Kd, Y]      = RicHarmonicKlein(A', C', W, V, [], T, ...
+%                        direction='forward', skipValidate=false)   % Kalman
 %
 %   Inputs:
 %     A, B          PhasorArray system and input matrices
+%                   (observation: pass A' and C' instead — see RECIPE 2)
 %     Q, R          State and control weighting (double or PhasorArray)
-%     K0            Initial feedback gain; [] → DC LQR fallback (default: [])
+%                   (observation: noise covariances W and V)
+%     K0            Initial feedback gain (default: []). [] → DC LQR fallback,
+%                   which always runs when K0 is empty (independent of
+%                   skipValidate), so RicHarmonicKlein(A,B,Q,R,[],T) just works.
 %     T             Period (default: 2*pi)
 %
 %   Options (name-value):
@@ -69,10 +112,19 @@ function [K, S, info] = RicHarmonicKlein(A, B, Q, R, K0, T, options)
 %     verbose               0=silent, 1/2=iteration table with Lyap summary,
 %                           3=block-per-iteration with full Lyap trace (default: 0)
 %     storeIterates         Store S_history, K_history, lyap_info (default: false)
+%     skipValidate          skip the Floquet check of a *provided* K0 (default: true).
+%                           Keep true when the provided K0 is known to be
+%                           stabilizing; set false to also re-check it and fall
+%                           back if it fails. An empty K0 always runs the fallback.
+%     direction             'backward' (default) or 'forward' — sign of dS/dt.
+%                           Use 'backward' for control (RECIPE 1),
+%                           'forward' for observation/Kalman (RECIPE 2).
 %
 %   Outputs:
-%     K     Final feedback gain (PhasorArray)
-%     S     Final Riccati solution (PhasorArray)
+%     K     Final feedback gain (PhasorArray).
+%           Control: u = -K*x. Observation: Kalman gain L = K'.
+%     S     Final Riccati solution (PhasorArray).
+%           Control: cost-to-go. Observation: error covariance Y.
 %     info  Diagnostics struct — see spec-algorithm-ric-harmonic-klein-v2.md
 %
 %   See also: lyap, SylvHarmonic, RicHarmonicKlein (v1)
@@ -98,6 +150,8 @@ arguments
     options.stagnationRatio      (1,1) double            = 0.05
     options.verbose              (1,1) {mustBeInteger, mustBeNonnegative} = 0
     options.storeIterates        (1,1) logical           = false
+    options.skipValidate         (1,1) logical           = true
+    options.direction            {mustBeMember(options.direction, {'backward','forward'})} = 'backward'
 end
 
 omega             = 2*pi / T;   %#ok<NASGU> (used implicitly via lyap)
@@ -112,9 +166,18 @@ R = PhasorArray(R);
 outIsReal = all([isreal(A), isreal(B), isreal(Q), isreal(R)]);
 
 %% --- K0 initialisation and stability check ---
-
-[K0, fallbackMsg] = validateOrFallbackK0(K0, A, B, outIsReal,T);
-
+% An empty K0 always triggers the DC LQR fallback (it means "find me a
+% stabilising start"), regardless of skipValidate. skipValidate only skips the
+% Floquet check of a *provided* K0.
+if ~options.skipValidate || isempty(K0)
+    [K0, fallbackMsg] = validateOrFallbackK0(K0, A, B, outIsReal, T, options.direction);
+else
+    fallbackMsg = [];
+    warning('Skipping validate step in RicHarmonicKlein: ensure provided K0 is stabilizing or the algorithm may not converge')
+end
+% With skipValidate=true the validation branch is skipped, so a numeric K0
+% would never be wrapped — K0.h would crash later. Wrap here unconditionally.
+if ~isempty(K0) && ~isa(K0, 'PhasorArray'), K0 = PhasorArray(K0); end
 %% --- h initialisation ---
 
 h0 = options.h;
@@ -250,6 +313,7 @@ for kk = 1:maxIter
         'thresholdResidual',  thresholdResidual/100, ...
         'stagnationWindow',   options.stagnationWindow, ...
         'stagnationRatio',    options.stagnationRatio, ...
+        'direction',          options.direction, ...
         'verbose',            verboseLyap);
 
     if outIsReal, Sk = mreal(Sk); end
@@ -288,7 +352,10 @@ for kk = 1:maxIter
     end
 
     %% --- Riccati residual  (always, from iter 1) ---
-    riccati_res = d(Sk, T) + A.' * Sk + Sk * A ...
+    % 'backward': dS/dt + A'S + SA - SBR^-1B'S + Q = 0
+    % 'forward' : -dS/dt + A'S + SA - SBR^-1B'S + Q = 0
+    if strcmp(options.direction, 'forward'), signD = -1; else, signD = +1; end
+    riccati_res = signD * d(Sk, T) + A.' * Sk + Sk * A ...
                   - Sk * B * Rinv * B.' * Sk + Q;
     Qnorm      = norm(Q.value, 'fro');
     resRicAbs  = norm(riccati_res.value, 'fro');
@@ -418,14 +485,18 @@ end
 end
 
 %% =========================================================================
-function [K0, msg] = validateOrFallbackK0(K0, A, B, outIsReal, T)
-%VALIDATEORFALLBACKK0  Ensure K0 stabilises A-B*K0; fall back to DC LQR if needed.
+function [K0, msg] = validateOrFallbackK0(K0, A, B, outIsReal, T, direction)
+%VALIDATEORFALLBACKK0  Ensure K0 stabilises the closed loop; DC LQR fallback if needed.
+% 'backward': check Floquet of Ak0 = A - B*K0.
+% 'forward' (dual / Kalman use): the physical closed loop is (A - B*K0)' —
+% in LTP the Floquet exponents of M and M' differ, so check the transpose.
 msg = '';
 
     T_tmp = T;
 if ~isempty(K0)
     if ~isa(K0, 'PhasorArray'), K0 = PhasorArray(K0); end
     Ak0 = A - B * K0;
+    if strcmp(direction, 'forward'), Ak0 = Ak0.'; end
     LL  = findTrueFloquet(Ak0,T_tmp);
     if all(real(LL) <= 0), return, end
     warning('RicHarmonicKlein:unstableK0', ...
@@ -433,48 +504,54 @@ if ~isempty(K0)
     LL
 end
 
-% Grow-h LQR-on-Toeplitz fallback.
-% Solve the LQR on the order-h_lqr block-Toeplitz lift (A.T_tb - N) and extract
-% a periodic K0. h_lqr = 0 is the classic DC LQR; growing h_lqr captures the
-% periodic coupling that carries controllability (a system whose stabilising
-% coupling lives at harmonic k needs h_lqr >= k). Stop at the first h_lqr whose
-% K0 actually stabilises the periodic system. Q = I, R = I: any positive-definite
-% weights stabilise when the lift is controllable, and the Floquet check below
-% guards correctness regardless.
-% ponytail: alpha-shift continuation is the documented next-level fallback when
-% controllability hides above h_lqr = hMax — see the lab note
-% "riccati-alpha-continuation"; wire it here if a parametric case needs it.
-n = size(A, 1);
-m = size(B, 2);
-hMax = 6;
+n = size(A, 1); m = size(B, 2);
 K0 = [];
-for hl = 0:hMax
-    % whole body guarded: any failing order (icare ill-posed, extraction edge
-    % case, Floquet check) is simply skipped so the search continues.
-    Kcand = [];
-    try
-        Al = A.T_tb(hl) - N_tb(n, hl, T);
-        Bl = B.T_tb(hl);
-        Ql = eye(n * (2*hl + 1));
-        Rl = eye(m * (2*hl + 1));
-        [~, Kl, ~] = icare(Al, Bl, Ql, Rl);
-        if ~isempty(Kl) && all(isfinite(Kl(:)))
-            Kc = PhasorArray.fromTBMatrix(Kl, m, 'n1');
-            if outIsReal, Kc = mreal(Kc); end
-            if all(real(findTrueFloquet(A - B*Kc, T)) <= 0)
-                Kcand = Kc;
-            end
-        end
-    catch
-        Kcand = [];
-    end
-    if ~isempty(Kcand)
-        K0  = Kcand;
-        msg = sprintf('LQR-on-Toeplitz(h=%d) fallback used for K0.', hl);
-        return
+
+% --- Fallback 1: DC LQR (cheap; uses only A_0, ignores the periodic coupling) ---
+try
+    [~, K0_dc, ~] = icare(A.phas(0), B.phas(0), eye(n), eye(m));
+catch
+    K0_dc = [];
+end
+if ~isempty(K0_dc) && all(isfinite(K0_dc(:)))
+    Kc = PhasorArray(K0_dc); if outIsReal, Kc = mreal(Kc); end
+    if stabilises(A, B, Kc, T, direction)
+        K0 = Kc;  msg = 'DC LQR fallback used for K0.';
     end
 end
-error('RicHarmonicKlein:noStabilizingK0', ...
-    ['No stabilising K0 found by LQR-on-Toeplitz up to h=%d. Provide a ' ...
-     'stabilising K0 manually, or use alpha-shift continuation.'], hMax);
+
+% --- Fallback 2: truncated HSS LQR (captures the periodicity, converges in h) ---
+% Solve a finite LQR on the lifted pair (T(A,h)-N, T(B,h)) and map the lifted
+% gain back to a periodic K(t) via fromTBMatrix. A small h already yields a
+% stabilising seed for the Kleinman iteration that refines it with the true Q,R.
+if isempty(K0)
+    for h = 2:2:12
+        try
+            Kh = lqr(TB(A,h) - N_tb(n,h,T), TB(B,h), ...
+                     eye(n*(2*h+1)), eye(m*(2*h+1)));
+            Kc = PhasorArray.fromTBMatrix(Kh, m, 'n1');
+            if outIsReal, Kc = mreal(Kc); end
+        catch
+            continue
+        end
+        if stabilises(A, B, Kc, T, direction)
+            K0 = Kc;  msg = sprintf('Truncated HSS LQR fallback (h=%d) used for K0.', h);
+            break
+        end
+    end
+end
+
+if isempty(K0)
+    error('RicHarmonicKlein:noStabilizingK0', ...
+        ['DC and truncated-HSS LQR fallbacks failed to stabilise the periodic ', ...
+         'system. Provide a stabilising K0 manually.'])
+end
+end
+
+%% =========================================================================
+function tf = stabilises(A, B, K0, T, direction)
+%STABILISES  True if A - B*K0 (or its transpose for 'forward') is Floquet-stable.
+Ak = A - B * K0;
+if strcmp(direction, 'forward'), Ak = Ak.'; end
+tf = all(real(findTrueFloquet(Ak, T)) < 0);
 end
