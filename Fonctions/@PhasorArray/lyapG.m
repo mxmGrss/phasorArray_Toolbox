@@ -1,10 +1,6 @@
 function [res, info] = lyapG(o1, o2, o3, o4, o5, options)
 %LYAPG  Periodic generalized (descriptor) Lyapunov / Sylvester solver.
 %
-%   Descriptor engine behind the unified front-end. Prefer the name-value
-%   interface  A.lyap(Q, 'E', E)  /  A.lyap(B, C, 'Ea', Ea, 'Eb', Eb)  for
-%   new code; lyapG is kept for the explicit positional descriptor signature.
-%
 %   Solves descriptor-form periodic equations WITHOUT inverting E(t) and
 %   WITHOUT forming dE/dt (handled implicitly by the Toeplitz algebra).
 %

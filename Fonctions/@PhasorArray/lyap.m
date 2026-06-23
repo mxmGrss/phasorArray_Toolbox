@@ -10,10 +10,10 @@ function [res, info] = lyap(o1, o2, o3, options)
 %     A and B must be square; rows(A)==rows(C), cols(B)==cols(C).
 %
 %   Descriptor (generalized) mode: pass a mass matrix via name-value 'E'
-%   (Lyapunov) or 'Ea'/'Eb' (Sylvester) to solve, e.g.
-%       lyap(A, Q, 'E', E)   ->  d/dt(E'PE) + A'PE + E'PA + Q = 0
-%   together with 'direction' ('backward'|'forward') and 'derivativeForm'
-%   ('product'|'sandwich'). E = [] (default) is the standard equation above.
+%   (Lyapunov) or 'Ea'/'Eb' (Sylvester), e.g.  lyap(A, Q, 'E', E)  solves
+%   d/dt(E'PE) + A'PE + E'PA + Q = 0, with 'derivativeForm'
+%   ('product'|'sandwich'). Delegates to the lyapG engine. E = [] (default)
+%   is the standard equation above.
 %
 %   Options (name-value):
 %     T                   Period of the periodic system (default: 2*pi)
@@ -25,9 +25,15 @@ function [res, info] = lyap(o1, o2, o3, options)
 %     stagnationRatio     Min relative improvement to avoid stagnation (default: 0.05)
 %     verbose             Print iteration table to console (default: false)
 %     storeResidualPhasor Store full residual PhasorArray in info (default: false)
-%     systemType          'rectangle' (overdetermined, default) or 'square' (Galerkin,
-%                         hOut=h — border harmonics discarded, controls cost explosion)
+%     systemType          'rectangle' (default: keeps every Cauchy-product output
+%                         harmonic, hOut=h+h_op) or 'square' (Galerkin, hOut=h —
+%                         border convolution terms neglected, controls cost explosion)
 %     updateMethod        'adaptive' (regime-based jump, default) or 'incremental' (h+1)
+%     direction           'backward' (default) solves  dP/dt + A'P + PA + Q = 0
+%                         (cost-to-go / observability type); 'forward' solves
+%                         dP/dt = A'P + PA + Q (covariance type — for the usual
+%                         covariance equation dP/dt = AP + PA' + Q, pass A').
+%                         Same convention in Sylvester mode (sign of dM/dt).
 %
 %   Returns:
 %     res   PhasorArray solution
@@ -64,11 +70,11 @@ arguments
     options.storeResidualPhasor (1,1) logical = false
     options.systemType          {mustBeMember(options.systemType,  {'rectangle','square'})}   = 'rectangle'
     options.updateMethod        {mustBeMember(options.updateMethod,{'adaptive','incremental'})} = 'adaptive'
+    options.direction           {mustBeMember(options.direction,   {'backward','forward'})}      = 'backward'
     options.E                                 = []            % descriptor mass (Lyapunov); [] → standard
     options.Ea                                = []            % descriptor left mass (Sylvester)
     options.Eb                                = []            % descriptor right mass (Sylvester)
     options.derivativeForm      {mustBeMember(options.derivativeForm,{'product','sandwich'})}  = 'product'
-    options.direction           {mustBeMember(options.direction,    {'backward','forward'})}   = 'backward'
 end
 
 % --- Descriptor (generalized) mode: delegate to the lyapG engine -----------
@@ -146,9 +152,9 @@ end
 
 t_start  = tic;
 t_step   = tic;
-res      = PhasorArray(SylvHarmonic(o1, o2, o3, h, omega, options.systemType));
+res      = PhasorArray(SylvHarmonic(o1, o2, o3, h, omega, options.systemType, options.direction));
 dt_step  = toc(t_step);
-[resnorm, resrelnorm, resPhasor] = computeResidual(res, o1, o2, o3, T);
+[resnorm, resrelnorm, resPhasor] = computeResidual(res, o1, o2, o3, T, options.direction);
 
 %% --- Fixed-h: early return ---
 
@@ -298,9 +304,9 @@ while status == -1 && h < maxh
     %% --- Solve at new h ---
     nIter   = nIter + 1;
     t_step  = tic;
-    res     = PhasorArray(SylvHarmonic(o1, o2, o3, h, omega, options.systemType));
+    res     = PhasorArray(SylvHarmonic(o1, o2, o3, h, omega, options.systemType, options.direction));
     dt_step = toc(t_step);
-    [resnorm, resrelnorm, resPhasor] = computeResidual(res, o1, o2, o3, T);
+    [resnorm, resrelnorm, resPhasor] = computeResidual(res, o1, o2, o3, T, options.direction);
 
     h_history(nIter)      = h;
     resrel_history(nIter) = resrelnorm;
@@ -381,9 +387,15 @@ info = packInfo(status, statusMsg, resrelnorm, resnorm, h, ...
 end % lyap
 
 %% =========================================================================
-function [resnorm, resrelnorm, resPhasor] = computeResidual(res, o1, o2, o3, T)
+function [resnorm, resrelnorm, resPhasor] = computeResidual(res, o1, o2, o3, T, direction)
 %COMPUTERESIDUAL  Evaluate Sylvester residual and its norms.
-resPhasor  = res.d(T) + o1*res + res*o2 + o3;
+% 'backward': dX/dt + AX + XB + C = 0 ; 'forward': -dX/dt + AX + XB + C = 0.
+if strcmp(direction, 'forward')
+    signD = -1;
+else
+    signD = +1;
+end
+resPhasor  = signD*res.d(T) + o1*res + res*o2 + o3;
 resnorm    = norm(resPhasor.value, 'fro');
 Cnorm      = norm(o3.value, 'fro');
 resrelnorm = resnorm / (Cnorm + eps);
