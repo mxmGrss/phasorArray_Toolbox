@@ -26,7 +26,7 @@ function [r,t] = plot(o1,T,t,arg)
     %              - 'DispReal' (logical): Display the real part of the matrix (default: `true`).
     %              - 'ZeroCentered' (logical): Center the Y-axis around zero (default: `false`).
     %              - 'title' (string): Custom title for the figure (default: `[]`).
-    %              - 'linetype' (string): Line style for the plot (default: `'-'`).
+    %              - 'LineStyle' (string): Line style for the plot (default: `'-'`).
     %              - 'GlobalYLim' (logical): Apply the same Y-limits across subplots (default: `false`).
     %              - 'linkaxes' (string): Link axes of subplots (`'x'`, `'y'`, `'xy'`, etc.) (default: `'x'`).
     %              - 'forceReal' (logical): Assume `o1` is real-valued and simplify computation (default: `false`).
@@ -54,7 +54,7 @@ function [r,t] = plot(o1,T,t,arg)
     %     plot(A, 2*pi, t, 'plot', true, 'explosed', false);
     %
     %     % Plot only the imaginary part with a different linestyle
-    %     plot(A, 2*pi, [], 'DispImag', true, 'DispReal', false, 'linetype', '--');
+    %     plot(A, 2*pi, [], 'DispImag', true, 'DispReal', false, 'LineStyle', '--');
     %
     %   See also: PhasorArray2time.
     arguments
@@ -68,7 +68,7 @@ function [r,t] = plot(o1,T,t,arg)
         arg.DispReal logical = []
         arg.ZeroCentered logical =false
         arg.title = [] %options : "none" or string or []
-        arg.linetype='-'
+        arg.LineStyle='-'
         arg.GlobalYLim logical =false
         arg.linkaxes='x'
         arg.forceReal = false
@@ -103,7 +103,7 @@ function [r,t] = plot(o1,T,t,arg)
     end
     [rr,tt]=PhasorArray2time(o1,T,t,plot=arg.plot, DispImag=arg.DispImag, ...
         DispReal=arg.DispReal,explosed=arg.explosed,hold=arg.hold,ZeroCentered=arg.ZeroCentered, ...
-        title=arg.title,linetype=arg.linetype,GlobalYLim=arg.GlobalYLim,linkaxes=arg.linkaxes,forceReal=arg.forceReal,grid = arg.grid);
+        title=arg.title,LineStyle=arg.LineStyle,GlobalYLim=arg.GlobalYLim,linkaxes=arg.linkaxes,forceReal=arg.forceReal,grid = arg.grid);
 
     if nargout>0
         r=rr;
