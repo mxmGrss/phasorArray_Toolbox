@@ -31,7 +31,7 @@ function [Mt,t] = PhasorArray2time(Mph,T,t,arg)
 %              - 'checkRealTol' (double): Tolerance for real-valued check (default: `1e-8`).
 %              - 'title' (string): Title of the plot (default: `[]`).
 %              - 'plot3D' (logical): Plot the matrix coefficients in 3D (default: `false`).
-%              - 'linetype' (string): Line type for the plot (default: `'-'`).
+%              - 'LineStyle' (string): Line type for the plot (default: `'-'`).
 %              - 'GlobalYLim' (logical): Set uniform y-limits for all subplots (default: `false`).
 %              - 'linkaxes' (string): Link axes ('x', 'y', 'xy', etc.) (default: `'x'`).
 %              - 'computationMethod' (integer): Method used for evaluation (default: `1`).
@@ -77,7 +77,7 @@ function [Mt,t] = PhasorArray2time(Mph,T,t,arg)
 
 arguments
     Mph
-    T=1
+    T=2*pi
     t=[]
     arg.plot logical         = false
     arg.explosed logical     = true
@@ -90,7 +90,7 @@ arguments
     arg.checkRealTol         = 1e-8
     arg.title                = []
     arg.plot3D logical       = false
-    arg.linetype             = '-'
+    arg.LineStyle             = '-'
     arg.GlobalYLim logical   = false
     arg.linkaxes             = 'x';
     arg.computationMethod    = 1
@@ -358,7 +358,7 @@ end
 %                     hold on
 %                 end
 %                 if arg.plot3D
-%                     plot3(real(squeeze(Mt(nxi,nyi,:))),imag(squeeze(Mt(nxi,nyi,:))),t,arg.linetype)
+%                     plot3(real(squeeze(Mt(nxi,nyi,:))),imag(squeeze(Mt(nxi,nyi,:))),t,arg.LineStyle)
 %                     xlabel("Re(a_{"+num2str(nxi)+num2str(nyi)+"})")
 %                     ylabel("Im(a_{"+num2str(nxi)+num2str(nyi)+"})")
 %                     zlabel(xlabelStr)
@@ -371,10 +371,10 @@ end
 %                     end
 %                 else
 %                     if arg.DispImag
-%                         plot(t,imag(squeeze(Mt(nxi,nyi,:))),arg.linetype)
+%                         plot(t,imag(squeeze(Mt(nxi,nyi,:))),arg.LineStyle)
 %                         % ylabel("Im(a_{"+num2str(nxi)+num2str(nyi)+"})")
 %                     else
-%                         plot(t,real(squeeze(Mt(nxi,nyi,:))),arg.linetype)
+%                         plot(t,real(squeeze(Mt(nxi,nyi,:))),arg.LineStyle)
 %                         % if isreal(Mt)
 %                         %     ylabel("a_{"+num2str(nxi)+num2str(nyi)+"}")
 %                         % else
@@ -396,7 +396,7 @@ end
 %                 if arg.hold
 %                     hold on
 %                 end
-%                 plot(t,real(squeeze(Mt(nxi,nyi,:))),arg.linetype)
+%                 plot(t,real(squeeze(Mt(nxi,nyi,:))),arg.LineStyle)
 %                 ylabel("Re(a_{"+num2str(nxi)+num2str(nyi)+"})")
 %                 ylim('auto')
 %                 if arg.ZeroCentered
@@ -411,7 +411,7 @@ end
 %                 if arg.hold
 %                     hold on
 %                 end
-%                 plot(t,imag(squeeze(Mt(nxi,nyi,:))),arg.linetype)
+%                 plot(t,imag(squeeze(Mt(nxi,nyi,:))),arg.LineStyle)
 %                 ylabel("Im(a_{"+num2str(nxi)+num2str(nyi)+"})")
 %                 ylim('auto')
 %                 if arg.ZeroCentered
@@ -466,14 +466,14 @@ end
 %             hold on
 %         end
 %         if arg.DispImag
-%             plot(t,imag(reshape(Mt,[],numel(t))),arg.linetype)
+%             plot(t,imag(reshape(Mt,[],numel(t))),arg.LineStyle)
 %             if isempty(arg.title)
 %                 title('M(t), imag part')
 %             else
 %                 title(arg.title)
 %             end
 %         else
-%             plot(t,real(reshape(Mt,[],numel(t))),arg.linetype)
+%             plot(t,real(reshape(Mt,[],numel(t))),arg.LineStyle)
 %             if isempty(arg.title)
 %                 title('M(t), real part')
 %             else
@@ -501,7 +501,7 @@ end
 %             % arg.hold checks if the plot should be superposed on the current figure
 %             hold on
 %         end
-%         plot(t,real(reshape(Mt,[],numel(t))),arg.linetype)
+%         plot(t,real(reshape(Mt,[],numel(t))),arg.LineStyle)
 % 
 %         ylim('auto')
 %         if arg.ZeroCentered
@@ -514,7 +514,7 @@ end
 %             % arg.hold checks if the plot should be superposed on the current figure
 %             hold on
 %         end
-%         plot(t,imag(reshape(Mt,[],numel(t))),arg.linetype)
+%         plot(t,imag(reshape(Mt,[],numel(t))),arg.LineStyle)
 % 
 %         ylim('auto')
 %         if arg.ZeroCentered
@@ -528,7 +528,6 @@ end
 % 
 
 function t = plot2(arg,t,T,Mt)
-
 
 nx = size(Mt,1);
 ny = size(Mt,2);
@@ -579,7 +578,7 @@ if arg.explosed
                     hold on
                 end
                 if arg.plot3D
-                    plot3(real(squeeze(Mt(nxi,nyi,:))),imag(squeeze(Mt(nxi,nyi,:))),t,arg.linetype)
+                    plot3(real(squeeze(Mt(nxi,nyi,:))),imag(squeeze(Mt(nxi,nyi,:))),t,arg.LineStyle)
                     xlabel("Re(a_{"+num2str(nxi)+num2str(nyi)+"})")
                     ylabel("Im(a_{"+num2str(nxi)+num2str(nyi)+"})")
                     zlabel(xlabelStr)
@@ -592,10 +591,10 @@ if arg.explosed
                     end
                 else
                     if arg.DispImag
-                        plot(t,imag(squeeze(Mt(nxi,nyi,:))),arg.linetype)
+                        plot(t,imag(squeeze(Mt(nxi,nyi,:))),arg.LineStyle)
                         % ylabel("Im(a_{"+num2str(nxi)+num2str(nyi)+"})")
                     else
-                        plot(t,real(squeeze(Mt(nxi,nyi,:))),arg.linetype)
+                        plot(t,real(squeeze(Mt(nxi,nyi,:))),arg.LineStyle)
                         % if isreal(Mt)
                         %     ylabel("a_{"+num2str(nxi)+num2str(nyi)+"}")
                         % else
@@ -619,7 +618,7 @@ if arg.explosed
                 if arg.hold
                     hold on
                 end
-                plot(t,real(squeeze(Mt(nxi,nyi,:))),arg.linetype)
+                plot(t,real(squeeze(Mt(nxi,nyi,:))),arg.LineStyle)
                 ylabel("Re(a_{"+num2str(nxi)+num2str(nyi)+"})")
                 ylim('auto')
                 if arg.ZeroCentered
@@ -636,7 +635,7 @@ if arg.explosed
                 if arg.hold
                     hold on
                 end
-                plot(t,imag(squeeze(Mt(nxi,nyi,:))),arg.linetype)
+                plot(t,imag(squeeze(Mt(nxi,nyi,:))),arg.LineStyle)
                 ylabel("Im(a_{"+num2str(nxi)+num2str(nyi)+"})")
                 ylim('auto')
                 if arg.ZeroCentered
@@ -696,14 +695,14 @@ else
             hold on
         end
         if arg.DispImag
-            plot(t,imag(reshape(Mt,[],numel(t))),arg.linetype)
+            plot(t,imag(reshape(Mt,[],numel(t))),arg.LineStyle)
             if isempty(arg.title)
                 title('M(t), imaginary part')
             else
                 title(arg.title)
             end
         else
-            plot(t,real(reshape(Mt,[],numel(t))),arg.linetype)
+            plot(t,real(reshape(Mt,[],numel(t))),arg.LineStyle)
             if isempty(arg.title)
                 title('M(t), real part')
             else
@@ -724,7 +723,7 @@ else
             % arg.hold checks if the plot should be superposed on the current figure
             hold on
         end
-        plot(t,real(reshape(Mt,[],numel(t))),arg.linetype)
+        plot(t,real(reshape(Mt,[],numel(t))),arg.LineStyle)
 
         ylim('auto')
         if arg.ZeroCentered
@@ -737,7 +736,7 @@ else
             % arg.hold checks if the plot should be superposed on the current figure
             hold on
         end
-        plot(t,imag(reshape(Mt,[],numel(t))),arg.linetype)
+        plot(t,imag(reshape(Mt,[],numel(t))),arg.LineStyle)
 
         ylim('auto')
         if arg.ZeroCentered

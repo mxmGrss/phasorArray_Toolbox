@@ -46,44 +46,41 @@ arguments
     varg.timeDim  {mustBeLessThanOrEqual(varg.timeDim,3),mustBeGreaterThanOrEqual(varg.timeDim,1)} = 3
     varg.procedeWithError = false
 end
-% dt=t(2)-t(1);
-% T=(t(end)+dt)/nT;
-
-
-%  VALIDATION DE L'ENTREE
-if isvector(At) %case of vector input, dont need to have a 3D structure, dont need to specify timeDim
-    At=At(:); % At is put as a column
+%  INPUT VALIDATION
+if isvector(At) % vector input: reshape to [1 x 1 x n], timeDim is irrelevant
+    At=At(:);
     At=permute(At,[2 3 1]);
-elseif varg.timeDim~=3 %otherwise we check if timeDim is specified
-    if ismatrix(At) %Case of matrix is provided
-        %all good
-    else
-        %send a warning, does not respect convention
+elseif varg.timeDim~=3 % permute time dimension to dim 3
+    if ~ismatrix(At)
         warning('TimeArray2Phasors:timeDimPermutation', 'Non-matrix input with timeDim=%d: permuting dimension %d with dimension 3.', varg.timeDim, varg.timeDim)
     end
-    switch varg.timeDim %perform permutation
-        case 1
-            At = permute(At,[3 2 1]);
-        case 2
-            At = permute(At,[1 3 2]);
-    end
+    perm         = 1:3;
+    perm([varg.timeDim, 3]) = perm([3, varg.timeDim]);
+    At           = permute(At, perm);
 end
 
 n=size(At,3);
 
-testPowerOf2 = log(n)/log(2);
-if abs(round(testPowerOf2)-testPowerOf2)>1e-3
+% Validate time vector length against array size
+if ~isempty(t) && numel(t) ~= n
+    error('PhasorArray:TimeArray2Phasors:timeMismatch', ...
+          'numel(t)=%d does not match size(At,timeDim)=%d.', numel(t), n);
+end
+
+% Check that samples per period (n/nT) is a power of 2.
+% n = nT * 2^m is valid even if n itself is not a power of 2 (e.g. nT=3, n=1536).
+nPerPeriod = n / nT;
+if ~(nPerPeriod == floor(nPerPeriod) && nPerPeriod > 0 && bitand(uint32(nPerPeriod), uint32(nPerPeriod)-1) == 0)
     if varg.procedeWithError
-        warning('TimeArray2Phasors:notPowerOf2', 'Time series length %d is not a power of 2; output accuracy may be reduced.', n)
+        warning('TimeArray2Phasors:notPowerOf2', 'Samples per period n/nT=%g is not a power of 2; output accuracy may be reduced.', nPerPeriod)
     else
-        error('TimeArray2Phasors:notPowerOf2', 'Time series length %d is not a power of 2; output would be inaccurate. Recheck your data or set procedeWithError to true.', n)
+        error('TimeArray2Phasors:notPowerOf2', 'Samples per period n/nT=%g is not a power of 2; output would be inaccurate. Ensure n = nT * 2^m.', nPerPeriod)
     end
 end
 
 FST=fftshift(fft(At,[],3),3)/n;
 
 fshiftn=((-n/2):(n/2-1))/nT;
-% fshift=fshiftn/T;
 
 [~,I1]=find(mod(fshiftn,1)==0);
 
@@ -96,11 +93,25 @@ end
 Aph=ReduceArray(Aph,varg.truncIndex);
 
 h=(size(Aph,3)-1)/2;
+
+% Phase correction when t(1) != 0.
+% If the signal is sampled on [t1, t1+T-dt] with t1 != 0, each harmonic k
+% carries a phase offset exp(-i*k*omega0*t1). T = n*dt/nT.
+if ~isempty(t) && abs(t(1)) > eps
+    dt_t   = t(2) - t(1);
+    T_t    = n * dt_t / nT;
+    omega0 = 2*pi / T_t;
+    k_vec  = (-h:h);                             % 1 x (2h+1)
+    phase  = exp(-1i * k_vec * omega0 * t(1));   % 1 x (2h+1)
+    Aph    = Aph .* reshape(phase, 1, 1, []);    % broadcast over dims 1 and 2
+end
+
+% Enforce conjugate symmetry Ak = conj(A-k) for real-valued signals (vectorized).
 if varg.isReal
-    for kk=0:h
-        Aph(:,:,h+1+kk)=(Aph(:,:,h+1+kk)+conj(Aph(:,:,h+1-kk)))/2;
-        Aph(:,:,h+1-kk)=conj(Aph(:,:,h+1+kk));
-    end
+    Aph_pos = (Aph(:,:,h+2:end) + conj(flip(Aph(:,:,1:h), 3))) / 2;
+    Aph     = cat(3, conj(flip(Aph_pos,3)), ...
+                     real(Aph(:,:,h+1)), ...
+                     Aph_pos);
 end
 
 

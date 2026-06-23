@@ -122,6 +122,7 @@ REVIEWER_ACTION_PLAN.md
 
 # Generic local MATLAB/Simulink scratch artifacts
 *.asv
+*_old.m
 *.autosave
 *.slxc
 slprj/

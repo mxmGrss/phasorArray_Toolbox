@@ -3,7 +3,7 @@ message: "If you use this software, please cite it as below."
 type: software
 title: "The PhasorArray Toolbox"
 abstract: "A Matlab toolbox dedicated to harmonic modelling and control of Linear Time-Periodic systems."
-version: "v1.2"
+version: "v1.3"
 date-released: "2026-03-16"
 license: MIT
 repository-code: "https://github.com/mxmGrss/phasorArray_Toolbox"
@@ -30,3 +30,8 @@ keywords:
   - LTP systems
   - control theory
   - phasor
+  - Lyapunov equation
+  - Riccati equation
+  - Kalman filter
+  - observer design
+  - descriptor systems

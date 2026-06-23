@@ -37,7 +37,7 @@ y = sig(t);
 %[text] Use the time2phasor method with a signal sample from 0 to T-dt on 2^m points
 Y=PhasorArray.time2Phasor(y,"timeDim",2) %[output:3289d7f2]
 hold on  %[output:80490bd5]
-plot(Y,T,0:1e-3:4,linetype='-.') %[output:80490bd5]
+plot(Y,T,0:1e-3:4,LineStyle='-.') %[output:80490bd5]
 sgtitle('y(t) vs Y->y') %[output:80490bd5]
 
 YY = PhasorArray.funcToPhasorArray(sig,T);

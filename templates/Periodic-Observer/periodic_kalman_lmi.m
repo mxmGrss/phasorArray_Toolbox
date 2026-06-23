@@ -24,7 +24,7 @@ V = PhasorArray(eye(ny));          % measurement noise
 hP  = 10;
 h   = 10;
 
-% Q is the state covariance matrix (symmetric, nx x nx)
+% Q is the information matrix (inverse error covariance, symmetric, nx x nx)
 Q_var = PhasorArray.ndsdpvar(nx, nx, hP, 'PhasorType', 'symmetric', 'real', true);
 % Z = Q L — note: Z is nx × ny because L is nx × ny
 Z     = PhasorArray.ndsdpvar(nx, ny, hP, 'PhasorType', 'full', 'real', true);
@@ -32,10 +32,11 @@ Z     = PhasorArray.ndsdpvar(nx, ny, hP, 'PhasorType', 'full', 'real', true);
 QT = Q_var.T_tb(h);
 N  = N_tb(A, h, T);
 
-%% 2. Dual Schur-complement LMI
-%  Dual of the control problem: A Q + Q A' - Z C - C' Z' - dQ/dt + W
-LMI_top = (A * Q_var + Q_var * A' - Z * C - C' * Z');
-LMI_top_tb = LMI_top.T_tb(h) - (N*QT - QT*N);   % -dQ/dt lifting rules
+%% 2. Dual Schur-complement LMI (information form)
+%  Backward observer certificate, linear in (Q, Z = Q*L):
+%  A'Q + Q A - Z C - C' Z' + dQ/dt   (the derivative enters with +)
+LMI_top = (A' * Q_var + Q_var * A - Z * C - C' * Z');
+LMI_top_tb = LMI_top.T_tb(h) + (N*QT - QT*N);   % +dQ/dt lifting rule
 LMI_top_tb = 0.5 * (LMI_top_tb + LMI_top_tb'); % Enforce numerical symmetry
 
 ZT = Z.T_tb(h);

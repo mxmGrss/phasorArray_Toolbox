@@ -29,31 +29,36 @@ P  = PhasorArray.ndsdpvar(nx, nx, hP, 'PhasorType', 'symmetric', 'real', true);
 PT = P.T_tb(h);
 N  = N_tb(nx, h, T);
 
-%% 2. Periodic Riccati LMI for observer
-% A P + P A' - P C' V^-1 C P - dP/dt + W < 0
-% Schur complement:
-% [ A P + P A' - dP/dt + W,  P C' ]
-% [          C P          ,   V   ] >= 0
+%% 2. Periodic Riccati LMI for observer (subsolution from below)
+% The Kalman covariance Sigma satisfies dSigma/dt = F(Sigma) where
+%   F(P) = A P + P A' + W - P C' V^-1 C P.
+%
+% Any P satisfying the SUBSOLUTION condition dP/dt <= F(P) is a lower bound
+% on the covariance (P(t) <= Sigma(t) by comparison).  The MAXIMUM P in the
+% feasible set equals Sigma itself.
+%
+% Schur form of dP/dt <= F(P):
+%   [A P + P A' + W - dP/dt,  P C']  >= 0
+%   [         C P           ,   V  ]
+%
+% Objective: MAXIMIZE trace(P_0), i.e., minimize -trace(P_0).
 
-AP   = T_tb((A * P + P * A'),h);     
-Pdot = N * PT - PT * N;              % lifted d/dt P(t) properly with N*P - P*N
-PC   = T_tb((P * C'),h);             
+AP   = T_tb((A * P + P * A'), h);
+Pdot = N * PT - PT * N;              % T(dP/dt) = N*T(P) - T(P)*N
+PC   = T_tb((P * C'), h);
 WT   = W.T_tb(h);
 VT   = V.T_tb(h);
 
-F11 = AP - Pdot + WT;
-F12 = PC;
-
-LMI_tb = [F11,  F12; 
-          F12', VT];
+LMI_tb = [AP - Pdot + WT,  PC;
+          PC',              VT];
 LMI_tb = 0.5 * (LMI_tb + LMI_tb'); % Enforce exact symmetry numerically
 
 F = [ PT >= 0 ];
-F = [ F, LMI_tb >= 1e-6*eye(size(LMI_tb)) ];
+F = [ F, LMI_tb >= 0 ];
 
 %% 4. Solve
-% Minimize the mean variance Trace(P_0)
-obj = trace(P{:,:,0});
+% Maximize Trace(P_0) — the maximum subsolution is P = Sigma (Kalman covariance).
+obj = -trace(P{:,:,0});
 sol = optimize(F, obj, sdpsettings('solver', 'mosek', 'verbose', 1));
 
 %% 5. Extract observer gain: L = P C' V⁻¹
