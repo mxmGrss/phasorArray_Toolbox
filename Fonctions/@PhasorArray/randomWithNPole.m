@@ -92,7 +92,7 @@ function Aper = randomWithNPole(J_or_V, h, opts)
 %   % Controlled bandwidth, generic structure, approx Floquet (Bessel < 1e-11)
 %   Ap = PhasorArray.randomWithNPole([-1; -0.5], 20, Method='truncated');
 %
-% See also: findTruelmV3, findTrueFloquetV3, HmqNEig
+% See also: findTruelm, findTrueFloquet, HmqNEig
 
 arguments
     J_or_V  double
@@ -196,5 +196,6 @@ for i = 1:Nt
     At(:,:,i) = thd * G  +  R * J / R;
 end
 
-Aper = PhasorArray(TimeArray2Phasors(At, 1, t));
+is_real_At = isreal(At) || (max(abs(imag(At(:)))) < 1e-12);
+Aper = PhasorArray(TimeArray2Phasors(At, 1, t, 'isReal', is_real_At));
 end

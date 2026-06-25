@@ -1,553 +1,144 @@
 function [trueMu, trueL, stats] = findTruelm(ev, T, nx, varg)
-% FINDTRUELM  Extract true Floquet exponents from a Hill/HSS eigenvalue spectrum.
+% FINDTRUELM  Extract true Floquet exponents from a Hill/HSS spectrum.
+%   Single coherent topological solver (V3 Engine).
+%   Fixes the two known failure modes of previous versions:
+%     (1) circular geometry: ALL distances use the cylindrical (toroidal-imag)
+%         metric -- no flat Euclidean DBSCAN/kmeans that tear the Brillouin edge.
+%     (2) coincident multiplicity (repeated Floquet exponents): detected by
+%         cluster MASS and emitted by REPLICATION, never by k-means splitting
+%         a coincident cloud (which returns one copy + parasites).
 %
-%   [trueMu, trueL, stats] = findTruelm(ev, T, nx) identifies the nx true
-%   Floquet exponents from the (2h+1)*nx eigenvalues of the Hill matrix.
-%   Each true exponent mu_k generates a "comb" of aliases: mu_k + j*m*omega
-%   for m in {-h,...,h}. The solvers exploit this structure to cluster the
-%   spectrum and recover one representative per comb.
+%   ev  : (:,1) full HSS spectrum, (2h+1)*nx values.
+%   T   : fundamental period (omega = 2*pi/T).
+%   nx  : descriptor dimension = total Floquet multiplicity (sum of mults).
 %
-%   SYNTAX:
-%       [trueMu, trueL, stats] = findTruelm(ev, T, nx)
-%       [trueMu, trueL, stats] = findTruelm(ev, T, nx, 'method', 'gap', ...)
-%
-%   INPUTS:
-%       ev   - (:,1) double  Full Hill/HSS eigenvalue vector.
-%       T    - (1,1) double  Fundamental period (s or rad depending on convention).
-%       nx   - (1,1) int     Number of true modes (size of the original A matrix).
-%
-%   NAME-VALUE:
-%       method   (char)   Clustering solver. Default: 'kde'.
-%                  'kde'    Cylindrical KDE + greedy peak picking (original).
-%                  'gap'    Gap detection on sorted imaginary parts (no toolbox).
-%                  'dbscan' DBSCAN + K-means fallback (Stats Toolbox required).
-%                  'kmeans' K-means with outlier trimming (Stats Toolbox required).
-%       trA0     (1,1) double  dc harmonic trace tr(A_0) for Liouville validation.
-%                              Default: [] (validation skipped, stats.liouvilleRes = NaN).
-%       bandwidth (1,1) double KDE bandwidth. Default: 1e-3. ['kde' only]
-%       epsilon  (1,1) double  DBSCAN neighbourhood radius. Default: 0 (auto).
-%       minPts   (1,1) int     DBSCAN minimum neighbours. Default: 0 (auto).
-%       outlierSigma (1,1) double  Intra-cluster outlier rejection threshold
-%                                  (multiples of cluster std). Default: 3.
-%                                  ['gap', 'kmeans' only]
-%
-%   OUTPUTS:
-%       trueMu - (nx,1) double  True Floquet exponents (wrapped to Brillouin zone).
-%       trueL  - (nx,1) double  True Floquet multipliers exp(T * trueMu).
-%       stats  - struct         Diagnostics — all fields always present:
-%           .method        : Solver used.
-%           .confidence    : Normalised peak density (or cluster fill) per mode.
-%           .rmse          : Intra-cluster spread of real parts.
-%           .cluster_size  : Number of eigenvalues assigned to each mode.
-%           .outlier_ratio : Fraction of spectrum marked as outliers.
-%           .liouvilleRes  : |sum(trueMu) - trA0| / |trA0|  (NaN if trA0 not given).
-%
-%   SOLVER GUIDE:
-%       'kde'    — safest default; works without toolbox; bandwidth-sensitive.
-%       'gap'    — fastest, no parameters, best for clean well-separated combs.
-%       'dbscan' — robust to outliers; auto-epsilon; falls back to kmeans if
-%                  cluster count != nx.
-%       'kmeans' — deterministic with Replicates=5; outliers trimmed post-hoc.
-%
-%   NOTE:
-%       This function is an internal clustering step called by findTrueFloquet.
-%       For normal use, call findTrueFloquet directly — it handles HmqNEig,
-%       h-refinement, and convergence checking automatically.
-%       Call findTruelm directly only if you already have a raw HSS spectrum
-%       (e.g. for benchmarking solvers or post-processing external eigenvalues).
-%
-%   See also: findTrueFloquet (recommended entry point), HmqNEig.
+%   stats.liouvilleRes uses Sum(mu) = tr(A0) as the ultimate failure detector.
 
 arguments
     ev   (:,1) double
     T    (1,1) double
     nx   (1,1) {mustBeInteger, mustBePositive}
-    varg.method      {mustBeMember(varg.method, {'robust','kde','gap','dbscan','kmeans'})} = 'robust'
-    varg.trA0                                       = []
-    varg.bandwidth   (1,1) double                   = 1e-3
-    varg.epsilon     (1,1) double                   = 0
-    varg.minPts      (1,1) {mustBeInteger, mustBeNonnegative} = 0
-    varg.outlierSigma (1,1) double                  = 3
-    varg.verbose     (1,1) logical                  = false
+    varg.trA0    = []
+    varg.Rmerge  (1,1) double = 0      % 0 = auto (fraction of spectrum scale)
+    varg.verbose (1,1) logical = false
+    
+    % Legacy options ignored
+    varg.method = []
 end
 
-omega     = 2*pi / T;
-imag_frac = wrapToHalf(imag(ev), omega);   % map all imaginary parts to [-omega/2, omega/2)
+omega   = 2*pi / T;
+N       = numel(ev);
+rho_ref = N / nx;                 % points per simple mode = (2h+1)
+reEV    = real(ev);
+imF     = wrapToHalf(imag(ev), omega);
 
-%% --- Dispatch ---
+% ---- scales for the cylindrical metric -------------------------------------
+bw = max(1e-3, omega/200);        % sharp kernel to resolve comb cores
+dens = zeros(N,1);
+for i = 1:N
+    dx = reEV(i) - reEV;
+    dy = wrapToHalf(imF(i) - imF, omega);
+    dens(i) = sum(exp(-(dx.^2 + dy.^2) / (2*bw^2)));
+end
+cdist2 = @(ar,ai,br,bi) (ar-br).^2 + wrapToHalf(ai-bi,omega).^2;
 
-switch varg.method
-    case 'robust'
-        [trueMu, cs] = solveByRobust(ev, imag_frac, omega, nx, varg.epsilon, varg.minPts, varg.verbose);
-    case 'kde'
-        [trueMu, cs] = solveByCKDE(ev, imag_frac, omega, nx, varg.bandwidth);
-    case 'gap'
-        [trueMu, cs] = solveByGap(ev, imag_frac, omega, nx, varg.outlierSigma);
-    case 'dbscan'
-        [trueMu, cs] = solveByDBSCAN(ev, imag_frac, omega, nx, varg.epsilon, varg.minPts);
-    case 'kmeans'
-        [trueMu, cs] = solveByKMeans(ev, imag_frac, nx, varg.outlierSigma);
+if varg.Rmerge > 0
+    R_merge = varg.Rmerge;
+else
+    core    = reEV(dens > 0.2*max(dens));         % dense points; never empty
+    scaleD  = (max(core)-min(core)) + omega;
+    R_merge = max(0.015*scaleD, 5*bw);
+end
+R_re = R_merge;
+R_im = min(R_merge, 0.15*omega);
+tau     = 0.15;                   % a real comb core exceeds tau*max(density)
+densMax = max(dens);
+pool    = true(N,1);
+peaksR  = []; peaksI = []; peakDens = [];
+while any(pool)
+    idxPool = find(pool);
+    [dp, j] = max(dens(idxPool));
+    if dp < tau * densMax, break; end   % remaining pool = outliers/parasites
+    p = idxPool(j);
+    peaksR(end+1,1) = reEV(p);  peaksI(end+1,1) = imF(p);  peakDens(end+1,1) = dens(p); %#ok<AGROW>
+    R_im_use = R_im;
+    if abs(imF(p)) < bw, R_im_use = omega/2; end
+    near = pool & (abs(reEV - reEV(p)) <= R_re) ...
+                & (abs(wrapToHalf(imF - imF(p), omega)) <= R_im_use);
+    pool(near) = false;
+end
+
+% ---- Voronoi assignment of ALL points to nearest peak (circular) -----------
+nP  = numel(peaksR);
+D2  = zeros(N, nP);
+for k = 1:nP
+    D2(:,k) = cdist2(reEV, imF, peaksR(k), peaksI(k));
+end
+[~, assign] = min(D2, [], 2);
+mass = accumarray(assign, 1, [nP 1]);
+
+% ---- multiplicity by mass, keep the nx-budget densest modes ----------------
+[~, order] = sort(peakDens, 'descend');        % trust dense peaks first
+mult   = zeros(nP,1);
+budget = nx;
+for k = order(:)'
+    if budget <= 0, break; end
+    m = max(1, round(mass(k)/rho_ref));
+    m = min(m, budget);
+    mult(k) = m;
+    budget  = budget - m;
+end
+ki = 1;
+keptOrder = order(mult(order) > 0);
+while budget > 0 && ~isempty(keptOrder)
+    kk = keptOrder(mod(ki-1, numel(keptOrder))+1);
+    mult(kk) = mult(kk) + 1; budget = budget - 1; ki = ki + 1;
+end
+
+% ---- refine each kept peak to its cluster's density-weighted core ----------
+keep = find(mult > 0);
+trueMu = zeros(nx,1);
+conf = zeros(nx,1); rmseV = zeros(nx,1); csz = zeros(nx,1);
+w = 0;
+for k = keep(:)'
+    m   = assign == k;
+    evk = ev(m); dk = dens(m);
+    [~, c] = max(dk);                          % density peak = ground-truth core
+    muk = reEV(find(m,1)); %#ok<NASGU>
+    evkR = real(evk); evkI = wrapToHalf(imag(evk), omega);
+    muVal = evkR(c) + 1i*evkI(c);
+    for r = 1:mult(k)
+        w = w + 1;
+        trueMu(w) = muVal;
+        conf(w)   = mass(k)/rho_ref/mult(k);
+        rmseV(w)  = std(evkR);
+        csz(w)    = mass(k);
+    end
 end
 
 trueL = exp(T * trueMu);
 
-%% --- Liouville validation (optional) ---
-
+% ---- Liouville validation --------------------------------------------------
 if ~isempty(varg.trA0)
-    trA0 = varg.trA0;
-    if abs(trA0) > 1e-12 * nx
-        liouvilleRes = abs(sum(trueMu) - trA0) / abs(trA0);
+    if abs(varg.trA0) > 1e-12*nx
+        liou = abs(sum(trueMu) - varg.trA0) / abs(varg.trA0);
     else
-        liouvilleRes = abs(sum(trueMu) - trA0);   % absolute fallback: nilpotent dc
+        liou = abs(sum(trueMu) - varg.trA0);
     end
 else
-    liouvilleRes = NaN;
+    liou = NaN;
 end
 
-%% --- Pack stats ---
-
-stats.method        = varg.method;
-stats.confidence    = cs.confidence;
-stats.rmse          = cs.rmse;
-stats.cluster_size  = cs.cluster_size;
-stats.outlier_ratio = cs.outlier_ratio;
-stats.liouvilleRes  = liouvilleRes;
-
-end
-
-%% =========================================================================
-%% SOLVER 1 — Cylindrical KDE + greedy peak picking  (original algorithm)
-%% =========================================================================
-
-function [trueMu, cs] = solveByCKDE(ev, imag_frac, omega, nx, bw)
-% solveByCKDE  Cylindrical KDE density over the HSS spectrum, greedy nx-peak extraction.
-%   The cylindrical distance wraps the imaginary axis modulo omega so that
-%   alias combs appear as co-located density peaks.
-
-N            = length(ev);
-pts_per_mode = N / nx;
-
-% --- KDE density at each eigenvalue ---
-density = zeros(N, 1);
-reEV = real(ev);
-imEV = imag(ev);
-for i = 1:N
-    dx       = reEV(i) - reEV;
-    dy_wrap  = wrapToHalf(imEV(i) - imEV, omega);
-    dist_sq  = dx.^2 + dy_wrap.^2;
-    density(i) = sum(exp(-dist_sq / (2 * bw^2)));
-end
-
-% --- Greedy peak extraction ---
-trueMu    = zeros(nx, 1);
-ev_pool   = ev;
-dens_pool = density;
-frac_pool = imag_frac;
-
-cs.confidence   = zeros(nx, 1);
-cs.rmse         = zeros(nx, 1);
-cs.cluster_size = zeros(nx, 1);
-
-for k = 1:nx
-    if isempty(ev_pool)
-        trueMu(k) = trueMu(k-1);
-        continue
-    end
-    [max_dens, max_idx] = max(dens_pool);
-    peak_ev  = ev_pool(max_idx);
-    trueMu(k) = real(peak_ev) + 1i * frac_pool(max_idx);
-
-    cs.confidence(k) = max_dens / pts_per_mode;
-
-    dx       = real(ev_pool) - real(peak_ev);
-    dy_wrap  = wrapToHalf(imag(ev_pool) - imag(peak_ev), omega);
-    dist_sq  = dx.^2 + dy_wrap.^2;
-
-    is_inlier  = dist_sq <= (5*bw)^2;
-    cs.rmse(k)         = sqrt(mean(dist_sq(is_inlier)));
-    cs.cluster_size(k) = sum(is_inlier);
-
-    ev_pool   = ev_pool(~is_inlier);
-    dens_pool = dens_pool(~is_inlier);
-    frac_pool = frac_pool(~is_inlier);
-end
-
-cs.outlier_ratio = length(ev_pool) / N;
-end
-
-%% =========================================================================
-%% SOLVER 2 — Gap detection on sorted imaginary parts  (no toolbox)
-%% =========================================================================
-
-function [trueMu, cs] = solveByGap(ev, imag_frac, omega, nx, outlierSigma)
-% solveByGap  Sort imaginary parts on the circle [-omega/2, omega/2), find
-%   the nx largest circular gaps to define cluster boundaries, then average
-%   real parts within each cluster.  Intra-cluster outliers (real part)
-%   are removed before the centroid computation.
-
-N = length(ev);
-[frac_sorted, sort_idx] = sort(imag_frac);
-
-% Circular gaps: diff between consecutive points + wrap-around gap
-gaps     = [diff(frac_sorted); frac_sorted(1) - frac_sorted(end) + omega];
-[~, gap_order] = sort(gaps, 'descend');
-boundary_starts = sort(gap_order(1:nx));   % sorted indices where a gap (= cluster start) begins
-
-% Assign cluster labels (1..nx)
-labels = zeros(N, 1);
-for k = 1:nx
-    start_idx = boundary_starts(k) + 1;            % first point after gap k
-    if k < nx
-        end_idx = boundary_starts(k+1);             % last point before gap k+1
-        range   = start_idx : end_idx;
-    else
-        range   = [start_idx:N, 1:boundary_starts(1)];   % wrap-around cluster
-    end
-    labels(sort_idx(range)) = k;
-end
-
-% Per-cluster centroid with real-part outlier rejection
-trueMu          = zeros(nx, 1);
-cs.confidence   = zeros(nx, 1);
-cs.rmse         = zeros(nx, 1);
-cs.cluster_size = zeros(nx, 1);
-outlier_count   = 0;
-
-for k = 1:nx
-    mask  = labels == k;
-    ev_k  = ev(mask);
-    fr_k  = imag_frac(mask);
-
-    if isempty(ev_k), continue, end
-
-    % Outlier rejection on real part (truncation noise)
-    re_k   = real(ev_k);
-    sigma_k = std(re_k) + eps;
-    inlier  = abs(re_k - mean(re_k)) <= outlierSigma * sigma_k;
-
-    if ~any(inlier), inlier = true(size(ev_k)); end   % safety: keep all if all rejected
-
-    ev_in = ev_k(inlier);
-    fr_in = fr_k(inlier);
-    outlier_count           = outlier_count + sum(~inlier);
-
-    trueMu(k)              = mean(real(ev_in)) + 1i * mean(fr_in);
-    cs.cluster_size(k)     = sum(inlier);
-    cs.rmse(k)             = std(real(ev_in));
-    cs.confidence(k)       = cs.cluster_size(k) / (N / nx);
-end
-
-cs.outlier_ratio = outlier_count / N;
-end
-
-%% =========================================================================
-%% SOLVER 3 — DBSCAN + K-means fallback  (Stats Toolbox)
-%% =========================================================================
-
-function [trueMu, cs] = solveByDBSCAN(ev, imag_frac, omega, nx, epsilon, minPts)
-% solveByDBSCAN  DBSCAN on the 1-D imaginary-fraction axis.  Outliers (label -1)
-%   are not forced into any cluster.  If the number of clusters found differs
-%   from nx, falls back to K-means on non-outlier points, or on all points.
-
-assert(~isempty(which('dbscan')), ...
-    'findTruelm:noToolbox', 'method=''dbscan'' requires the Statistics and Machine Learning Toolbox (R2019a+).');
-
-N = length(ev);
-
-if epsilon <= 0, epsilon = omega / (4 * nx); end
-if minPts  <= 0, minPts  = max(2, floor(N / (nx * 4))); end
-
-labels       = dbscan(imag_frac, epsilon, minPts);
-valid_labels = unique(labels(labels > 0));
-K_found      = numel(valid_labels);
-
-if K_found ~= nx
-    warning('findTruelm:dbscanMismatch', ...
-        'DBSCAN found %d clusters (expected %d, eps=%.3e, minPts=%d). Falling back to K-means.', ...
-        K_found, nx, epsilon, minPts)
-    non_out = labels > 0;
-    if sum(non_out) >= nx
-        km_labels              = kmeans(imag_frac(non_out), nx, 'Replicates', 5);
-        labels(non_out)        = km_labels;
-        labels(~non_out)       = -1;
-    else
-        labels       = kmeans(imag_frac, nx, 'Replicates', 5);
-    end
-    valid_labels = unique(labels(labels > 0));
-end
-
-trueMu          = zeros(nx, 1);
-cs.confidence   = zeros(nx, 1);
-cs.rmse         = zeros(nx, 1);
-cs.cluster_size = zeros(nx, 1);
-
-for k = 1:nx
-    mask  = labels == valid_labels(k);
-    ev_k  = ev(mask);
-    fr_k  = imag_frac(mask);
-    trueMu(k)          = mean(real(ev_k)) + 1i * mean(fr_k);
-    cs.cluster_size(k) = sum(mask);
-    cs.rmse(k)         = std(real(ev_k));
-    cs.confidence(k)   = cs.cluster_size(k) / (N / nx);
-end
-
-cs.outlier_ratio = sum(labels == -1) / N;
-end
-
-%% =========================================================================
-%% SOLVER 4 — K-means with intra-cluster outlier trimming  (Stats Toolbox)
-%% =========================================================================
-
-function [trueMu, cs] = solveByKMeans(ev, imag_frac, nx, outlierSigma)
-% solveByKMeans  K-means (K=nx) on imaginary fractions, then real-part outlier
-%   rejection within each cluster before centroid computation.
-
-assert(~isempty(which('kmeans')), ...
-    'findTruelm:noToolbox', 'method=''kmeans'' requires the Statistics and Machine Learning Toolbox.');
-
-N = length(ev);
-labels = kmeans(imag_frac, nx, 'Replicates', 5);
-
-trueMu          = zeros(nx, 1);
-cs.confidence   = zeros(nx, 1);
-cs.rmse         = zeros(nx, 1);
-cs.cluster_size = zeros(nx, 1);
-outlier_count   = 0;
-
-for k = 1:nx
-    mask  = labels == k;
-    ev_k  = ev(mask);
-    fr_k  = imag_frac(mask);
-
-    if isempty(ev_k), continue, end
-
-    re_k    = real(ev_k);
-    sigma_k = std(re_k) + eps;
-    inlier  = abs(re_k - mean(re_k)) <= outlierSigma * sigma_k;
-
-    if ~any(inlier), inlier = true(size(ev_k)); end
-
-    ev_in  = ev_k(inlier);
-    fr_in  = fr_k(inlier);
-    outlier_count = outlier_count + sum(~inlier);
-
-    trueMu(k)          = mean(real(ev_in)) + 1i * mean(fr_in);
-    cs.cluster_size(k) = sum(inlier);
-    cs.rmse(k)         = std(real(ev_in));
-    cs.confidence(k)   = cs.cluster_size(k) / (N / nx);
-end
-
-cs.outlier_ratio = outlier_count / N;
-end
-
-%% =========================================================================
-%% SOLVER 0 — Robust Clustering by Density Splitting (Note Technique v2.0)
-%% =========================================================================
-
-function [trueMu, cs] = solveByRobust(ev, imag_frac, omega, nx, eps_in, minPts_in, verbose)
-% solveByRobust  Identify Floquet combs using 2D normalized density clustering.
-%   Specifically handles "super-clusters" (multiplicity > 1) via local
-%   sub-clustering, resolving alpha +/- j*beta paires with small beta.
-N       = length(ev);
-rho_ref = N / nx;  % Theoretical 2h+1 points per true exponent
-bw      = 1e-3;    % Bandwidth for local density peaks
-
-if verbose
-    fprintf('    [solveByRobust] N=%d valeurs (attendu ~%d par mode).\n', N, round(rho_ref));
-end
-
-% 1. DENSITÉ LOCALE (peak-picking immunisé contre les queues de comète)
-% On pré-calcule la densité KDE pour pointer exactement sur le coeur dense
-density = zeros(N, 1);
-
-reEV = real(ev);
-imEV = imag(ev);
-for i = 1:N
-    dx       = (reEV(i)) - reEV;
-    dy_wrap  = wrapToHalf(imEV(i) - imEV, omega);
-    dist_sq  = dx.^2 + dy_wrap.^2;
-    density(i) = sum(exp(-dist_sq / (2 * bw^2)));
-end
-
-% 2. PRÉ-TRAITEMENT ET NORMALISATION
-% Z-score normalization est nécessaire pour que DBSCAN puisse voir 
-% les différences d'amortissement (Re) et de fréquence (Im) de la même manière.
-pts_2d = [reEV, imag_frac];
-pts_norm = (pts_2d - mean(pts_2d, 1)) ./ (std(pts_2d, 1) + eps);
-
-% 3. CLUSTERING DE DENSITÉ GLOBAL (DBSCAN)
-hasStatsTbx = ~isempty(which('dbscan'));
-
-if hasStatsTbx
-    % Automatic epsilon/minPts if not provided
-    epsilon = eps_in;  if epsilon <= 0, epsilon = 0.5; end   % Normalized units
-    minPts  = minPts_in; if minPts  <= 0, minPts  = max(2, floor(rho_ref / 2.5)); end
-    labels  = dbscan(pts_norm, epsilon, minPts);
-else
-    % Fallback: Simple custom DB-like clustering or using sorted distance
-    % If toolbox missing, we use a crude but functional Euclidean neighbor check.
-    labels = customDBSCAN(pts_norm, 0.5, max(2, floor(rho_ref / 3)));
-end
-
-valid_labels = unique(labels(labels > 0));
-split_count = 0;
-
-if verbose
-    fprintf('    [solveByRobust] DBSCAN a trouvé %d cluster(s) de base. Détection des fusions...\n', numel(valid_labels));
-end
-
-raw_centroids = [];
-confidences   = [];
-rmses         = [];
-cluster_sz    = [];
-
-% 4. BOUCLE DE RÉSOLUTION DES MULTIPLICITÉS (Splitting & Peak Extraction)
-for L = valid_labels(:)'
-    mask = (labels == L);
-    pts_L = pts_2d(mask, :);
-    pts_L_norm = pts_norm(mask, :);
-    dens_L = density(mask);
-    
-    D = size(pts_L, 1) / rho_ref;
-    multiplicity = round(D); % Detect merged modes (D ~ 2, 3...)
-    
-    if multiplicity <= 1
-        % Mode unique : Prendre le point avec la densité max (vérité terrain)
-        [max_dens, max_idx] = max(dens_L);
-        raw_centroids(end+1,:) = pts_L(max_idx, :);
-        confidences(end+1)   = D;
-        rmses(end+1)         = std(real(pts_L(:,1)));
-        cluster_sz(end+1)    = size(pts_L, 1);
-        if verbose
-            fprintf('      - Cluster %d : Mode isolé (densité max = %.1f)\n', L, max_dens);
-        end
-    else
-        split_count = split_count + 1;
-        if verbose
-            fprintf('      - Cluster %d : MULTIPLICITÉ (%d) détectée ! Scission par K-means et extraction KDE...\n', L, multiplicity);
-        end
-        % SUPER-CLUSTER Détecté : Scission par K-means local en 2D
-        if hasStatsTbx
-            [sub_idx, ~] = kmeans(pts_L_norm, multiplicity, 'Replicates', 5);
-        else
-            sub_idx = customKMeans(pts_L_norm, multiplicity);
-        end
-        
-        for k = 1:multiplicity
-            sub_mask = (sub_idx == k);
-            sub_pts  = pts_L(sub_mask, :);
-            sub_dens = dens_L(sub_mask);
-            if isempty(sub_pts), continue; end
-            
-            % Peak picking optimal
-            [sub_max_dens, sub_max_idx] = max(sub_dens);
-            raw_centroids(end+1,:) = sub_pts(sub_max_idx, :);
-            confidences(end+1)   = size(sub_pts, 1) / rho_ref;
-            rmses(end+1)         = std(real(sub_pts(:,1)));
-            cluster_sz(end+1)    = size(sub_pts, 1);
-            if verbose
-                fprintf('         * Sous-mode %d/%d localisé (densité max = %.1f)\n', k, multiplicity, sub_max_dens);
-            end
-        end
-    end
-end
-
-if verbose && split_count > 0
-    fprintf('    [solveByRobust] Extraction terminée (%d super-cluster(s) démêlé(s)).\n', split_count);
-end
-
-% 4. SÉLECTION FINALE ET TRI
-% If too many clusters (noise/non-converged), select the nx densest ones.
-if size(raw_centroids, 1) > nx
-    [~, order] = sort(confidences, 'descend');
-    sel = order(1:nx);
-    centroids = raw_centroids(sel, :);
-    cs.confidence = confidences(sel);
-    cs.rmse = rmses(sel);
-    cs.cluster_size = cluster_sz(sel);
-elseif size(raw_centroids, 1) < nx && ~isempty(raw_centroids)
-    % Pad with existing centroids if desperately short (rare)
-    centroids = [raw_centroids; repmat(raw_centroids(end, :), nx - size(raw_centroids,1), 1)];
-    cs.confidence = [confidences(:); zeros(nx - length(confidences), 1)];
-    cs.rmse = [rmses(:); zeros(nx - length(rmses), 1)];
-    cs.cluster_size = [cluster_sz(:); zeros(nx - length(cluster_sz), 1)];
-else
-    centroids = raw_centroids;
-    cs.confidence = confidences;
-    cs.rmse = rmses;
-    cs.cluster_size = cluster_sz;
-end
-
-trueMu = centroids(:,1) + 1i * centroids(:,2);
-cs.outlier_ratio = sum(labels == -1) / N;
-
-end
-
-
-%% =========================================================================
-%% HELPER & FALLBACKS
-%% =========================================================================
-
-function labels = customKMeans(pts, k)
-% customKMeans  Minimal K-means implementation (Lloyd's algorithm) for fallback.
-[N, d] = size(pts);
-if N <= k, labels = (1:N)'; return; end
-% Spread out centers initial selection
-centers = pts(round(linspace(1, N, k)), :);
-labels = zeros(N, 1);
-pts_3d = reshape(pts, [N, 1, d]);
-for iter = 1:20
-    prev_labels = labels;
-    centers_3d = reshape(centers, [1, k, d]);
-    % Compute squared Euclidean distance (broadcasted)
-    dists = sum((pts_3d - centers_3d).^2, 3);
-    [~, labels] = min(dists, [], 2);
-    if isequal(labels, prev_labels), break; end
-    % Centroid update
-    for j = 1:k
-        mask = (labels == j);
-        if any(mask), centers(j, :) = mean(pts(mask, :), 1); end
-    end
-end
-end
-
-function labels = customDBSCAN(pts, epsilon, minPts)
-% customDBSCAN  Minimal O(N^2) DBSCAN implementation for toolbox-less users.
-N = size(pts, 1);
-labels = zeros(N, 1);
-visited = false(N, 1);
-clusterID = 0;
-
-for i = 1:N
-    if visited(i), continue; end
-    visited(i) = true;
-    
-    neighbors = find(sum((pts - pts(i,:)).^2, 2) <= epsilon^2);
-    if numel(neighbors) < minPts
-        labels(i) = -1; % Noise
-    else
-        clusterID = clusterID + 1;
-        labels(i) = clusterID;
-        j = 1;
-        while j <= numel(neighbors)
-            neigh = neighbors(j);
-            if ~visited(neigh)
-                visited(neigh) = true;
-                sub_neighbors = find(sum((pts - pts(neigh,:)).^2, 2) <= epsilon^2);
-                if numel(sub_neighbors) >= minPts
-                    neighbors = unique([neighbors; sub_neighbors(:)]);
-                end
-            end
-            if labels(neigh) <= 0
-                labels(neigh) = clusterID;
-            end
-            j = j + 1;
-        end
-    end
+stats = struct('method','v3-cylindrical-replicate', 'confidence',conf, ...
+    'rmse',rmseV, 'cluster_size',csz, 'outlier_ratio', NaN, ...
+    'liouvilleRes', liou, 'nPeaks', nP, 'mult', {mult(keep)});
+
+if varg.verbose
+    fprintf('[v3] %d distinct peaks, masses=%s, mult=%s, Liouville=%.2e\n', ...
+        nP, mat2str(mass'), mat2str(mult(keep)'), liou);
 end
 end
 
 function y = wrapToHalf(x, omega)
-% wrapToHalf  Map x to the half-open interval [-omega/2, omega/2).
 y = mod(x + omega/2, omega) - omega/2;
 end
