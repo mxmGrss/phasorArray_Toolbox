@@ -1,22 +1,49 @@
 function [x,t,dx] = freqVarying_hmqSim(Aph,tfinal,x0,omega,Bph,u,varg)
-%freqVarying_hmqSim simulate free-response of system \dot x = A(t) x where A(theta) is
-%a 2pi periodique matrices, with dot theta = omega(t) ans arbitrary function
-%, from initial condition x0.
-%   freqVarying_hmqSim(Aph, tmax,x0,omega)
+%freqVarying_hmqSim Simulate response of a frequency-varying periodic system.
+%   This function simulates the linear system \dot{x} = A(\theta(t))x + B(\theta(t))u(t)
+%   where A and B are 2pi-periodic matrices in the phase domain \theta,
+%   and the phase evolves according to \dot{\theta} = \omega(t).
+%
+%   Syntax:
+%       [x, t, dx] = freqVarying_hmqSim(Aph, tfinal)
+%       [x, t, dx] = freqVarying_hmqSim(Aph, tfinal, x0, omega, Bph, u, Name, Value)
+%
+%   Input Arguments:
+%       Aph    : PhasorArray or 3D double - Periodic state matrix A(\theta).
+%       tfinal : double or vector - Final simulation time or time span (default: 10).
+%       x0     : vector - Initial state conditions [x(0); \theta(0)] (default: ones).
+%       omega  : function handle - Frequency law \omega(t) (default: @(t) 2*pi).
+%       Bph    : PhasorArray or 3D double - Periodic input matrix B(\theta) (default: []).
+%       u      : function handle - Input signal u(y,t) (default: @(y,t) 1).
+%
+%   Name-Value Arguments:
+%       opts         : cell/struct - Additional options passed to ode15s.
+%       plot         : logical - Enable plotting of results (default: true).
+%       solver       : char - Solver {'adaptative', 'forward-euler', 'RK4'} (default: 'adaptative').
+%       FSprecpow    : double - Power defining the fixed step size.
+%       checkReal    : logical - Toggle reality checks on evaluated matrices.
+%       isRealValued : logical - Optimizes evaluation for real-valued systems.
+%
+%   Output Arguments:
+%       x  : matrix - State trajectories over time.
+%       t  : vector - Time vector.
+%       dx : matrix - State derivatives (if 3 outputs requested).
+%
+%   See also: FloquetDec, TransitionMatrixOverT
 
 arguments
     Aph
-    tfinal=0
-    x0=ones(size(Aph,1),1)
+    tfinal = 0
+    x0 = ones(size(Aph,1),1)
     omega = @(t) 2 * pi
-    Bph=[]
+    Bph = []
     u = @(y,t) 1;
     varg.opts = {}
-    varg.plot = true
-    varg.solver {mustBeMember(varg.solver,{'adaptative','forward-euler','RK4'})} ='adaptative'
-    varg.FSprecpow = 8
-    varg.checkReal  logical = false
-    varg.isRealValued logical = false
+    varg.plot (1,1) logical = true
+    varg.solver (1,:) char {mustBeMember(varg.solver,{'adaptative','forward-euler','RK4'})} = 'adaptative'
+    varg.FSprecpow (1,1) double = 8
+    varg.checkReal (1,1) logical = false
+    varg.isRealValued (1,1) logical = false
 end
 
 opts=varg.opts;

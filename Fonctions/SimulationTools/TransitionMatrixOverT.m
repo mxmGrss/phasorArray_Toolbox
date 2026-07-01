@@ -1,13 +1,36 @@
 function [Phi0T,E,V,D,W] = TransitionMatrixOverT(Aph,T,varg)
-%TransitionMatrixOverT simulate dot x = A(t) x from 0 to T
-% with x0 = ei and concatenate the result to forme transition matrix
-%the resulting vectors
+%TransitionMatrixOverT Compute the state transition matrix over one period.
+%   This function simulates the linear periodic system \dot{x} = A(t)x 
+%   from t=0 to t=T for each fundamental initial condition (x0 = e_i)
+%   and concatenates the results to form the transition matrix Phi(T,0).
+%
+%   Syntax:
+%       Phi0T = TransitionMatrixOverT(Aph, T)
+%       [Phi0T, E, V, D, W] = TransitionMatrixOverT(Aph, T, Name, Value)
+%
+%   Input Arguments:
+%       Aph : PhasorArray or 3D double - The periodic state matrix A(t).
+%       T   : double - The period of the system (default: 1).
+%
+%   Name-Value Arguments:
+%       simutype     : char - Time integration solver {'adaptative', 'forward-euler', 'RK4'} (default: 'adaptative').
+%       FSprecpow    : double - Power defining the fixed step size dt = T/2^p for fixed solvers (default: 0).
+%       enforce_real : logical - Force complex-valued ODE integration even if A(t) appears real.
+%
+%   Output Arguments:
+%       Phi0T : matrix - The state transition matrix evaluated at t=T (monodromy matrix).
+%       E     : vector - Eigenvalues of Phi0T (Floquet multipliers).
+%       V     : matrix - Right eigenvectors of Phi0T.
+%       D     : matrix - Diagonal matrix of eigenvalues of Phi0T.
+%       W     : matrix - Left eigenvectors of Phi0T.
+%
+%   See also: FloquetDec, freqVarying_hmqSim
 
 arguments
     Aph
-    T = 1
-    varg.simutype {mustBeMember(varg.simutype,{'adaptative','forward-euler','RK4'})} ='adaptative'
-    varg.FSprecpow = 0
+    T (1,1) double = 1
+    varg.simutype (1,:) char {mustBeMember(varg.simutype,{'adaptative','forward-euler','RK4'})} = 'adaptative'
+    varg.FSprecpow (1,1) double = 0
     varg.enforce_real logical = []
 end
 

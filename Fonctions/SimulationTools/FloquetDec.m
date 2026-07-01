@@ -1,21 +1,50 @@
 function [Wf,Lambda,Phi0T,N] = FloquetDec(Aph,T,varg)
-%Output Wf the phasorArray of W(t),
+%FloquetDec Compute the Floquet decomposition of a periodic system.
+%   This function simulates the state transition matrix over one period
+%   and uses it to compute the Floquet exponents (Lambda) and the periodic
+%   transformation matrix (Wf) in the harmonic domain (PhasorArray).
+%
+%   Syntax:
+%       [Wf, Lambda, Phi0T, N] = FloquetDec(Aph, T)
+%       [Wf, Lambda, Phi0T, N] = FloquetDec(Aph, T, Name, Value)
+%
+%   Input Arguments:
+%       Aph : PhasorArray or 3D double - The periodic state matrix A(t).
+%       T   : double - The period of the system (default: 1).
+%
+%   Name-Value Arguments:
+%       TransSolver           : char - Solver for the transition matrix {'RK4', 'adaptative', 'forward-euler'}.
+%       FixedStepTransPow     : double - Power defining the fixed step size dt = T/2^p (default: 18).
+%       InitProbSolver        : char - Solver for the initial value problem.
+%       FixedStepInitProbPow  : double - Power defining the fixed step size for IVP.
+%       plot                  : logical - Enable plotting (default: false).
+%       nT                    : double - Number of periods to simulate (default: 1).
+%       precalc_Phi0T         : matrix - Pre-calculated transition matrix.
+%       auto_adjust_precision : logical - Auto increase precision if periodicity fails.
+%
+%   Output Arguments:
+%       Wf     : 3D array - The harmonic content (FFT) of the periodic transformation W(t).
+%       Lambda : matrix - The Floquet exponents matrix (logm(Phi0T)/T).
+%       Phi0T  : matrix - The state transition matrix evaluated at t=T.
+%       N      : struct - Error metrics for periodicity constraint.
+%
+%   See also: TransitionMatrixOverT, freqVarying_hmqSim
 
 arguments
     Aph
-    T=1
-    varg.TransSolver {mustBeMember(varg.TransSolver,{'adaptative','forward-euler','RK4'})} ='RK4'
-    varg.FixedStepTransPow=18
-    varg.InitProbSolver {mustBeMember(varg.InitProbSolver,{'adaptative','forward-euler','RK4'})} ='RK4'
-    varg.FixedStepInitProbPow=18
-    varg.plot=false
-    varg.nT=1
-    varg.holdplot=false
-    varg.modulo_eig = 0
-    varg.precalc_Phi0T=[];
-    varg.auto_adjust_precision=true
-    varg.jordan = 'false'
-    varg.tolSwitch2Jordan = 1e-3;
+    T (1,1) double = 1
+    varg.TransSolver (1,:) char {mustBeMember(varg.TransSolver,{'adaptative','forward-euler','RK4'})} = 'RK4'
+    varg.FixedStepTransPow (1,1) double = 18
+    varg.InitProbSolver (1,:) char {mustBeMember(varg.InitProbSolver,{'adaptative','forward-euler','RK4'})} = 'RK4'
+    varg.FixedStepInitProbPow (1,1) double = 18
+    varg.plot (1,1) logical = false
+    varg.nT (1,1) double = 1
+    varg.holdplot (1,1) logical = false
+    varg.modulo_eig (1,1) double = 0
+    varg.precalc_Phi0T = []
+    varg.auto_adjust_precision (1,1) logical = true
+    varg.jordan (1,:) char = 'false'
+    varg.tolSwitch2Jordan (1,1) double = 1e-3
 end
 
 if isa(Aph,'PhasorArray')
