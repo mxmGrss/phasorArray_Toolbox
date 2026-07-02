@@ -41,10 +41,16 @@ function Aper = randomWithNPole(J_or_V, h, opts)
 %
 %   Summary:
 %
-%     Method         Floquet error    h exact   A(t) generic
-%     'structured'   ~0 (FP only)      yes          no
-%     'generic'      < 1e-8 (alias)    no           yes
-%     'truncated'    < 1e-11 (Bessel)  yes          yes
+%     Method         Floquet error         h exact   A(t) generic
+%     'structured'   ~0 for real/well-      yes          no
+%                     separated modes;
+%                     up to ~1e-4 for
+%                     complex modes close
+%                     in (Re,Im) -- solver
+%                     extraction limit,
+%                     see findTruelm
+%     'generic'      < 1e-8 (alias)         no           yes
+%     'truncated'    < 1e-11 (Bessel)       yes          yes
 %
 % Syntax
 %   Aper = PhasorArray.randomWithNPole(V, h)
