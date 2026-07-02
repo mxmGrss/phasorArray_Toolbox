@@ -104,7 +104,6 @@ for k = keep(:)'
     m   = assign == k;
     evk = ev(m); dk = dens(m);
     [~, c] = max(dk);                          % density peak = ground-truth core
-    muk = reEV(find(m,1)); %#ok<NASGU>
     evkR = real(evk); evkI = wrapToHalf(imag(evk), omega);
     muVal = evkR(c) + 1i*evkI(c);
     for r = 1:mult(k)
