@@ -52,16 +52,15 @@ function [Aper, info] = randomWithNPole(J_or_V, h, opts)
 %     'generic'      < 1e-8 (alias)         no           yes
 %     'truncated'    < 1e-11 (Bessel)       yes          yes
 %
-%   Which to pick: 'structured' (default) covers almost every case. Its only
-%   drawback is a triangular/sparse A(t) coupling -- fix that with
-%   Densify=true: post-conjugation by a random constant orthogonal S
-%   densifies A(t) to full generic coupling while leaving the Floquet
-%   exponents EXACTLY unchanged (constant similarity, zero added error) and
-%   bandwidth still exactly h. structured+Densify strictly dominates
-%   'truncated' (same guarantees, zero error instead of <1e-11) -- prefer it.
-%   Reserve 'generic'/'truncated' for the one case they still cover:
-%   intentional wide-band content beyond h (testing a solver's behaviour
-%   under real aliasing/truncation, not just missing high harmonics).
+%   Which to pick: the default ('structured' + Densify) covers almost every
+%   case: exact Floquet exponents, exact bandwidth h, fully generic dense
+%   coupling (the raw triangular structure of the Floquet-Lyapunov
+%   construction is mixed away by a constant orthogonal conjugation at zero
+%   accuracy cost). It strictly dominates 'truncated' (same guarantees,
+%   zero error instead of <1e-11). Reserve 'generic'/'truncated' for the
+%   one case they still cover: intentional wide-band content beyond h
+%   (testing a solver's behaviour under real aliasing/truncation, not just
+%   missing high harmonics).
 %
 % Syntax
 %   Aper = PhasorArray.randomWithNPole(V, h)
@@ -81,11 +80,12 @@ function [Aper, info] = randomWithNPole(J_or_V, h, opts)
 %
 % Options (name-value)
 %   Method    'structured' (default) | 'generic' | 'truncated'
-%   Densify   true|false (default false). Post-conjugate by a random constant
+%   Densify   true|false (default TRUE). Post-conjugate by a random constant
 %             orthogonal matrix S: A -> S*A*S'. Densifies the coupling to
 %             full generic structure at ZERO cost in Floquet accuracy and
 %             bandwidth (constant similarity). S and the pre-conjugation
-%             matrix L are returned in info.
+%             matrix L are returned in info. Set false only to inspect the
+%             raw triangular Floquet-Lyapunov construction.
 %   seed      RNG seed for reproducibility (default: unseeded)
 %   amp       Rotation amplitude, 'generic'/'truncated' only (default 0.4).
 %             Larger amp → richer harmonic content, larger Bessel error.
@@ -126,10 +126,12 @@ function [Aper, info] = randomWithNPole(J_or_V, h, opts)
 %   % Controlled bandwidth, generic structure, approx Floquet (Bessel < 1e-11)
 %   Ap = PhasorArray.randomWithNPole([-1; -0.5], 20, Method='truncated');
 %
-%   % Dense coupling, EXACT Floquet exponents, exact bandwidth h (preferred
-%   % over 'truncated' -- see "Which to pick" above)
-%   [Ap, info] = PhasorArray.randomWithNPole([-1; -0.5], 20, Densify=true);
+%   % Full similarity chain J -> Q -> P -> L -> S -> A
+%   [Ap, info] = PhasorArray.randomWithNPole([-1; -0.5], 20);
 %   % info.S = mixing matrix, info.L = pre-conjugation matrix
+%
+%   % Raw triangular Floquet-Lyapunov construction (no mixing)
+%   Ap = PhasorArray.randomWithNPole([-1; -0.5], 20, Densify=false);
 %
 % See also: findTruelm, findTrueFloquet, HmqNEig
 
@@ -142,7 +144,7 @@ arguments
     opts.amp    (1,1) double = 0.4
     opts.hRot   (1,1) double = 4
     opts.acAmp  (1,1) double = 0.3   % 'structured' only: Q harmonic amplitude (AC/DC ratio knob)
-    opts.Densify (1,1) logical = false  % conjugate by a random constant orthogonal S (exact)
+    opts.Densify (1,1) logical = true   % conjugate by a random constant orthogonal S (exact)
 end
 
 if ~isempty(opts.seed), rng(opts.seed); end
