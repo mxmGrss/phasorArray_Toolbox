@@ -53,11 +53,11 @@ function [Aper, info] = randomWithNPole(J_or_V, h, opts)
 %     'truncated'    < 1e-11 (Bessel)       yes          yes
 %
 %   Which to pick: 'structured' (default) covers almost every case. Its only
-%   drawback is a triangular/sparse A(t) coupling -- fix that by conjugating
-%   with a random constant orthogonal matrix afterwards (see Examples): this
+%   drawback is a triangular/sparse A(t) coupling -- fix that with
+%   Densify=true: post-conjugation by a random constant orthogonal S
 %   densifies A(t) to full generic coupling while leaving the Floquet
 %   exponents EXACTLY unchanged (constant similarity, zero added error) and
-%   bandwidth still exactly h. That combination strictly dominates
+%   bandwidth still exactly h. structured+Densify strictly dominates
 %   'truncated' (same guarantees, zero error instead of <1e-11) -- prefer it.
 %   Reserve 'generic'/'truncated' for the one case they still cover:
 %   intentional wide-band content beyond h (testing a solver's behaviour
@@ -81,6 +81,11 @@ function [Aper, info] = randomWithNPole(J_or_V, h, opts)
 %
 % Options (name-value)
 %   Method    'structured' (default) | 'generic' | 'truncated'
+%   Densify   true|false (default false). Post-conjugate by a random constant
+%             orthogonal matrix S: A -> S*A*S'. Densifies the coupling to
+%             full generic structure at ZERO cost in Floquet accuracy and
+%             bandwidth (constant similarity). S and the pre-conjugation
+%             matrix L are returned in info.
 %   seed      RNG seed for reproducibility (default: unseeded)
 %   amp       Rotation amplitude, 'generic'/'truncated' only (default 0.4).
 %             Larger amp → richer harmonic content, larger Bessel error.
@@ -88,13 +93,18 @@ function [Aper, info] = randomWithNPole(J_or_V, h, opts)
 %
 % Output
 %   Aper : PhasorArray, nx×nx, omega = 1 (T = 2π)
-%   info : struct with the intermediate similarity-transform matrices.
+%   info : struct with the full chain of similarity-transform matrices:
+%          J -> Q -> P -> L -> (S) -> Aper
 %            .J    prescribed Jordan/diagonal form (nx×nx double)
+%            .Q    'structured' only: Q(t), PhasorArray
 %            .P    'structured' only: P(t) = I+Q(t), PhasorArray
 %            .Pinv 'structured' only: P(t)^{-1}, PhasorArray (exact)
-%            .Q    'structured' only: Q(t), PhasorArray
-%          A(t) = d(P)*Pinv + P*J*Pinv  (structured; verify with d(P_pa),
-%          not d(Q_pa), if you rebuild it -- they're equal since P=I+Q).
+%            .L    Densify=true only: pre-conjugation matrix
+%                  L(t) = d(P)*Pinv + P*J*Pinv (exponents already = eig(J))
+%            .S    Densify=true only: constant orthogonal mixing matrix,
+%                  Aper = S*L*S'
+%          Rebuild check: Aper == trunc(d(P)*Pinv + P*J*Pinv, h) (Densify
+%          off) -- exact to machine precision.
 %
 % Known limitation
 %   Exponents with Im(μ) = ±ω/2 lie on the Brillouin zone boundary and
@@ -118,9 +128,8 @@ function [Aper, info] = randomWithNPole(J_or_V, h, opts)
 %
 %   % Dense coupling, EXACT Floquet exponents, exact bandwidth h (preferred
 %   % over 'truncated' -- see "Which to pick" above)
-%   nx = 2; Ap = PhasorArray.randomWithNPole([-1; -0.5], 20);
-%   S  = orth(randn(nx));
-%   Ap = S * Ap * S';
+%   [Ap, info] = PhasorArray.randomWithNPole([-1; -0.5], 20, Densify=true);
+%   % info.S = mixing matrix, info.L = pre-conjugation matrix
 %
 % See also: findTruelm, findTrueFloquet, HmqNEig
 
@@ -133,6 +142,7 @@ arguments
     opts.amp    (1,1) double = 0.4
     opts.hRot   (1,1) double = 4
     opts.acAmp  (1,1) double = 0.3   % 'structured' only: Q harmonic amplitude (AC/DC ratio knob)
+    opts.Densify (1,1) logical = false  % conjugate by a random constant orthogonal S (exact)
 end
 
 if ~isempty(opts.seed), rng(opts.seed); end
@@ -149,7 +159,7 @@ else
 end
 
 % --- Dispatch
-info = struct('J', J, 'P', [], 'Pinv', [], 'Q', []);
+info = struct('J', J, 'P', [], 'Pinv', [], 'Q', [], 'L', [], 'S', []);
 switch opts.Method
     case "structured"
         [Aper, info.P, info.Pinv, info.Q] = buildStructured(nx, J, h, opts.acAmp);
@@ -158,6 +168,13 @@ switch opts.Method
     case "truncated"
         Aper = buildGeneric(nx, J, h, opts.amp, opts.hRot);
         Aper = Aper.trunc(h);
+end
+
+% --- Optional densification: constant orthogonal similarity (exact) ---------
+if opts.Densify
+    info.L = Aper;                 % pre-conjugation matrix, exponents = eig(J)
+    info.S = orth(randn(nx));
+    Aper   = info.S * Aper * info.S';
 end
 end
 
