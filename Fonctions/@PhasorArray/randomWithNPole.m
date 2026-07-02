@@ -52,6 +52,17 @@ function Aper = randomWithNPole(J_or_V, h, opts)
 %     'generic'      < 1e-8 (alias)         no           yes
 %     'truncated'    < 1e-11 (Bessel)       yes          yes
 %
+%   Which to pick: 'structured' (default) covers almost every case. Its only
+%   drawback is a triangular/sparse A(t) coupling -- fix that by conjugating
+%   with a random constant orthogonal matrix afterwards (see Examples): this
+%   densifies A(t) to full generic coupling while leaving the Floquet
+%   exponents EXACTLY unchanged (constant similarity, zero added error) and
+%   bandwidth still exactly h. That combination strictly dominates
+%   'truncated' (same guarantees, zero error instead of <1e-11) -- prefer it.
+%   Reserve 'generic'/'truncated' for the one case they still cover:
+%   intentional wide-band content beyond h (testing a solver's behaviour
+%   under real aliasing/truncation, not just missing high harmonics).
+%
 % Syntax
 %   Aper = PhasorArray.randomWithNPole(V, h)
 %   Aper = PhasorArray.randomWithNPole(J, h)
@@ -97,6 +108,12 @@ function Aper = randomWithNPole(J_or_V, h, opts)
 %
 %   % Controlled bandwidth, generic structure, approx Floquet (Bessel < 1e-11)
 %   Ap = PhasorArray.randomWithNPole([-1; -0.5], 20, Method='truncated');
+%
+%   % Dense coupling, EXACT Floquet exponents, exact bandwidth h (preferred
+%   % over 'truncated' -- see "Which to pick" above)
+%   nx = 2; Ap = PhasorArray.randomWithNPole([-1; -0.5], 20);
+%   S  = orth(randn(nx));
+%   Ap = S * Ap * S';
 %
 % See also: findTruelm, findTrueFloquet, HmqNEig
 
