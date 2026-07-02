@@ -102,6 +102,7 @@ arguments
     opts.seed   = []
     opts.amp    (1,1) double = 0.4
     opts.hRot   (1,1) double = 4
+    opts.acAmp  (1,1) double = 0.3   % 'structured' only: Q harmonic amplitude (AC/DC ratio knob)
 end
 
 if ~isempty(opts.seed), rng(opts.seed); end
@@ -120,7 +121,7 @@ end
 % --- Dispatch
 switch opts.Method
     case "structured"
-        Aper = buildStructured(nx, J, h);
+        Aper = buildStructured(nx, J, h, opts.acAmp);
     case "generic"
         Aper = buildGeneric(nx, J, h, opts.amp, opts.hRot);
     case "truncated"
@@ -130,7 +131,7 @@ end
 end
 
 % =========================================================================
-function Aper = buildStructured(nx, J, h)
+function Aper = buildStructured(nx, J, h, acAmp)
 % Floquet-Lyapunov with lower-triangular unipotent P = I + Q.
 % P^{-1} exact via Neumann series (Q^nx = 0).
 % Floquet exponents = eig(J) exact.  Output bandwidth = exactly h.
@@ -144,7 +145,7 @@ t  = (0:Nt-1)/Nt * T;
 Q_t = zeros(nx, nx, Nt);
 for i = 2:nx
     for j = 1:i-1
-        amp    = 0.3 * randn(K,1) ./ (1:K)';
+        amp    = acAmp * randn(K,1) ./ (1:K)';
         phases = 2*pi * rand(K,1);
         Q_t(i,j,:) = sum(amp .* cos((1:K)' .* t + phases), 1);
     end
