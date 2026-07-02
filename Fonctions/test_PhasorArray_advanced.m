@@ -686,7 +686,7 @@ function test_riccati_lmi_vs_kleinman()
 % Verifies that RicHarmonicKlein converges to the same LQR gain as the
 % direct Schur-complement Riccati LMI (YALMIP).
 %
-% ARE:  (A-N)^* P + P(A-N) - P B R^{-1} B^* P + Q = 0
+% HARE:  (A-N)^* P + P(A-N) - P B R^{-1} B^* P + Q = 0
 % Schur LMI:
 %   [ He((A-N)^*P) + Q,  PB ] >= 0,   max tr(PT)
 %   [ B^*P,               R  ]

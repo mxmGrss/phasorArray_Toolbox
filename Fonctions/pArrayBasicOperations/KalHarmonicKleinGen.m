@@ -1,5 +1,5 @@
 function [L, Y, info] = KalHarmonicKleinGen(A, C, W, V, E, L0, T, options)
-%KALHARMONICKLEINGEN  Periodic descriptor Kalman filter via dual GARE-LTP.
+%KALHARMONICKLEINGEN  Periodic descriptor Kalman filter via dual GPDRE-LTP.
 %
 %   Computes the steady-state (T-periodic) Kalman filter for the linear
 %   time-periodic (LTP) descriptor system
@@ -26,7 +26,7 @@ function [L, Y, info] = KalHarmonicKleinGen(A, C, W, V, E, L0, T, options)
 %   covariance equation that are of sandwich (mass-inside) type.
 %
 %   ========================================================================
-%   THEORY — derivation of the generalized filter GARE (LTP)
+%   THEORY — derivation of the generalized filter GPDRE (LTP)
 %   ========================================================================
 %
 %   (1) Explicit filter. With Atil = E^-1 A and Wtil = E^-1 W E^-T, the
@@ -37,7 +37,7 @@ function [L, Y, info] = KalHarmonicKleinGen(A, C, W, V, E, L0, T, options)
 %
 %   (2) Polynomial (inverse-free) form. Multiply on the left by E and on
 %       the right by E.'. Every inverse cancels and one obtains the
-%       GENERALIZED FILTER GARE:
+%       GENERALIZED FILTER GPDRE:
 %
 %         E Y' E.' = A Y E.' + E Y A.' - E Y C.' V^-1 C Y E.' + W      (FILT)
 %
@@ -59,11 +59,11 @@ function [L, Y, info] = KalHarmonicKleinGen(A, C, W, V, E, L0, T, options)
 %
 %   (3) Why the sandwich is structural: adjoint duality. The adjoint of the
 %       mass-OUTSIDE descriptor E x' = A x is the mass-INSIDE system
-%       d/dt(E.' lambda) = -A.' lambda. Control GAREs for the mass-outside
+%       d/dt(E.' lambda) = -A.' lambda. Control GPDREs for the mass-outside
 %       form carry the product derivative d/dt(E.'XE) (RicHarmonicKleinGen,
-%       'product'); GAREs for the mass-inside form carry the sandwiched
+%       'product'); GPDREs for the mass-inside form carry the sandwiched
 %       derivative E.'(dX/dt)E ('sandwich'). Filtering being the control of
-%       the adjoint, the filter GARE is necessarily of sandwich type.
+%       the adjoint, the filter GPDRE is necessarily of sandwich type.
 %
 %   (4) Duality mapping = transposition + FORWARD direction. (FILT) is a
 %       forward equation; plain transposition alone would hand the control
@@ -191,7 +191,7 @@ else
     K0c = L0.';
 end
 
-%% --- Solve the dual control GARE (forward + sandwich — see theory §3-§4) ---
+%% --- Solve the dual control GPDRE (forward + sandwich — see theory §3-§4) ---
 opts = namedargs2cell(options);
 [Kc, Y, info] = RicHarmonicKleinGen(Ac, Bc, W, V, Ec, K0c, T, ...
     opts{:}, 'derivativeForm', 'sandwich', 'direction', 'forward');

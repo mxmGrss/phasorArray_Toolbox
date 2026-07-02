@@ -11,7 +11,7 @@ function [K, S, info] = RicHarmonicKlein(A, B, Q, R, K0, T, options)
 %   System:    dx/dt = A(t)*x + B(t)*u,   cost  J = int( x'Qx + u'Ru )dt
 %   Call:
 %       [K, S, info] = RicHarmonicKlein(A, B, Q, R)
-%   Solves the CONTROL GARE (backward / cost-to-go, the default):
+%   Solves the CONTROL PDRE (backward / cost-to-go, the default):
 %       dS/dt + A'*S + S*A - S*B*R^-1*B'*S + Q = 0
 %   Returns:
 %       K : optimal state feedback,  u = -K(t)*x,  K = R^-1*B'*S
@@ -27,7 +27,7 @@ function [K, S, info] = RicHarmonicKlein(A, B, Q, R, K0, T, options)
 %   Call (note the TRANSPOSED inputs and direction='forward'):
 %       [Kd, Y, info] = RicHarmonicKlein(A', C', W, V, direction='forward')
 %       L = Kd';                       % observer (Kalman) gain
-%   Solves the FILTER GARE (forward / covariance type):
+%   Solves the FILTER PDRE (forward / covariance type):
 %       dY/dt = A*Y + Y*A' - Y*C'*V^-1*C*Y + W
 %   Returns (after transposition):
 %       L : Kalman gain for the observer

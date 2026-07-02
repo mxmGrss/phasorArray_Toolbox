@@ -1,7 +1,7 @@
 function [K, S, info] = RicHarmonicKleinGen(A, B, Q, R, E, K0, T, options)
 %RICHARMONICKLEINGEN  Periodic generalized (descriptor) Riccati via Kleinman.
 %
-%   Solves the GARE-LTP for the descriptor system  E(t) x' = A(t) x + B(t) u
+%   Solves the GPDRE-LTP for the descriptor system  E(t) x' = A(t) x + B(t) u
 %   WITHOUT inverting E(t) and WITHOUT forming dE/dt:
 %
 %     d/dt(E.'*X*E) + A.'*X*E + E.'*X*A - E.'*X*B*R^-1*B.'*X*E + Q = 0
@@ -10,7 +10,7 @@ function [K, S, info] = RicHarmonicKleinGen(A, B, Q, R, E, K0, T, options)
 %   With E = I this reduces exactly to RicHarmonicKlein.
 %
 %   Descriptor Kalman filter via duality (forward + sandwich):
-%   The filter GARE  E*dY/dt*E.' = A*Y*E.' + E*Y*A.' - E*Y*C.'*V^-1*C*Y*E.' + W
+%   The filter GPDRE  E*dY/dt*E.' = A*Y*E.' + E*Y*A.' - E*Y*C.'*V^-1*C*Y*E.' + W
 %   of the plant  E(t)*dx/dt = A(t)*x + w,  y = C(t)*x + v  is solved by
 %       [Kd, Y] = RicHarmonicKleinGen(A.', C.', W, V, E.', [], T, ...
 %                     direction='forward', derivativeForm='sandwich')
@@ -27,10 +27,10 @@ function [K, S, info] = RicHarmonicKleinGen(A, B, Q, R, E, K0, T, options)
 %       solve generalized Lyapunov (lyapG):
 %           d/dt(E.'*S*E) + Ak.'*S*E + E.'*S*Ak + Yk + Q = 0
 %       Kk+1 = R^-1 * B.' * Sk * E                % gain update
-%       outer checks on the FULL GARE residual (see above)
+%       outer checks on the FULL GHARE residual (see above)
 %     end
 %
-%   At convergence the Kleinman linearisation recovers the GARE since
+%   At convergence the Kleinman linearisation recovers the GHARE since
 %   B.'*X*E = R*K  →  Ak.'*X*E + E.'*X*Ak + K.'*R*K = A.'*X*E + E.'*X*A - K.'*R*K.
 %
 %   Usage:
@@ -51,13 +51,13 @@ function [K, S, info] = RicHarmonicKleinGen(A, B, Q, R, E, K0, T, options)
 %     thresholdResidual, relChangeThreshold, reduceThreshold,
 %     warmStartFraction, stagnationWindow, stagnationRatio,
 %     verbose, storeIterates, skipValidate
-%     derivativeForm   'product' (default): GARE derivative term is
+%     derivativeForm   'product' (default): GPDRE derivative term is
 %                      d/dt(E.'XE) — primal descriptor E·x' = A·x + B·u.
-%                      'sandwich': derivative term is E.'·(dX/dt)·E — GARE
+%                      'sandwich': derivative term is E.'·(dX/dt)·E — GPDRE
 %                      of the mass-inside form d/dt(E·x) = A·x + B·u (the
 %                      adjoint structure; used by KalHarmonicKleinGen for
 %                      the dual filtering problem). Coincide for constant E.
-%     direction        'backward' (default) or 'forward' — sign of the GARE
+%     direction        'backward' (default) or 'forward' — sign of the GPDRE
 %                      derivative term, propagated to lyapG, to the outer
 %                      residual, and to the K0 Floquet check (in forward mode
 %                      the physical loop is the TRANSPOSED descriptor
@@ -67,7 +67,7 @@ function [K, S, info] = RicHarmonicKleinGen(A, B, Q, R, E, K0, T, options)
 %
 %   Outputs:
 %     K     Final feedback gain (PhasorArray), K = R^-1*B.'*S*E
-%     S     Final GARE solution X (PhasorArray)
+%     S     Final GPDRE solution X (PhasorArray)
 %     info  Diagnostics struct — same fields as RicHarmonicKlein
 %
 %   See also: RicHarmonicKlein, PhasorArray/lyapG, SylvHarmonicGen
@@ -144,7 +144,7 @@ h_op  = max([A.h, B.h, Q.h, R.h, E.h]);
 if options.verbose >= 1
     rule = repmat('=', 1, 62);
     fprintf('\n%s\n', rule)
-    fprintf('  RicHarmonicKleinGen  --  Periodic descriptor GARE via Kleinman\n')
+    fprintf('  RicHarmonicKleinGen  --  descriptor GPDRE via Kleinman (GHARE in HSS)\n')
     fprintf('%s\n', rule)
     fprintf('  Equation   :  d/dt(E''*X*E) + A''*X*E + E''*X*A - E''*X*B*R^-1*B''*X*E + Q = 0\n')
     fprintf('  Formulation:  d/dt(E''*S*E) + Ak''*S*E + E''*S*Ak + K''*R*K + Q = 0\n')
@@ -158,7 +158,7 @@ if options.verbose >= 1
     fprintf('    System type                = %s\n',   options.systemType)
     fprintf('%s\n', repmat('-', 1, 62))
     fprintf('  Convergence\n')
-    fprintf('    thresholdResidual          = %.2e   (relative GARE residual)\n', thresholdResidual)
+    fprintf('    thresholdResidual          = %.2e   (relative GHARE residual)\n', thresholdResidual)
     fprintf('    relChangeThreshold         = %.2e   (||Kk-Kk-1||/||Kk||, freeze guard)\n', options.relChangeThreshold)
     fprintf('    maxIter                    = %d\n',   options.maxIter)
     fprintf('    stagnationWindow           = %d     steps\n', options.stagnationWindow)
@@ -295,7 +295,7 @@ for kk = 1:maxIter
         lyap_str = '';
     end
 
-    %% --- Full GARE residual  (always, from iter 1) ---
+    %% --- Full GHARE residual  (always, from iter 1) ---
     XE = Sk * E;   EX = E.' * Sk;                 % shared subexpressions
     if strcmp(options.derivativeForm, 'sandwich')
         derivTerm = E.' * d(Sk, T) * E;

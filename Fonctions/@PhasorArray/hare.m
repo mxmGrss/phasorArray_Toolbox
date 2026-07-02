@@ -1,14 +1,14 @@
 function [K, X, info] = hare(A, B, Q, R, options)
-%HARE  Harmonic Algebraic Riccati Equation (LQR / GARE) for a periodic system.
+%HARE  Harmonic Algebraic Riccati Equation solver ((G)HARE) for a periodic system.
 %
-%   [K, X, info] = HARE(A, B, Q, R) solves the periodic (LTP) control ARE for
-%   the system  x' = A(t) x + B(t) u  via the harmonic Kleinman iteration:
+%   [K, X, info] = HARE(A, B, Q, R) solves the periodic (LTP) control PDRE for
+%   the system  x' = A(t) x + B(t) u  as a HARE via harmonic Kleinman iteration:
 %
 %       dX/dt + A'X + XA - X B R^-1 B' X + Q = 0 ,   K = R^-1 B' X .
 %
 %   With a descriptor mass matrix E (name-value 'E'), it solves the
-%   generalized ARE for  E(t) x' = A(t) x + B(t) u, without inverting E(t)
-%   or forming dE/dt:
+%   generalized PDRE (GPDRE) for  E(t) x' = A(t) x + B(t) u  as a GHARE,
+%   without inverting E(t) or forming dE/dt:
 %
 %       d/dt(E'XE) + A'XE + E'XA - E'XB R^-1 B'XE + Q = 0 ,  K = R^-1 B'XE .
 %
@@ -16,9 +16,9 @@ function [K, X, info] = hare(A, B, Q, R, options)
 %   name-value. Mirrors care/icare in spirit.
 %
 %   Name-value options:
-%     E               Descriptor mass matrix; [] → standard ARE (default []).
+%     E               Descriptor mass matrix; [] → base HARE (default []).
 %     direction       'backward' (control, default) | 'forward' (filter /
-%                     covariance integration, the dual GARE).
+%                     covariance integration, the dual HARE).
 %     derivativeForm  'product' (default) | 'sandwich' (where dE/dt lives).
 %     K0              Initial stabilising gain; [] → grow-h LQR-Toeplitz
 %                     fallback inside the solver (default []).
@@ -68,7 +68,7 @@ useGen = ~isempty(options.E) ...
 
 if useGen
     E = options.E;
-    if isempty(E), E = PhasorArray(eye(size(A,1))); end   % E = I → reduces to base ARE
+    if isempty(E), E = PhasorArray(eye(size(A,1))); end   % E = I → reduces to base HARE
     [K, X, info] = RicHarmonicKleinGen(A, B, Q, R, E, options.K0, options.T, ...
         common{:}, 'direction', options.direction, 'derivativeForm', options.derivativeForm);
 else

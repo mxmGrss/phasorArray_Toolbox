@@ -38,7 +38,7 @@ function [res, info] = lyapG(o1, o2, o3, o4, o5, options)
 %   of the equation (handled implicitly by the Toeplitz algebra). Then
 %       dV/dt = -x.'*Q*x,  and Q > 0 with P > 0 certifies stability;
 %   x0.'*(E.'PE)(t0)*x0 is the cost-to-go int( x.'Qx )dt.
-%   Use for: stability certificates, LQR/GARE descriptor (control side).
+%   Use for: stability certificates, LQR/GPDRE descriptor (control side).
 %
 %   'sandwich' — derivative of P alone, mass matrices outside:
 %       E.'(t) * dP/dt * E(t) + A.'PE + E.'PA + Q = 0
@@ -46,7 +46,7 @@ function [res, info] = lyapG(o1, o2, o3, o4, o5, options)
 %   side: the dual of the mass-outside descriptor E*dx/dt = A*x is the
 %   mass-INSIDE adjoint d/dt(E.'*lambda) = -A.'*lambda, and pushing the
 %   mass through the derivative cancels the dE/dt contributions. Concretely
-%   it is the filtering GARE structure: in the covariance substitution
+%   it is the filtering GPDRE structure: in the covariance substitution
 %   Pz = E*Y*E.' the dE/dt terms cancel on both sides, leaving the
 %   sandwiched derivative E*dY/dt*E.' (NOT d/dt(E*Y*E.')).
 %   Use for: Kalman / error-covariance equations of the descriptor filter.
