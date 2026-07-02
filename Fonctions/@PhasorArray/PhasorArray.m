@@ -4012,7 +4012,7 @@ end
 
 methods (Static, Access=public)
     % Implementation in @PhasorArray/randomWithNPole.m
-    Aper = randomWithNPole(J_or_V, h, varargin)
+    [Aper, info] = randomWithNPole(J_or_V, h, varargin)
     % Implementation in @PhasorArray/randomSPD.m
     P = randomSPD(nx, h, varargin)
     % Implementation in @PhasorArray/randomPhasorArrayWithPole.m

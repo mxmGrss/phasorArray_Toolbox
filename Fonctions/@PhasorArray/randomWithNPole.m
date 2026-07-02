@@ -1,4 +1,4 @@
-function Aper = randomWithNPole(J_or_V, h, opts)
+function [Aper, info] = randomWithNPole(J_or_V, h, opts)
 % RANDOMWITHNPOLE  Generate a random periodic matrix with prescribed Floquet exponents.
 %
 %   Returns a PhasorArray representing a random nx×nx time-periodic matrix A(t)
@@ -88,6 +88,13 @@ function Aper = randomWithNPole(J_or_V, h, opts)
 %
 % Output
 %   Aper : PhasorArray, nx×nx, omega = 1 (T = 2π)
+%   info : struct with the intermediate similarity-transform matrices.
+%            .J    prescribed Jordan/diagonal form (nx×nx double)
+%            .P    'structured' only: P(t) = I+Q(t), PhasorArray
+%            .Pinv 'structured' only: P(t)^{-1}, PhasorArray (exact)
+%            .Q    'structured' only: Q(t), PhasorArray
+%          A(t) = d(P)*Pinv + P*J*Pinv  (structured; verify with d(P_pa),
+%          not d(Q_pa), if you rebuild it -- they're equal since P=I+Q).
 %
 % Known limitation
 %   Exponents with Im(μ) = ±ω/2 lie on the Brillouin zone boundary and
@@ -142,9 +149,10 @@ else
 end
 
 % --- Dispatch
+info = struct('J', J, 'P', [], 'Pinv', [], 'Q', []);
 switch opts.Method
     case "structured"
-        Aper = buildStructured(nx, J, h, opts.acAmp);
+        [Aper, info.P, info.Pinv, info.Q] = buildStructured(nx, J, h, opts.acAmp);
     case "generic"
         Aper = buildGeneric(nx, J, h, opts.amp, opts.hRot);
     case "truncated"
@@ -154,7 +162,7 @@ end
 end
 
 % =========================================================================
-function Aper = buildStructured(nx, J, h, acAmp)
+function [Aper, P_pa, Pinv, Q_pa] = buildStructured(nx, J, h, acAmp)
 % Floquet-Lyapunov with lower-triangular unipotent P = I + Q.
 % P^{-1} exact via Neumann series (Q^nx = 0).
 % Floquet exponents = eig(J) exact.  Output bandwidth = exactly h.
