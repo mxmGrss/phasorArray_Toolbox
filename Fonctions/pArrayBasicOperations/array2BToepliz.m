@@ -53,7 +53,9 @@ function [Tmat, N] = array2BToepliz(Aph, m, varg)
         h2 = m(2);
     end
 
-    % BT Logic: Block (i, j) corresponds to harmonic k = j - i + (h1 - h2)
+    % BT Logic: Block (i, j) corresponds to harmonic k = i - j + (h2 - h1),
+    % i.e. T(A)_{k,m} = A_{k-m} with harmonics ascending (-h..+h), matching
+    % array2TBlocks. BT and TB are then related by a pure perfect shuffle.
     % Required range: k in [-(h1+h2), h1+h2]
     h_req = h1 + h2;
     k_min = -h_req;
@@ -80,9 +82,9 @@ function [Tmat, N] = array2BToepliz(Aph, m, varg)
     switch varg.method
         case 'cell2mat'
             Aph2 = mat2cell(Aph, n1, n2, ones(2 * h_req + 1, 1));
-            % Formula: idx = j - i + 2*h1 + 1
-            col = 2 - (1 : 2 * h1 + 1) + 2 * h1;
-            row = (1 : 2 * h2 + 1) + 2 * h1;
+            % Formula: idx = i - j + 2*h2 + 1  (same as array2TBlocks)
+            col = (1 : 2 * h1 + 1) + 2 * h2;
+            row = 2 - (1 : 2 * h2 + 1) + 2 * h2;
             Toe = toeplitz(col, row);
             Tmat = cell2mat(Aph2(Toe));
 
@@ -91,7 +93,7 @@ function [Tmat, N] = array2BToepliz(Aph, m, varg)
             for xi = 1:2*h1+1
                 line = [];
                 for yi = 1:2*h2+1
-                    k = yi - xi + h1 - h2;
+                    k = xi - yi + h2 - h1;
                     line = [line, Aph(:, :, k + h_req + 1)];
                 end
                 Tmat = [Tmat; line];

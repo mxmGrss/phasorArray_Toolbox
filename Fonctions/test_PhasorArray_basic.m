@@ -99,6 +99,15 @@ results(end+1) = runTest('Diagnostics: isreal for real signal', @() test_isreal(
 results(end+1) = runTest('Toeplitz: T_tb round-trip', @() test_T_tb_roundtrip(tol));
 results(end+1) = runTest('Toeplitz: T_tb multiplication consistency', @() test_T_tb_mul(tol));
 results(end+1) = runTest('Operator: N_tb structure', @() test_N_tb(tol));
+results(end+1) = runTest('Toeplitz: BT == TB on scalar', @() test_BT_scalar_eq_TB(tol));
+results(end+1) = runTest('Toeplitz: BT*F_bt = F_bt(A*x)', @() test_BT_Fbt_mul(tol));
+results(end+1) = runTest('Toeplitz: BT_2_TB shuffle consistency', @() test_BT_2_TB(tol));
+results(end+1) = runTest('Toeplitz: BT2array round-trip', @() test_BT2array_roundtrip(tol));
+results(end+1) = runTest('Operator: BT - N_bt Floquet spectrum', @() test_BT_Nbt_spectrum());
+results(end+1) = runTest('Hankel: BTHankel == TBHankel on scalar', @() test_BTHankel_scalar(tol));
+results(end+1) = runTest('Hankel: spTBHankel == TBHankel', @() test_spTBHankel(tol));
+results(end+1) = runTest('Hankel: spBTHankel == BTHankel', @() test_spBTHankel(tol));
+results(end+1) = runTest('Product: TBmtimes and spTBmtimes match TB(A*B)', @() test_TBmtimes(tol));
 
 %% ========================================================================
 %  9. EVAL & RECONSTRUCTION
@@ -518,6 +527,101 @@ function test_N_tb(tol)
     omega = 2*pi/T;
     expected_diag = repmat(1i * kvals(:) * omega, n, 1);
     assert(max(abs(Ndiag - expected_diag)) < tol, 'N_tb diagonal mismatch');
+end
+
+function test_BT_scalar_eq_TB(tol)
+    % On a scalar PhasorArray the block layouts are trivial: BT and TB must
+    % return the exact same Toeplitz matrix.
+    a = PhasorArray.random(1, 1, 3);
+    h = 5;
+    assert(norm(a.BT(h) - a.TB(h), inf) < tol, 'scalar BT ~= TB');
+end
+
+function test_BT_Fbt_mul(tol)
+    % Documented key property of F_bt: F_bt(A*x) = BT(A,h) * F_bt(x,h)
+    % (truncation-exact when h >= hA + hx).
+    A = PhasorArray.random(2, 2, 2);
+    x = PhasorArray.random(2, 1, 2);
+    h = 4;
+    lhs = A.BT(h) * x.F_bt(h);
+    rhs = F_bt(A * x, h);
+    assert(norm(lhs - rhs, inf) < tol, 'BT * F_bt ~= F_bt(A*x)');
+end
+
+function test_BT_2_TB(tol)
+    % BT and TB are the same operator in two block layouts: BT_2_TB is the
+    % perfect-shuffle change of layout and must map one onto the other.
+    A = PhasorArray.random(2, 2, 2);
+    h = 3;
+    err = norm(BT_2_TB(A.BT(h), 2*h+1) - A.TB(h), inf);
+    assert(err < tol, 'BT_2_TB(BT(A)) ~= TB(A)');
+end
+
+function test_BT2array_roundtrip(tol)
+    % Extracting the harmonic slices back from BT(A) must recover A.
+    A = PhasorArray.random(2, 2, 2);
+    h = A.h;
+    pA = BT2array(A.BT(h), 2*h+1);
+    % BT(A,h) holds harmonics up to 2h; original A occupies the center
+    hBig = 2*h;
+    center = pA(:, :, hBig+1-h : hBig+1+h);
+    ref = A.value;
+    assert(norm(center(:) - ref(:), inf) < tol, 'BT2array(BT(A)) ~= A');
+end
+
+function test_BT_Nbt_spectrum()
+    % Harmonic dynamics in BT layout: eig(BT(A) - N_bt) must contain the
+    % prescribed Floquet exponents (omega = 1, T = 2*pi).
+    mus = [-0.7; -0.3];
+    A = PhasorArray.randomWithNPole(mus, 6, seed=1);
+    H = 12;
+    M = A.BT(H) - N_bt(2, H, 2*pi);
+    e = eig(full(M));
+    err = max(arrayfun(@(m) min(abs(e - m)), mus));
+    assert(err < 1e-8, 'BT - N_bt spectrum misses Floquet exponents');
+end
+
+function test_BTHankel_scalar(tol)
+    % Scalar case: BT and TB layouts coincide, Hankel matrices too.
+    a = PhasorArray.random(1, 1, 3);
+    [HpJ1, JHm1, Hp1, Hm1] = a.TBHankel(4);
+    [HpJ2, JHm2, Hp2, Hm2] = a.BTHankel(4);
+    err = max([norm(HpJ1-HpJ2,inf), norm(JHm1-JHm2,inf), ...
+               norm(Hp1-Hp2,inf),   norm(Hm1-Hm2,inf)]);
+    assert(err < tol, 'scalar BTHankel ~= TBHankel');
+end
+
+function test_spTBHankel(tol)
+    % Regression: the sparse builder used to return TRANSPOSED matrices
+    % (meshgrid misuse in spArray2TBHankel).
+    A = PhasorArray.random(2, 2, 2);
+    [HpJ1, JHm1, Hp1, Hm1] = A.TBHankel(4);
+    [HpJ2, JHm2, Hp2, Hm2] = A.spTBHankel(4);
+    assert(issparse(HpJ2), 'spTBHankel not sparse');
+    err = max([norm(full(HpJ2)-HpJ1,inf), norm(full(JHm2)-JHm1,inf), ...
+               norm(full(Hp2)-Hp1,inf),   norm(full(Hm2)-Hm1,inf)]);
+    assert(err < tol, 'spTBHankel ~= TBHankel');
+end
+
+function test_spBTHankel(tol)
+    A = PhasorArray.random(2, 2, 2);
+    [HpJ1, JHm1, Hp1, Hm1] = A.BTHankel(4);
+    [HpJ2, JHm2, Hp2, Hm2] = A.spBTHankel(4);
+    assert(issparse(HpJ2), 'spBTHankel not sparse');
+    err = max([norm(full(HpJ2)-HpJ1,inf), norm(full(JHm2)-JHm1,inf), ...
+               norm(full(Hp2)-Hp1,inf),   norm(full(Hm2)-Hm1,inf)]);
+    assert(err < tol, 'spBTHankel ~= BTHankel');
+end
+
+function test_TBmtimes(tol)
+    % Regression: spTBmtimes consumed the transposed sparse Hankels and
+    % returned wrong products. Ground truth: exact product then Toeplitz.
+    A = PhasorArray.random(2, 2, 2);
+    B = PhasorArray.random(2, 2, 2);
+    h = 4;
+    Ttrue = TB(A*B, h);
+    assert(norm(A.TBmtimes(B,h) - Ttrue, inf) < 1e-10, 'TBmtimes ~= TB(A*B)');
+    assert(norm(full(A.spTBmtimes(B,h)) - Ttrue, inf) < 1e-10, 'spTBmtimes ~= TB(A*B)');
 end
 
 %% ========================================================================
