@@ -111,6 +111,11 @@ results(end+1) = runTest('Toeplitz: S_tb construction', @() test_S_tb());
 results(end+1) = runTest('Toeplitz: S_tb * F_tb vs PhaseShift', @() test_S_tb_PhaseShift(tol));
 
 %% ========================================================================
+%  9. RANDOM GENERATORS
+%  ========================================================================
+results(end+1) = runTest('randomWithNPole: scalar case (nx=1)', @() test_randomWithNPole_scalar(tol));
+
+%% ========================================================================
 %  SUMMARY
 %  ========================================================================
 nPass = sum([results.passed]);
@@ -498,6 +503,22 @@ function test_T_bt()
     Nt = 2*hTrunc + 1;
     expectedSize = n * Nt;
     assert(isequal(size(T), [expectedSize, expectedSize]), 'T_bt size');
+end
+
+function test_randomWithNPole_scalar(tol)
+    % Regression: nx=1 used to return all-NaN ('generic'/'truncated', 0/0
+    % skew generator) or a constant ('structured'). Scalar exponent = DC.
+    mu = -0.7;
+    h  = 8;
+    for method = ["structured", "generic", "truncated"]
+        a = PhasorArray.randomWithNPole(mu, h, Method=method, seed=1);
+        v = squeeze(a.value);
+        assert(~any(isnan(v(:))), 'NaN output (%s)', method);
+        assert(abs(v(h+1) - mu) < tol, 'DC ~= mu (%s)', method);
+        assert(a.h == h, 'wrong bandwidth (%s)', method);
+        assert(norm(v(h+2:end)) > 0, 'constant output, no AC part (%s)', method);
+        assert(isreal(a), 'a(t) not real (%s)', method);
+    end
 end
 
 function test_S_tb()

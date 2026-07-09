@@ -110,6 +110,11 @@ function [Aper, info] = randomWithNPole(J_or_V, h, opts)
 %   Exponents with Im(μ) = ±ω/2 lie on the Brillouin zone boundary and
 %   cause aliasing ambiguity in Floquet extraction.  Keep |Im(μ)| < 0.45.
 %
+% Scalar case (nx = 1)
+%   The exponent of xdot = a(t)x is exactly the DC coefficient, so a(t) is
+%   built directly as μ + random zero-mean AC part (amplitude acAmp,
+%   bandwidth exactly h). Method is ignored; info.P/Pinv/Q/L/S stay empty.
+%
 % Examples
 %   % Stable system, two real exponents
 %   Ap = PhasorArray.randomWithNPole([-1; -0.5], 20);
@@ -162,6 +167,16 @@ end
 
 % --- Dispatch
 info = struct('J', J, 'P', [], 'Pinv', [], 'Q', [], 'L', [], 'S', []);
+if nx == 1
+    % Scalar LTP: the Floquet exponent of xdot = a(t)x is exactly the DC
+    % coefficient A_0; the zero-mean AC part is free. Build it directly —
+    % 'structured' degenerates to a constant (Q strictly triangular = 0)
+    % and 'generic'/'truncated' hit a 0/0 NaN in the 1x1 skew-symmetric
+    % rotation generator. Exact exponent, exact bandwidth h, all Methods.
+    Xk   = (opts.acAmp * randn(h,1) ./ (1:h)') .* exp(2i*pi*rand(h,1)) / 2;
+    Aper = PhasorArray(reshape([conj(flip(Xk)); J; Xk], 1, 1, []));
+    return
+end
 switch opts.Method
     case "structured"
         [Aper, info.P, info.Pinv, info.Q] = buildStructured(nx, J, h, opts.acAmp);
