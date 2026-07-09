@@ -169,10 +169,10 @@ end
 info = struct('J', J, 'P', [], 'Pinv', [], 'Q', [], 'L', [], 'S', []);
 if nx == 1
     % Scalar LTP: the Floquet exponent of xdot = a(t)x is exactly the DC
-    % coefficient A_0; the zero-mean AC part is free. Build it directly —
-    % 'structured' degenerates to a constant (Q strictly triangular = 0)
-    % and 'generic'/'truncated' hit a 0/0 NaN in the 1x1 skew-symmetric
-    % rotation generator. Exact exponent, exact bandwidth h, all Methods.
+    % coefficient A_0 and the zero-mean AC part is free, so a(t) is built
+    % directly (exact exponent, exact bandwidth h). The matrix
+    % constructions below require nx >= 2 (strictly triangular Q,
+    % skew-symmetric rotation generator).
     Xk   = (opts.acAmp * randn(h,1) ./ (1:h)') .* exp(2i*pi*rand(h,1)) / 2;
     Aper = PhasorArray(reshape([conj(flip(Xk)); J; Xk], 1, 1, []));
     return

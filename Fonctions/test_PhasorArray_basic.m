@@ -592,8 +592,7 @@ function test_BTHankel_scalar(tol)
 end
 
 function test_spTBHankel(tol)
-    % Regression: the sparse builder used to return TRANSPOSED matrices
-    % (meshgrid misuse in spArray2TBHankel).
+    % Sparse and dense Hankel builders must agree entrywise.
     A = PhasorArray.random(2, 2, 2);
     [HpJ1, JHm1, Hp1, Hm1] = A.TBHankel(4);
     [HpJ2, JHm2, Hp2, Hm2] = A.spTBHankel(4);
@@ -614,8 +613,7 @@ function test_spBTHankel(tol)
 end
 
 function test_TBmtimes(tol)
-    % Regression: spTBmtimes consumed the transposed sparse Hankels and
-    % returned wrong products. Ground truth: exact product then Toeplitz.
+    % Ground truth: exact product in the harmonic domain, then Toeplitz.
     A = PhasorArray.random(2, 2, 2);
     B = PhasorArray.random(2, 2, 2);
     h = 4;

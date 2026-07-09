@@ -506,8 +506,8 @@ function test_T_bt()
 end
 
 function test_randomWithNPole_scalar(tol)
-    % Regression: nx=1 used to return all-NaN ('generic'/'truncated', 0/0
-    % skew generator) or a constant ('structured'). Scalar exponent = DC.
+    % Scalar case: exponent = DC coefficient, output must be a genuinely
+    % periodic real signal for every Method.
     mu = -0.7;
     h  = 8;
     for method = ["structured", "generic", "truncated"]

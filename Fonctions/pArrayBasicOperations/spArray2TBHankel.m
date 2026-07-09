@@ -84,9 +84,6 @@ cm=cell(n1,n2);
         end
 end
 
-% Ensure sparse storage. (The previous meshgrid-based rebuild silently
-% TRANSPOSED the matrices: sparse(II(:),JJ(:),X(:)) placed column-major
-% data at row-major positions.)
 if ~isFunny(HpJ)
     HpJ = sparse(HpJ);
 end
