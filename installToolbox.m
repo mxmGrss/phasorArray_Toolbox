@@ -14,8 +14,10 @@ totalFolders = numel(foldersUnderRoot);
 prevLength = 0; % Keep track of how many characters were last printed
 varPro = -00.01;
 for i = 1:totalFolders
-    % Remove folder from path if it no longer exists
-    if ~isfolder(foldersUnderRoot{i})
+    % Remove folder from path if it no longer exists, or if it lives under
+    % a hidden folder (.git, .claude, ...): those must never shadow the
+    % toolbox code.
+    if ~isfolder(foldersUnderRoot{i}) || contains(foldersUnderRoot{i}, [filesep '.'])
         rmpath(foldersUnderRoot{i});
     end
 
@@ -47,8 +49,11 @@ if ~contains(path, rootFolder)
     addpath(rootFolder);
 end
 
-% 4) Recursively add all valid subfolders with genpath
-addpath(genpath(rootFolder));
+% 4) Recursively add all valid subfolders with genpath, excluding anything
+%    under a hidden folder (path segment starting with '.')
+allFolders = strsplit(genpath(rootFolder), pathsep);
+keep = ~cellfun(@isempty, allFolders) & ~contains(allFolders, [filesep '.']);
+addpath(strjoin(allFolders(keep), pathsep));
 
 % 5) Save the updated path
 savepath;
