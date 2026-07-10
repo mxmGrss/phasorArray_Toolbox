@@ -131,7 +131,7 @@ Use `warning('PhasorArray:...')` with toolbox-specific IDs — **not** `fprintf`
 
 ### MATLAB Style
 
-Follow `.github/matlab-guidelines.md` for:
+Follow `.agents/matlab-guidelines.md` for:
 - `arguments` blocks for all public functions
 - `mustBe*` validators for input validation
 - No global variables
@@ -157,4 +157,4 @@ Follow `.github/matlab-guidelines.md` for:
 - **Tests are custom structs**, not `matlab.unittest` — do not migrate without discussion.
 - **`scratch/` is an untracked dev sandbox** — if the user creates one locally, do not clean it up autonomously.
 - **Do not add `Signal Processing Toolbox` calls** — it was intentionally removed.
-- **CI/CD workflows are absent** — `.github/` contains planning docs only, not active pipelines.
+- **CI/CD workflows are absent** — `.github/` is tracked and reserved for public GitHub config (PR template today, `workflows/` when CI lands); agent instruction modules live in the untracked `.agents/`.
