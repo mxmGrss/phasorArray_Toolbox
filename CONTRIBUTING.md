@@ -27,7 +27,7 @@ and the full error message.
 5. Purely cosmetic changes (reformatting, renaming) are generally not
    accepted on their own.
 
-New functions follow the existing style (see `.github/matlab-guidelines.md`):
+New functions follow the existing style:
 `arguments` blocks with validators, English comments, no global variables,
 `warning('PhasorArray:...')` identifiers for diagnostics. Mathematical claims
 are accompanied by a reference or a derivation sketch in the header comment.
