@@ -317,7 +317,7 @@ hP=5 %[output:3c623155]
 %liste de sdp var servant aux phaseur 
 P2=(sdpvar(size(A,1),size(A,2),hP,'symmetric','complex')) %[output:7ef1a3c1]
 %sdpvar phaseur 0 (réel)
-P1=(ndsdpvar(size(A,1),size(A,2),1,'symmetric','real')) %[output:1d1f51b4]
+P1=(sdpvar(size(A,1),size(A,2),'symmetric','real')) %[output:1d1f51b4]
 %sdpvar phaseur array
 P = PosPart2PhasorArray(P1,P2) %[output:6fb4a619]
 PT=P.T_tb(h) %[output:4eb56510]

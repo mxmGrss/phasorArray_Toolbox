@@ -39,6 +39,13 @@ submitting a pull request you agree that your contribution is licensed under
 the same MIT license as the project ("inbound = outbound"). You retain the
 copyright on your contribution.
 
+**Institutional Contributors & DCO**: If your employer or academic
+institution requires a formal audit trail for open-source contributions, we
+support the standard [Developer Certificate of Origin](https://developercertificate.org/)
+(DCO). You can certify your contributions by signing off your commits using
+the `-s` flag (`git commit -s`), which appends a `Signed-off-by: Name <email>`
+trailer to your commit messages.
+
 ## Development History and AI Assistance
 
 **Up to November 2025**, all code in this toolbox was written manually by the
