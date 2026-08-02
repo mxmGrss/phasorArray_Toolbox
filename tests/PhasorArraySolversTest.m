@@ -477,6 +477,39 @@ classdef PhasorArraySolversTest < matlab.unittest.TestCase
             end
         end
 
+
+        function testLyapSolvesBothIntegrationDirections(testCase)
+            % backward integrates P(t) = int_t^inf Phi' Q Phi, forward
+            % P(t) = int_-inf^t Phi Q Phi'. Both are exposed and they are not the
+            % same solution: each satisfies its own equation and fails the other.
+            hh = testCase.h;
+            N  = N_tb(size(testCase.A, 1), hh, testCase.T);
+            fwdSign = [1 -1];
+            names = {'backward', 'forward'};
+
+            P = cell(1, 2);
+            for d = 1:2
+                P{d} = lyap(testCase.A, testCase.Q, 'h', hh, 'T', testCase.T, ...
+                    'autoUpdateh', true, 'direction', names{d});
+            end
+            testCase.verifyGreaterThan(max(abs(P{1}.value - P{2}.value), [], 'all'), 1e-6, ...
+                'the two directions returned the same solution');
+
+            for d = 1:2
+                XT = P{d}.T_tb(hh);
+                own   = norm(T_tb(testCase.A'*P{d} + P{d}*testCase.A, hh) ...
+                             + testCase.Q.T_tb(hh) + fwdSign(d)*(N*XT - XT*N), 'fro');
+                other = norm(T_tb(testCase.A'*P{d} + P{d}*testCase.A, hh) ...
+                             + testCase.Q.T_tb(hh) - fwdSign(d)*(N*XT - XT*N), 'fro');
+                % Truncation at hh, not the solver's own accuracy: the two
+                % residuals separate by five orders, which is the point.
+                testCase.verifyLessThan(own, 1e-5, ...
+                    sprintf('%s does not satisfy its own equation', names{d}));
+                testCase.verifyGreaterThan(other, 1e-3, ...
+                    sprintf('%s also satisfies the opposite equation', names{d}));
+            end
+        end
+
     end
 
     methods (Test, TestTags = {'Install'})
