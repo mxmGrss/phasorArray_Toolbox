@@ -1,22 +1,22 @@
-function [N, Nw] = N_bt(n, nh, T)
+function [N, Nw] = N_bt(n, h, T)
     %N_BT Differentiation matrix for Block-Toeplitz (BT) representation.
     %
-    %   N = N_bt(n, nh, T) returns the differentiation matrix N such that 
+    %   N = N_bt(n, h, T) returns the differentiation matrix N such that 
     %   if X is a BT vector, N*X corresponds to dX/dt.
     %
     %   N = diag(jkω) ⊗ eye(n)
     %
     %   Inputs:
     %       n   - Size of the spatial dimension.
-    %       nh  - Harmonic order(s). Scalar h for square case, [h1, h2] for rectangular.
-    %       T   - Period (default 1). Note: N_tb defaults to 2*pi, check consistency.
+    %       h  - Harmonic order(s). Scalar h for square case, [h1, h2] for rectangular.
+    %       T   - Period (default 2*pi, matching N_tb).
     %
-    %   See also: N_tb, spN_bt, array2BToepliz.
+    %   See also: N_tb, spN_bt, array2BToeplitz.
 
     arguments
         n
-        nh
-        T = 1
+        h
+        T = 2*pi
     end
 
     % Resolve n
@@ -28,12 +28,12 @@ function [N, Nw] = N_bt(n, nh, T)
     w = 2 * pi / T;
 
     % Resolve nh1, nh2
-    if isscalar(nh)
-        h1 = nh;
-        h2 = nh;
+    if isscalar(h)
+        h1 = h;
+        h2 = h;
     else
-        h1 = nh(1);
-        h2 = nh(2);
+        h1 = h(1);
+        h2 = h(2);
     end
 
     % Construct Nw: (2*h1+1) x (2*h2+1)

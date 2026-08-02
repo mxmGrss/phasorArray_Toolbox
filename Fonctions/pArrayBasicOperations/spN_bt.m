@@ -1,14 +1,19 @@
-function [N, Nw] = spN_bt(n, nh, T)
+function [N, Nw] = spN_bt(n, h, T)
     %SPN_BT Sparse differentiation matrix for Block-Toeplitz (BT) representation.
     %
-    %   N = spN_bt(n, nh, T) returns a sparse differentiation matrix N.
+    %   N = spN_bt(n, h, T) returns a sparse differentiation matrix N.
+    %
+    %   Inputs:
+    %       n   - Size of the spatial dimension.
+    %       h  - Harmonic order(s). Scalar h for square case, [h1, h2] for rectangular.
+    %       T   - Period (default 2*pi, matching N_tb).
     %
     %   See also: N_bt, spN_tb.
 
     arguments
         n
-        nh
-        T = 1
+        h
+        T = 2*pi
     end
 
     % Resolve n
@@ -20,12 +25,12 @@ function [N, Nw] = spN_bt(n, nh, T)
     w = 2 * pi / T;
 
     % Resolve nh1, nh2
-    if isscalar(nh)
-        h1 = nh;
-        h2 = nh;
+    if isscalar(h)
+        h1 = h;
+        h2 = h;
     else
-        h1 = nh(1);
-        h2 = nh(2);
+        h1 = h(1);
+        h2 = h(2);
     end
 
     % Construct sparse Nw: (2*h1+1) x (2*h2+1)

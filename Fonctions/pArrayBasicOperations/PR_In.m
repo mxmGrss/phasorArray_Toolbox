@@ -1,5 +1,5 @@
 function [outM] = PR_In(A,nxB,h)
-%produit rond  I_nB o A 
+%PR_IN Produit rond (round product) I_nB o A, block-wise Kronecker on a TB matrix.
 %where A is a block matrix of type 'TB'
 % B o A = [ B kron A11  | B kron A12  | ... | B kron A1(ny)   ]
 %         [ B kron A21  |                                     ]
@@ -12,6 +12,11 @@ function [outM] = PR_In(A,nxB,h)
 %    A can be provided as a 3D array of phasors, then A=array2TB(A, 2*h) is
 %    used
 %
+arguments
+    A
+    nxB (1,1) double
+    h (1,1) double
+end
 
 if isscalar(h)
     hOut = h;

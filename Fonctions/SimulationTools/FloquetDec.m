@@ -1,4 +1,4 @@
-function [Wf,Lambda,Phi0T,N] = FloquetDec(Aph,T,varg)
+function [Wf,Lambda,Phi0T,N] = FloquetDec(Aph,T,nvp)
 %FloquetDec Compute the Floquet decomposition of a periodic system.
 %   This function simulates the state transition matrix over one period
 %   and uses it to compute the Floquet exponents (Lambda) and the periodic
@@ -10,7 +10,7 @@ function [Wf,Lambda,Phi0T,N] = FloquetDec(Aph,T,varg)
 %
 %   Input Arguments:
 %       Aph : PhasorArray or 3D double - The periodic state matrix A(t).
-%       T   : double - The period of the system (default: 1).
+%       T   : double - The period of the system (default: 2*pi).
 %
 %   Name-Value Arguments:
 %       TransSolver           : char - Solver for the transition matrix {'RK4', 'adaptative', 'forward-euler'}.
@@ -32,19 +32,19 @@ function [Wf,Lambda,Phi0T,N] = FloquetDec(Aph,T,varg)
 
 arguments
     Aph
-    T (1,1) double = 1
-    varg.TransSolver (1,:) char {mustBeMember(varg.TransSolver,{'adaptative','forward-euler','RK4'})} = 'RK4'
-    varg.FixedStepTransPow (1,1) double = 18
-    varg.InitProbSolver (1,:) char {mustBeMember(varg.InitProbSolver,{'adaptative','forward-euler','RK4'})} = 'RK4'
-    varg.FixedStepInitProbPow (1,1) double = 18
-    varg.plot (1,1) logical = false
-    varg.nT (1,1) double = 1
-    varg.holdplot (1,1) logical = false
-    varg.modulo_eig (1,1) double = 0
-    varg.precalc_Phi0T = []
-    varg.auto_adjust_precision (1,1) logical = true
-    varg.jordan (1,:) char = 'false'
-    varg.tolSwitch2Jordan (1,1) double = 1e-3
+    T (1,1) double = 2*pi
+    nvp.TransSolver (1,:) char {mustBeMember(nvp.TransSolver,{'adaptative','forward-euler','RK4'})} = 'RK4'
+    nvp.FixedStepTransPow (1,1) double = 18
+    nvp.InitProbSolver (1,:) char {mustBeMember(nvp.InitProbSolver,{'adaptative','forward-euler','RK4'})} = 'RK4'
+    nvp.FixedStepInitProbPow (1,1) double = 18
+    nvp.plot (1,1) logical = false
+    nvp.nT (1,1) double = 1
+    nvp.holdplot (1,1) logical = false
+    nvp.modulo_eig (1,1) double = 0
+    nvp.precalc_Phi0T = []
+    nvp.auto_adjust_precision (1,1) logical = true
+    nvp.jordan (1,:) char = 'false'
+    nvp.tolSwitch2Jordan (1,1) double = 1e-3
 end
 
 if isa(Aph,'PhasorArray')
@@ -54,13 +54,13 @@ end
 Aph=PhasorArray(Aph);
 nx=size(Aph,1);
 
-nT=varg.nT;
-if isempty(varg.precalc_Phi0T)
+nT=nvp.nT;
+if isempty(nvp.precalc_Phi0T)
     disph('computing transition matrix...')
-    Phi0T=TransitionMatrixOverT(Aph,T,"simutype",varg.TransSolver,FSprecpow=varg.FixedStepTransPow);
+    Phi0T=TransitionMatrixOverT(Aph,T,"simutype",nvp.TransSolver,"FSprecpow", nvp.FixedStepTransPow);
     disph('computing transition matrix... Done !')
 else
-    Phi0T=varg.precalc_Phi0T;
+    Phi0T=nvp.precalc_Phi0T;
 end
 Sphi=sym(Phi0T);
 
@@ -75,14 +75,14 @@ for mui=1:size(Q,1)
     mu=vpa(Q(mui,mui));
     v0=vpa(dV(:,mui));
 
-    lambda=double(log(vpa(mu))+varg.modulo_eig*2*pi*1i)/T;
+    lambda=double(log(vpa(mu))+nvp.modulo_eig*2*pi*1i)/T;
     Al=Aph-lambda*eye(nx);
 
     Al.value;
     %     Al=Aph;
     %     Al(:,:,(end+1)/2)=Al(:,:,(end+1)/2)-eye(size(Al,1))*((log(vpa(mu))+0*2*pi*1i)/T);
 
-    [y_a,t_a]=hmq_sim(Al,nT*T,v0,T,plot=false,solver=varg.InitProbSolver,FSprecpow=varg.FixedStepInitProbPow);
+    [y_a,t_a]=hmq_sim(Al,nT*T,v0,T,"plot", false,"solver", nvp.InitProbSolver,"FSprecpow", nvp.FixedStepInitProbPow);
     n=length(t_a)-1; %on retire l'element final pour  avoir un vecteur de 0 à T-Ts
     N.Ny1(:,mui)=(y_a(:,end)-v0); %erreur, normalement à la fin on revient au debut puisque eigen vector
     N.Ny(mui)=norm(y_a(:,end)-v0)/norm(v0);
@@ -98,7 +98,7 @@ fshift=fshiftn/T;
 Wf=fftshift(fft((W),[],3),3)/n;
 
 [~,I]=find(fshift==0);
-if varg.plot
+if nvp.plot
 end
 
 
@@ -116,10 +116,10 @@ pause(0.1)
 if nnz(double(N.Ny>1e-2))>0
     N.Ny
     warning('FloquetDec:periodicityDeviation', 'Periodicity deviation >1%% ((xsim(T)-xsim(0))/xsim(0)); consider increasing Fs power.')
-    if varg.auto_adjust_precision
-        warning('FloquetDec:increasedFsPower', 'Increased Fs power to %d.', varg.FixedStepInitProbPow+1)
-        varg.FixedStepInitProbPow=varg.FixedStepInitProbPow+1;
-        C=[fieldnames(varg).'; struct2cell(varg).'];
+    if nvp.auto_adjust_precision
+        warning('FloquetDec:increasedFsPower', 'Increased Fs power to %d.', nvp.FixedStepInitProbPow+1)
+        nvp.FixedStepInitProbPow=nvp.FixedStepInitProbPow+1;
+        C=[fieldnames(nvp).'; struct2cell(nvp).'];
         C=C(:).';
         [Wf,Lambda,Phi0T,N] = FloquetDec(Aph,T,C{:});
         return
@@ -129,7 +129,7 @@ end
 
     function plotres()
 
-        if varg.plot
+        if nvp.plot
             for muii=1:size(Lambda)
                 i=i+1;
                 ty_a=squeeze(W(:,muii,:));
@@ -154,7 +154,7 @@ end
 
             i=i+1;
             figure(nf+i)
-            PhasorArray2time(Wf(:,:,I+((-25*nT):nT:(25*nT))),T,0:T/200:nT*T,plot=true,explosed=true,hold=varg.holdplot);
+            PhasorArray2time(Wf(:,:,I+((-25*nT):nT:(25*nT))),T,0:T/200:nT*T,"plot", true,"explosed", true,"hold", nvp.holdplot);
             sgtitle('Matrice W(t)')
         end
     end

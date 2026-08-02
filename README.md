@@ -136,6 +136,13 @@ plot(P);
 title('Periodic Solution P(t) of Lyapunov Equation');
 ```
 
+> **Period convention — breaking change.** The default period is **`T = 2*pi`**
+> (fundamental pulsation `ω = 1`) across the whole library. Earlier releases
+> mixed this with `T = 1` in some functions. Code that passed `T` explicitly —
+> as the example above does — is unaffected; code that relied on a default may
+> now produce results over `[0, 2π]` instead of `[0, 1]`. See
+> [CHANGELOG.md](CHANGELOG.md).
+
 ---
 
 ## 🔬 Applications & Scientific Context
