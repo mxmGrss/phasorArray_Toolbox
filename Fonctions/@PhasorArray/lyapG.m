@@ -1,4 +1,4 @@
-function [res, info] = lyapG(o1, o2, o3, o4, o5, options)
+function [res, info] = lyapG(o1, o2, o3, o4, o5, nvp)
 %LYAPG  Periodic generalized (descriptor) Lyapunov / Sylvester solver.
 %
 %   Solves descriptor-form periodic equations WITHOUT inverting E(t) and
@@ -106,25 +106,25 @@ arguments
     o3                               = []                     % E (Lyapunov) or C (Sylvester)
     o4                               = []                     % Ea (Sylvester only)
     o5                               = []                     % Eb (Sylvester only)
-    options.T                   (1,1) double  = 2*pi
-    options.h                                 = []            % [] triggers autoUpdateh
-    options.thresholdResidual   (1,1) double  = 1e-6
-    options.autoUpdateh         (1,1) logical = false
-    options.maxh                              = []            % default: h0 * 20
-    options.stagnationWindow    (1,1) {mustBeInteger, mustBePositive} = 5
-    options.stagnationRatio     (1,1) double  = 0.05
-    options.verbose             (1,1) logical = false
-    options.storeResidualPhasor (1,1) logical = false
-    options.systemType          {mustBeMember(options.systemType,  {'rectangle','square'})}   = 'rectangle'
-    options.updateMethod        {mustBeMember(options.updateMethod,{'adaptive','incremental'})} = 'adaptive'
-    options.derivativeForm      {mustBeMember(options.derivativeForm,{'product','sandwich'})}  = 'product'
-    options.direction           {mustBeMember(options.direction,     {'backward','forward'})}  = 'backward'
+    nvp.T                   (1,1) double  = 2*pi
+    nvp.h                                 = []            % [] triggers autoUpdateh
+    nvp.thresholdResidual   (1,1) double  = 1e-6
+    nvp.autoUpdateh         (1,1) logical = false
+    nvp.maxh                              = []            % default: h0 * 20
+    nvp.stagnationWindow    (1,1) {mustBeInteger, mustBePositive} = 5
+    nvp.stagnationRatio     (1,1) double  = 0.05
+    nvp.verbose             (1,1) logical = false
+    nvp.storeResidualPhasor (1,1) logical = false
+    nvp.systemType          {mustBeMember(nvp.systemType,  {'rectangle','square'})}   = 'rectangle'
+    nvp.updateMethod        {mustBeMember(nvp.updateMethod,{'adaptive','incremental'})} = 'adaptive'
+    nvp.derivativeForm      {mustBeMember(nvp.derivativeForm,{'product','sandwich'})}  = 'product'
+    nvp.direction           {mustBeMember(nvp.direction,     {'backward','forward'})}  = 'backward'
 end
 
-T                 = options.T;
+T                 = nvp.T;
 omega             = 2*pi / T;
-thresholdResidual = options.thresholdResidual;
-autoUpdateh       = options.autoUpdateh;
+thresholdResidual = nvp.thresholdResidual;
+autoUpdateh       = nvp.autoUpdateh;
 
 %% --- Mode dispatch, validation, and h initialisation ---
 
@@ -145,7 +145,7 @@ if isLyapunov
     if size(o3,1)~=size(o1,1) || size(o3,2)~=size(o1,2)
         error('PhasorArray:lyapG:dimensionMismatch', 'E (%dx%d) must be the same size as A (%dx%d).', size(o3,1), size(o3,2), size(o1,1), size(o1,2))
     end
-    h = options.h;
+    h = nvp.h;
     if isempty(h)
         h = max([o1.h, o2.h, o3.h]);
         autoUpdateh = true;
@@ -187,7 +187,7 @@ else
     if size(o5,1)~=size(o2,1) || size(o5,2)~=size(o2,2)
         error('PhasorArray:lyapG:dimensionMismatch', 'Eb (%dx%d) must be the same size as B (%dx%d).', size(o5,1), size(o5,2), size(o2,1), size(o2,2))
     end
-    h = options.h;
+    h = nvp.h;
     if isempty(h)
         h = max([o1.h, o2.h, o3.h, o4.h, o5.h]);
         autoUpdateh = true;
@@ -210,244 +210,80 @@ if detMinA < 1e-3 || detMinB < 1e-3
         detMinA, detMinB, numel(tGrid))
 end
 
-%% --- Initial solve ---
+%% --- Single-order solve callback ---
 
-t_start  = tic;
-t_step   = tic;
-res      = PhasorArray(SylvHarmonicGen(o1, o2, o3, o4, o5, h, omega, options.systemType, options.derivativeForm, options.direction));
-dt_step  = toc(t_step);
-[resnorm, resrelnorm, resPhasor] = computeResidual(res, o1, o2, o3, o4, o5, T, options.derivativeForm, options.direction);
+% Closes over the operands so adaptiveHSolve only has to vary h.
+solveAtH = @(hh) solveOnce(o1, o2, o3, o4, o5, hh, omega, T, nvp);
 
 %% --- Fixed-h: early return ---
 
 if ~autoUpdateh
+    [res, resnorm, resrelnorm, resPhasor] = solveAtH(h);
     info = packInfo(3, sprintf('Fixed h=%d.', h), ...
-        resrelnorm, resnorm, h, [], [], [], [], {}, [], [], res, resPhasor, options);
+        resrelnorm, resnorm, h, [], [], [], [], {}, [], [], res, resPhasor, nvp);
     return
 end
 
-%% --- Adaptive-h loop ---
+%% --- Adaptive-h refinement ---
 
-maxh = options.maxh;
-if isempty(maxh), maxh = max(h * 20, h + 20); end  % h+20 guards against h=0
-capacity = maxh - h + 1;
-
-h_history      = zeros(1, capacity);
-resrel_history = zeros(1, capacity);
-res_history    = zeros(1, capacity);
-time_history   = zeros(1, capacity);
-h_history(1)      = h;
-resrel_history(1) = resrelnorm;
-res_history(1)    = resnorm;
-time_history(1)   = dt_step;
-regime_history = {'initial'};   % cell — grows with end+1
-s_alg_history  = [];            % grows with end+1
-s_exp_history  = [];
-nIter = 1;
-
-res_best        = res;
-resnorm_best    = resnorm;
-resrelnorm_best = resrelnorm;
-resPhasor_best  = resPhasor;
-h_best          = h;
-
-stagnationWindow    = options.stagnationWindow;
-stagnationRatio     = options.stagnationRatio;
-algebraic_hit_count = 0;
-
-n_sys      = size(o1, 1) * size(o2, 1);  % nA*nB: vectorised solution size
+n_sys    = size(o1, 1) * size(o2, 1);   % nA*nB: size of the vectorised solution
 % Spectral width of the harmonic operator (fixed): widest of
 % T(Eb.'⊗A), T(B.'⊗Ea), the derivative product T(Eb.'⊗Ea), and C.
-h_op       = max([o1.h + o5.h, o2.h + o4.h, o4.h + o5.h, o3.h]);
-isSquare   = strcmp(options.systemType, 'square');
-hOut_of    = @(hh) hh * isSquare + (hh + h_op) * ~isSquare;  % hOut as function of h
-if options.verbose
-    n1 = size(o3, 1);  n2 = size(o3, 2);
-    fprintf('\nPhasorArray.lyapG — adaptive h refinement\n')
-    if isLyapunov
-        fprintf('  Equation:  d/dt(E''·P·E) + A''·P·E + E''·P·A + Q = 0   [gen. Lyapunov, %dx%d]\n', n1, n2)
-        fprintf('  Each step solves:  [N·T(E''⊗E'') + T(M_A)] · vec(P) = -vec(Q)\n')
-    else
-        fprintf('  Equation:  d/dt(Ea·X·Eb) + A·X·Eb + Ea·X·B + C = 0   [gen. Sylvester, %dx%d]\n', n1, n2)
-        fprintf('  Each step solves:  [N·T(Eb''⊗Ea) + T(M_S)] · vec(X) = -vec(C)\n')
-    end
-    if isSquare
-        fprintf('  where  n = n1·n2 = %d·%d = %d,  h_op = %d,  hOut = h  [square mode]\n', n1, n2, n_sys, h_op)
-        fprintf('    M  :  [n·(2·h+1)] × [n·(2·h+1)]   (square — border harmonics discarded)\n')
-    else
-        fprintf('  where  n = n1·n2 = %d·%d = %d,  h_op = %d,  hOut = h + h_op\n', n1, n2, n_sys, h_op)
-        fprintf('    M  :  [n·(2·hOut+1)] × [n·(2·h+1)]   (rectangle — full residual L2 coverage)\n')
-    end
-    fprintf('    X  :  solution truncated to h harmonics\n')
-    fprintf('\n')
-    fprintf('%4s | %4s | %11s | %12s | %-12s | %8s | %9s | %s\n', ...
-        'h', 'hOut', 'Res norm', 'Rel res norm', 'Regime', 'Step (s)', 'Total (s)', 'Note')
-    fprintf('-----|------|-------------|--------------|--------------|----------|-----------|------\n')
-    note0 = '';
-    if resrelnorm <= thresholdResidual, note0 = 'converged'; end
-    fprintf('%4d | %4d | %11.4e | %12.4e | %-12s | %8.3f | %9.3f | %s\n', ...
-        h, hOut_of(h), resnorm, resrelnorm, 'initial', dt_step, toc(t_start), note0)
-end
+h_op     = max([o1.h + o5.h, o2.h + o4.h, o4.h + o5.h, o3.h]);
+isSquare = strcmp(nvp.systemType, 'square');
 
-%% --- Check initial-solve convergence before entering the loop ---
+cfg = struct( ...
+    'thresholdResidual', thresholdResidual, ...
+    'maxh',              nvp.maxh, ...
+    'stagnationWindow',  nvp.stagnationWindow, ...
+    'stagnationRatio',   nvp.stagnationRatio, ...
+    'updateMethod',      nvp.updateMethod, ...
+    'verbose',           nvp.verbose, ...
+    'hOp',               h_op, ...
+    'hOutFcn',           @(hh) hh*isSquare + (hh + h_op)*~isSquare, ...
+    'preamble',          buildPreamble(o3, n_sys, h_op, isLyapunov, isSquare), ...
+    'label',             'h');
 
-if resrelnorm <= thresholdResidual
-    status    = 0;
-    statusMsg = sprintf('Converged at h=%d (initial solve, resrel=%.2e).', h, resrelnorm);
-else
-    status    = -1;
-    statusMsg = '';
-end
+[best, trace] = adaptiveHSolve(solveAtH, h, cfg);
 
-while status == -1 && h < maxh
-    %% --- Adaptive step selection ---
-    regime = 'initial';
-
-    if strcmp(options.updateMethod, 'incremental') || h < h_op * 1.1 || nIter <= 1
-        h = h + 1;
-    else  % adaptive
-        idx_start = find(h_history(1:nIter) >= h_op * 1.1, 1);
-        if isempty(idx_start) || idx_start >= nIter
-            h = h + 1;
-        else
-            h1 = h_history(idx_start);  e1 = resrel_history(idx_start);
-            h2 = h_history(nIter);      e2 = resrel_history(nIter);
-
-            s_exp = (log(e2+eps) - log(e1+eps)) / (h2 - h1 + eps);
-            s_alg = (log(e2+eps) - log(e1+eps)) / (log(h2+eps) - log(h1+eps));
-
-            h_exp = h2 + ceil((log(thresholdResidual+eps) - log(e2+eps)) / (s_exp - eps));
-            h_alg = ceil(h2 * (thresholdResidual / (e2+eps))^(1 / (s_alg - eps)));
-
-            s_alg_history(end+1) = s_alg; %#ok<AGROW>
-            s_exp_history(end+1) = s_exp; %#ok<AGROW>
-
-            if s_alg < -0.1 && s_alg > -1.5
-                deltah = h_alg - h2;
-                regime = 'algebraic';
-            elseif s_exp < -1e-4
-                deltah = h_exp - h2;
-                regime = 'exponential';
-            else
-                deltah = 1;
-                regime = 'stagnated';
-            end
-
-            deltah = ceil(deltah * 0.8);
-            deltah = max(1, deltah);
-            deltah = min(deltah, 50);
-            deltah = min(deltah, ceil(h * 0.5));
-            h      = min(h2 + deltah, maxh);
-
-            % Algebraic early exit: target h is beyond maxh
-            if strcmp(regime, 'algebraic') && h_alg > maxh
-                algebraic_hit_count = algebraic_hit_count + 1;
-                if algebraic_hit_count >= 2
-                    status    = 4;
-                    statusMsg = sprintf( ...
-                        'Algebraic convergence too slow (slope=%.2f). Target h=%d unreachable (maxh=%d). Best: h=%d, resrel=%.2e.', ...
-                        s_alg, h_alg, maxh, h_best, resrelnorm_best);
-                    res        = res_best;  resnorm    = resnorm_best;
-                    resrelnorm = resrelnorm_best;
-                    resPhasor  = resPhasor_best;  h = h_best;
-                    if options.verbose
-                        fprintf('%4d | %4d | %11.4e | %12.4e | %-12s | %8s | %9s | unreachable (slope=%.2f, target h=%d)\n', ...
-                            h, hOut_of(h), resnorm, resrelnorm, regime, '-', '-', s_alg, h_alg)
-                    end
-                    break
-                end
-            else
-                algebraic_hit_count = 0;
-            end
-        end
-    end
-
-    if status == 4, break, end
-
-    %% --- Solve at new h ---
-    nIter   = nIter + 1;
-    t_step  = tic;
-    res     = PhasorArray(SylvHarmonicGen(o1, o2, o3, o4, o5, h, omega, options.systemType, options.derivativeForm, options.direction));
-    dt_step = toc(t_step);
-    [resnorm, resrelnorm, resPhasor] = computeResidual(res, o1, o2, o3, o4, o5, T, options.derivativeForm, options.direction);
-
-    h_history(nIter)      = h;
-    resrel_history(nIter) = resrelnorm;
-    res_history(nIter)    = resnorm;
-    time_history(nIter)   = dt_step;
-    regime_history{nIter} = regime; %#ok<AGROW>
-
-    if resrelnorm < resrelnorm_best
-        res_best        = res;
-        resnorm_best    = resnorm;
-        resrelnorm_best = resrelnorm;
-        resPhasor_best  = resPhasor;
-        h_best          = h;
-    end
-
-    note = '';
-
-    % Convergence check (inside loop so note appears in the same table row)
-    if resrelnorm <= thresholdResidual
-        status    = 0;
-        statusMsg = sprintf('Converged at h=%d (resrel=%.2e).', h, resrelnorm);
-        note = 'converged';
-        if options.verbose
-            fprintf('%4d | %4d | %11.4e | %12.4e | %-12s | %8.3f | %9.3f | %s\n', ...
-                h, hOut_of(h), resnorm, resrelnorm, regime, dt_step, toc(t_start), note)
-        end
-        break
-    end
-
-    % Stagnation check
-    if nIter >= stagnationWindow
-        window     = resrel_history(nIter - stagnationWindow + 1 : nIter);
-        rel_improv = (window(1) - min(window)) / (window(1) + eps);
-        if rel_improv < stagnationRatio
-            status    = 1;
-            statusMsg = sprintf('Stagnated at h=%d (%.1f%% improvement over %d steps). Best: h=%d, resrel=%.2e.', ...
-                h, rel_improv*100, stagnationWindow, h_best, resrelnorm_best);
-            note = 'stagnated';
-        end
-    end
-
-    if options.verbose
-        fprintf('%4d | %4d | %11.4e | %12.4e | %-12s | %8.3f | %9.3f | %s\n', ...
-            h, hOut_of(h), resnorm, resrelnorm, regime, dt_step, toc(t_start), note)
-    end
-
-    if status == 1
-        res        = res_best;  resnorm    = resnorm_best;
-        resrelnorm = resrelnorm_best;
-        resPhasor  = resPhasor_best;  h = h_best;
-        break
-    end
-end
-
-%% --- Finalise status (only maxh case remains) ---
-
-if status == -1
-    status    = 2;
-    statusMsg = sprintf('Reached maxh=%d without convergence. Best: h=%d, resrel=%.2e.', ...
-        maxh, h_best, resrelnorm_best);
-    res        = res_best;
-    resnorm    = resnorm_best;
-    resrelnorm = resrelnorm_best;
-    resPhasor  = resPhasor_best;
-    h          = h_best;
-    if options.verbose, fprintf('  → maxh reached. Returning best solution (h=%d).\n', h_best), end
-end
-
-h_history      = h_history(1:nIter);
-resrel_history = resrel_history(1:nIter);
-res_history    = res_history(1:nIter);
-time_history   = time_history(1:nIter);
-regime_history = regime_history(1:nIter);
-info = packInfo(status, statusMsg, resrelnorm, resnorm, h, ...
-    h_history, resrel_history, res_history, time_history, ...
-    regime_history, s_alg_history, s_exp_history, res, resPhasor, options);
+res  = best.sol;
+info = packInfo(trace.status, trace.statusMsg, best.resrelnorm, best.resnorm, best.h, ...
+    trace.h_history, trace.resrel_history, trace.res_history, trace.time_history, ...
+    trace.regime_history, trace.s_alg_history, trace.s_exp_history, ...
+    best.sol, best.resPhasor, nvp);
 
 end % lyapG
+
+%% =========================================================================
+function [res, resnorm, resrelnorm, resPhasor] = solveOnce(o1, o2, o3, o4, o5, h, omega, T, nvp)
+%SOLVEONCE  Solve the generalized Sylvester equation at a single harmonic order.
+res = PhasorArray(SylvHarmonicGen(o1, o2, o3, o4, o5, h, omega, ...
+    nvp.systemType, nvp.derivativeForm, nvp.direction));
+[resnorm, resrelnorm, resPhasor] = computeResidual(res, o1, o2, o3, o4, o5, T, ...
+    nvp.derivativeForm, nvp.direction);
+end
+
+%% =========================================================================
+function s = buildPreamble(o3, n_sys, h_op, isLyapunov, isSquare)
+%BUILDPREAMBLE  Header text printed above the verbose refinement table.
+n1 = size(o3, 1);  n2 = size(o3, 2);
+s = sprintf('\nPhasorArray.lyapG — adaptive h refinement\n');
+if isLyapunov
+    s = [s sprintf('  Equation:  d/dt(E''·P·E) + A''·P·E + E''·P·A + Q = 0   [gen. Lyapunov, %dx%d]\n', n1, n2)];
+    s = [s sprintf('  Each step solves:  [N·T(E''⊗E'') + T(M_A)] · vec(P) = -vec(Q)\n')];
+else
+    s = [s sprintf('  Equation:  d/dt(Ea·X·Eb) + A·X·Eb + Ea·X·B + C = 0   [gen. Sylvester, %dx%d]\n', n1, n2)];
+    s = [s sprintf('  Each step solves:  [N·T(Eb''⊗Ea) + T(M_S)] · vec(X) = -vec(C)\n')];
+end
+if isSquare
+    s = [s sprintf('  where  n = n1·n2 = %d·%d = %d,  h_op = %d,  hOut = h  [square mode]\n', n1, n2, n_sys, h_op)];
+    s = [s sprintf('    M  :  [n·(2·h+1)] × [n·(2·h+1)]   (square — border harmonics discarded)\n')];
+else
+    s = [s sprintf('  where  n = n1·n2 = %d·%d = %d,  h_op = %d,  hOut = h + h_op\n', n1, n2, n_sys, h_op)];
+    s = [s sprintf('    M  :  [n·(2·hOut+1)] × [n·(2·h+1)]   (rectangle — full residual L2 coverage)\n')];
+end
+s = [s sprintf('    X  :  solution truncated to h harmonics\n\n')];
+end
 
 %% =========================================================================
 function detMin = minAbsDetOnGrid(E, T, tGrid)
@@ -483,7 +319,7 @@ end
 %% =========================================================================
 function info = packInfo(status, statusMsg, resrelnorm, resnorm, h, ...
         h_history, resrel_history, res_history, time_history, ...
-        regime_history, s_alg_history, s_exp_history, res, resPhasor, options)
+        regime_history, s_alg_history, s_exp_history, res, resPhasor, nvp)
 %PACKINFO  Build the info struct with all fields always present.
 info.status         = status;
 info.statusMsg      = statusMsg;
@@ -504,7 +340,7 @@ else
     info.resPsym = NaN;
 end
 
-if options.storeResidualPhasor
+if nvp.storeResidualPhasor
     info.residualPhasor = resPhasor;
 else
     info.residualPhasor = [];

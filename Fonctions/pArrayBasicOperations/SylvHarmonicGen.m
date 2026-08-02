@@ -112,10 +112,10 @@ function [Xph, M, colQ, colX] = SylvHarmonicGen(Ahmad, Bhmad, Chmad, Ea, Eb, h, 
     % 'product' : d/dt[M_E p]  →  N (at hOut) LEFT of T(M_E)
     % 'sandwich': M_E dp/dt    →  N (at hIn)  RIGHT of T(M_E)
     if strcmp(derivativeForm, 'sandwich')
-        Nin    = sparse(N_tb(nA * nB, hIn, [], omega=omega));
+        Nin    = sparse(N_tb(nA * nB, hIn, [], "omega", omega));
         Mderiv = T_ME * Nin;
     else
-        Nout   = sparse(N_tb(nA * nB, hOut, [], omega=omega));
+        Nout   = sparse(N_tb(nA * nB, hOut, [], "omega", omega));
         Mderiv = Nout * T_ME;
     end
 

@@ -1,4 +1,4 @@
-function [r, info] = mlHmcDivide(A, B, options)
+function [r, info] = mlHmcDivide(A, B, nvp)
 %MLHMCDIVIDE  Harmonic left-division: solves A(t)*X(t) = B(t) in the harmonic domain.
 %
 %   [X, info] = mlHmcDivide(A, B)
@@ -34,6 +34,7 @@ function [r, info] = mlHmcDivide(A, B, options)
 %       .h_history       Vector of hIn values tried  ([] if autoUpdateh=false)
 %       .res_history     Absolute residual history   ([] if autoUpdateh=false)
 %       .resrel_history  Relative residual history   ([] if autoUpdateh=false)
+%       .time_history    Step solve time in seconds  ([] if autoUpdateh=false)
 %       .regime_history  'initial'/'exponential'/'algebraic'/'stagnated' per iter
 %       .s_alg_history   Algebraic slope estimates   ([] if initial regime only)
 %       .s_exp_history   Exponential slope estimates ([] if initial regime only)
@@ -46,20 +47,20 @@ function [r, info] = mlHmcDivide(A, B, options)
 arguments
     A PhasorArray
     B PhasorArray
-    options.h                    = []
-    options.thresholdResidual    (1,1) double  = 5e-4
-    options.autoUpdateh          (1,1) logical = false
-    options.maxh                 = []
-    options.stagnationWindow     (1,1) {mustBeInteger, mustBePositive} = 15
-    options.stagnationRatio      (1,1) double  = 0.02
-    options.updateMethod         {mustBeMember(options.updateMethod, ...
+    nvp.h                    = []
+    nvp.thresholdResidual    (1,1) double  = 5e-4
+    nvp.autoUpdateh          (1,1) logical = false
+    nvp.maxh                 = []
+    nvp.stagnationWindow     (1,1) {mustBeInteger, mustBePositive} = 15
+    nvp.stagnationRatio      (1,1) double  = 0.02
+    nvp.updateMethod         {mustBeMember(nvp.updateMethod, ...
                                   {'adaptive','incremental'})} = 'adaptive'
-    options.verbose              (1,1) logical = false
-    options.storeResidualPhasor  (1,1) logical = false
+    nvp.verbose              (1,1) logical = false
+    nvp.storeResidualPhasor  (1,1) logical = false
 end
 
-thresholdResidual = options.thresholdResidual;
-C                 = namedargs2cell(options);
+thresholdResidual = nvp.thresholdResidual;
+C                 = namedargs2cell(nvp);
 
 %% --- Guard G1: A is a constant scalar ---
 
@@ -70,7 +71,7 @@ if isscalar(A) && A.h == 0
     end
     r    = PhasorArray(B.value / scalarVal);
     info = packInfo(3, 'Scalar constant — direct division.', ...
-        0, 0, 0, [], [], [], [], [], [], r, [], options);
+        0, 0, 0, [], [], [], [], [], [], [], r, [], nvp);
     return
 end
 
@@ -93,7 +94,7 @@ if isscalar(A) && ~isscalar(B)
     resrelnorm   = resnorm / (Bnorm + eps);
     hFinal       = (size(r.value,3)-1)/2;
     info = packInfo(3, 'Scalar-periodic × matrix — element-wise recursion.', ...
-        resrelnorm, resnorm, hFinal, [], [], [], [], [], [], r, resPhasor, options);
+        resrelnorm, resnorm, hFinal, [], [], [], [], [], [], [], r, resPhasor, nvp);
     return
 end
 
@@ -108,229 +109,55 @@ end
 
 %% --- Initialise hIn ---
 
-if isempty(options.h)
+if isempty(nvp.h)
     hIn = max(A.h, B.h) + A.h;
-    options.autoUpdateh = true;
+    nvp.autoUpdateh = true;
 else
-    hIn = options.h;
+    hIn = nvp.h;
 end
 
 Bnorm = norm(B.value, 'fro');
 
-%% --- Initial solve ---
+%% --- Single-order solve callback ---
 
-[r, resnorm, resrelnorm, resPhasor] = solveAtH(A, B, hIn, Bnorm);
+% Closes over the operands so adaptiveHSolve only has to vary hIn.
+solve = @(hh) solveAtH(A, B, hh, Bnorm);
 
 %% --- Fixed-h: early return ---
 
-if ~options.autoUpdateh
+if ~nvp.autoUpdateh
+    [r, resnorm, resrelnorm, resPhasor] = solve(hIn);
     info = packInfo(3, sprintf('Fixed hIn=%d.', hIn), ...
-        resrelnorm, resnorm, hIn, [], [], [], [], [], [], r, resPhasor, options);
+        resrelnorm, resnorm, hIn, [], [], [], [], [], [], [], r, resPhasor, nvp);
     return
 end
 
-%% --- Adaptive-h loop ---
+%% --- Adaptive-hIn refinement ---
 
-maxhIn = options.maxh;
-if isempty(maxhIn), maxhIn = max(hIn * 20, hIn + 20); end
-capacity = maxhIn - hIn + 1;
+% Spectral width of the operator: the Cauchy product A*X spreads B's harmonics
+% by A.h, so the residual only enters its asymptotic regime past A.h + B.h.
+spectral_width = A.h + B.h;
 
-h_history      = zeros(1, capacity);
-res_history    = zeros(1, capacity);
-resrel_history = zeros(1, capacity);
-regime_history = cell(1, capacity);
-s_alg_history  = [];
-s_exp_history  = [];
+cfg = struct( ...
+    'thresholdResidual', thresholdResidual, ...
+    'maxh',              nvp.maxh, ...
+    'stagnationWindow',  nvp.stagnationWindow, ...
+    'stagnationRatio',   nvp.stagnationRatio, ...
+    'updateMethod',      nvp.updateMethod, ...
+    'verbose',           nvp.verbose, ...
+    'hOp',               spectral_width, ...
+    'hOutFcn',           @(hh) hh + A.h, ...
+    'preamble',          sprintf('\nPhasorArray.mlHmcDivide — adaptive hIn\n  Equation:  A(t)·X(t) = B(t)   [%dx%d \\ %dx%d]\n  Each step solves:  T_tb(A) · F_tb(X) = F_tb(B)  (least squares)\n\n', ...
+                                 size(A,1), size(A,2), size(B,1), size(B,2)), ...
+    'label',             'hIn');
 
-h_history(1)      = hIn;
-res_history(1)    = resnorm;
-resrel_history(1) = resrelnorm;
-regime_history{1} = 'initial';
-nIter = 1;
+[best, trace] = adaptiveHSolve(solve, hIn, cfg);
 
-r_best          = r;
-resnorm_best    = resnorm;
-resrelnorm_best = resrelnorm;
-resPhasor_best  = resPhasor;
-hIn_best        = hIn;
-
-stagnationWindow     = options.stagnationWindow;
-stagnationRatio      = options.stagnationRatio;
-spectral_width       = A.h + B.h;
-algebraic_hit_count  = 0;
-
-if options.verbose
-    fprintf('\nPhasorArray.mlHmcDivide — adaptive hIn\n')
-    fprintf('%5s | %11s | %12s | %-12s | %s\n', 'hIn', 'Res norm', 'Rel res norm', 'Regime', 'Note')
-    fprintf('------|-------------|--------------|-------------|------\n')
-    fprintf('%5d | %11.4e | %12.4e | %-12s |\n', hIn, resnorm, resrelnorm, 'initial')
-end
-
-status    = -1;
-statusMsg = '';
-
-while resrelnorm_best > thresholdResidual && hIn < maxhIn
-    %% --- Step size selection ---
-    regime = 'initial';
-
-    if strcmp(options.updateMethod, 'incremental') || hIn < spectral_width * 1.1 || nIter <= 1
-        hIn = hIn + 1;
-    elseif strcmp(options.updateMethod, 'adaptive')
-        idx_start = find(h_history(1:nIter) >= spectral_width * 1.1, 1);
-        if isempty(idx_start) || idx_start >= nIter
-            % Not enough asymptotic history yet — fall back to +1
-            hIn = hIn + 1;
-        else
-            idx1 = idx_start;
-            idx2 = nIter;
-            e1   = resrel_history(idx1);  h1 = h_history(idx1);
-            e2   = resrel_history(idx2);  h2 = h_history(idx2);
-
-            s_exp = (log(e2+eps) - log(e1+eps)) / (h2 - h1 + eps);
-            s_alg = (log(e2+eps) - log(e1+eps)) / (log(h2+eps) - log(h1+eps));
-
-            target = thresholdResidual;
-            h_exp  = h2 + ceil((log(target+eps) - log(e2+eps)) / (s_exp - eps));
-            h_alg  = ceil(h2 * (target / (e2+eps))^(1 / (s_alg - eps)));
-
-            if s_alg < -0.1 && s_alg > -1.5
-                deltah = h_alg - h2;
-                regime = 'algebraic';
-            elseif s_exp < -1e-4
-                deltah = h_exp - h2;
-                regime = 'exponential';
-            else
-                deltah = 1;
-                regime = 'stagnated';
-            end
-
-            s_alg_history(end+1) = s_alg; %#ok<AGROW>
-            s_exp_history(end+1) = s_exp; %#ok<AGROW>
-
-            deltah = ceil(deltah * 0.8);
-            deltah = max(1, deltah);
-            deltah = min(deltah, 50);
-            deltah = min(deltah, ceil(hIn * 0.5));
-            hIn    = h2 + deltah;
-
-            % Algebraic early exit
-            if strcmp(regime, 'algebraic') && h_alg > maxhIn
-                algebraic_hit_count = algebraic_hit_count + 1;
-                if algebraic_hit_count >= 2
-                    status    = 4;
-                    statusMsg = sprintf( ...
-                        'Algebraic convergence too slow (slope=%.2f). Target h=%d unreachable (maxhIn=%d). Best: hIn=%d, resrel=%.2e.', ...
-                        s_alg, h_alg, maxhIn, hIn_best, resrelnorm_best);
-                    r          = r_best;
-                    resnorm    = resnorm_best;
-                    resrelnorm = resrelnorm_best;
-                    resPhasor  = resPhasor_best;
-                    hIn        = hIn_best;
-                    if options.verbose
-                        fprintf('%5d | %11.4e | %12.4e | %-12s | unreachable (slope=%.2f, target h=%d > maxhIn=%d)\n', ...
-                            hIn, resnorm, resrelnorm, regime, s_alg, h_alg, maxhIn)
-                    end
-                    break
-                end
-            else
-                algebraic_hit_count = 0;
-            end
-        end
-    end
-
-    if status == 4, break, end
-    hIn = min(hIn, maxhIn);
-
-    %% --- Solve at new hIn ---
-    nIter = nIter + 1;
-    [r, resnorm, resrelnorm, resPhasor] = solveAtH(A, B, hIn, Bnorm);
-
-    h_history(nIter)      = hIn;
-    res_history(nIter)    = resnorm;
-    resrel_history(nIter) = resrelnorm;
-    regime_history{nIter} = regime;
-
-    if resrelnorm < resrelnorm_best
-        r_best          = r;
-        resnorm_best    = resnorm;
-        resrelnorm_best = resrelnorm;
-        resPhasor_best  = resPhasor;
-        hIn_best        = hIn;
-    end
-
-    note = '';
-
-    % Convergence check (inside loop for correct table alignment)
-    if resrelnorm <= thresholdResidual
-        status    = 0;
-        statusMsg = sprintf('Converged at hIn=%d (resrel=%.2e).', hIn, resrelnorm);
-        note = 'converged';
-        if options.verbose
-            fprintf('%5d | %11.4e | %12.4e | %-12s | %s\n', hIn, resnorm, resrelnorm, regime, note)
-        end
-        break
-    end
-
-    % Stagnation check
-    if nIter >= stagnationWindow
-        window     = resrel_history(nIter - stagnationWindow + 1 : nIter);
-        rel_improv = (window(1) - min(window)) / (window(1) + eps);
-        if rel_improv < stagnationRatio
-            status    = 1;
-            statusMsg = sprintf('Stagnated at hIn=%d (%.1f%% improvement over %d steps). Best: hIn=%d, resrel=%.2e.', ...
-                hIn, rel_improv*100, stagnationWindow, hIn_best, resrelnorm_best);
-            note = 'stagnated';
-        end
-    end
-
-    if options.verbose
-        fprintf('%5d | %11.4e | %12.4e | %-12s | %s\n', hIn, resnorm, resrelnorm, regime, note)
-    end
-
-    if status == 1
-        r          = r_best;
-        resnorm    = resnorm_best;
-        resrelnorm = resrelnorm_best;
-        resPhasor  = resPhasor_best;
-        hIn        = hIn_best;
-        break
-    end
-end
-
-%% --- Finalise status ---
-
-if status == -1
-    if resrelnorm_best <= thresholdResidual
-        status    = 0;
-        statusMsg = sprintf('Converged at hIn=%d (resrel=%.2e).', hIn_best, resrelnorm_best);
-        r          = r_best;
-        resnorm    = resnorm_best;
-        resrelnorm = resrelnorm_best;
-        resPhasor  = resPhasor_best;
-        hIn        = hIn_best;
-    else
-        status    = 2;
-        statusMsg = sprintf('Reached maxhIn=%d without convergence. Best: hIn=%d, resrel=%.2e.', ...
-            maxhIn, hIn_best, resrelnorm_best);
-        r          = r_best;
-        resnorm    = resnorm_best;
-        resrelnorm = resrelnorm_best;
-        resPhasor  = resPhasor_best;
-        hIn        = hIn_best;
-        if options.verbose
-            fprintf('  → maxhIn reached. Returning best solution (hIn=%d).\n', hIn_best)
-        end
-    end
-end
-
-h_history      = h_history(1:nIter);
-res_history    = res_history(1:nIter);
-resrel_history = resrel_history(1:nIter);
-regime_history = regime_history(1:nIter);
-
-info = packInfo(status, statusMsg, resrelnorm, resnorm, hIn, ...
-    h_history, res_history, resrel_history, regime_history, ...
-    s_alg_history, s_exp_history, r, resPhasor, options);
+r    = best.sol;
+info = packInfo(trace.status, trace.statusMsg, best.resrelnorm, best.resnorm, best.h, ...
+    trace.h_history, trace.res_history, trace.resrel_history, trace.time_history, ...
+    trace.regime_history, trace.s_alg_history, trace.s_exp_history, ...
+    best.sol, best.resPhasor, nvp);
 
 end % mlHmcDivide
 
@@ -347,8 +174,8 @@ end
 
 %% =========================================================================
 function info = packInfo(status, statusMsg, resrelnorm, resnorm, h, ...
-        h_history, res_history, resrel_history, regime_history, ...
-        s_alg_history, s_exp_history, r, resPhasor, options)
+        h_history, res_history, resrel_history, time_history, regime_history, ...
+        s_alg_history, s_exp_history, r, resPhasor, nvp)
 %PACKINFO  Build the info struct with all fields always present.
 info.status         = status;
 info.statusMsg      = statusMsg;
@@ -358,6 +185,7 @@ info.h              = h;
 info.h_history      = h_history;
 info.res_history    = res_history;
 info.resrel_history = resrel_history;
+info.time_history   = time_history;
 info.regime_history = regime_history;
 info.s_alg_history  = s_alg_history;
 info.s_exp_history  = s_exp_history;
@@ -370,7 +198,7 @@ else
     info.resasym = NaN;
 end
 
-if options.storeResidualPhasor
+if nvp.storeResidualPhasor
     info.residualPhasor = resPhasor;
 else
     info.residualPhasor = [];

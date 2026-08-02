@@ -1,5 +1,5 @@
-function [Xph, M, M1, M2, colQ, colX] = LyapHarmonic(Ahm, Qhm, h, omega, options)
-% LYAPHARMORIC Solve Harmonic Lyapunov equations using Toeplitz blocks.
+function [Xph, M, M1, M2, colQ, colX] = LyapHarmonic(Ahm, Qhm, h, omega, nvp)
+%LYAPHARMONIC Solve Harmonic Lyapunov equations using Toeplitz blocks
 %
 %   X = LyapHarmonic(Ahm, Qhm, h, omega) solves the Continuous-Time
 %   Harmonic Lyapunov equation:
@@ -38,12 +38,12 @@ function [Xph, M, M1, M2, colQ, colX] = LyapHarmonic(Ahm, Qhm, h, omega, options
         Qhm
         h (1,1) {mustBeInteger, mustBeNonnegative}
         omega (1,1) {mustBeNumeric}
-        options.B = []
-        options.R = []
-        options.direction {mustBeMember(options.direction, {'backward','forward'})} = 'backward'
+        nvp.B = []
+        nvp.R = []
+        nvp.direction {mustBeMember(nvp.direction, {'backward','forward'})} = 'backward'
     end
 
-    if isempty(options.B)
+    if isempty(nvp.B)
         % --- Lyapunov Mode ---
         % 1. Convert to Toeplitz Block structure
         A_tb = array2TBlocks(Ahm, h);
@@ -55,7 +55,7 @@ function [Xph, M, M1, M2, colQ, colX] = LyapHarmonic(Ahm, Qhm, h, omega, options
         % 3. Build LHS operator: M1 = I ⊗ (A -+ Nh)'
         % 'backward' folds -Nh (solves dP/dt + A'P + PA + Q = 0),
         % 'forward' folds +Nh (solves dP/dt = A'P + PA + Q).
-        if strcmp(options.direction, 'forward')
+        if strcmp(nvp.direction, 'forward')
             signN = +1;
         else
             signN = -1;
