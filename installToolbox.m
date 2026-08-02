@@ -14,10 +14,8 @@ totalFolders = numel(foldersUnderRoot);
 prevLength = 0; % Keep track of how many characters were last printed
 varPro = -00.01;
 for i = 1:totalFolders
-    % Remove folder from path if it no longer exists, or if it lives under
-    % a hidden folder (.git, .claude, ...): those must never shadow the
-    % toolbox code.
-    if ~isfolder(foldersUnderRoot{i}) || contains(foldersUnderRoot{i}, [filesep '.'])
+    % Drop folders that no longer exist, plus the excluded ones.
+    if ~isfolder(foldersUnderRoot{i}) || isExcludedFolder(foldersUnderRoot{i}, rootFolder)
         rmpath(foldersUnderRoot{i});
     end
 
@@ -49,15 +47,31 @@ if ~contains(path, rootFolder)
     addpath(rootFolder);
 end
 
-% 4) Recursively add all valid subfolders with genpath, excluding anything
-%    under a hidden folder (path segment starting with '.')
+% 4) Recursively add all valid subfolders, minus the excluded ones.
 allFolders = strsplit(genpath(rootFolder), pathsep);
-keep = ~cellfun(@isempty, allFolders) & ~contains(allFolders, [filesep '.']);
+keep = ~cellfun(@isempty, allFolders) & ...
+       ~cellfun(@(f) isExcludedFolder(f, rootFolder), allFolders);
 addpath(strjoin(allFolders(keep), pathsep));
 
-% 5) Save the updated path
-savepath;
+% 5) Save the path. savepath cannot write pathdef.m without elevation and only
+%    warns, so check its status instead of assuming it persisted.
+if savepath ~= 0
+    warning('PhasorArray:installToolbox:pathNotSaved', ...
+        ['The MATLAB path was updated for this session but could NOT be saved ' ...
+         '(pathdef.m is not writable). Re-run installToolbox in each new session, ' ...
+         'or run MATLAB as administrator once to persist it.'])
+end
 
 fprintf('Path updated successfully.\nJump to the <a href="matlab:doc PhasorArray">Phasor Array Documentation</a> and <a href="matlab:doc PhasorSS">PhasorSS Documentation</a> \nOr see an exemple with <a href="matlab:open GettingStarted.mlx">GettingStarted</a>\nAll the basis are <a href="matlab:open BasicToolBox.mlx">here</a>\nFor Periodic State Space system jump to <a href="matlab:open Periodic_State_space_example.mlx">PeriodicStateSpace</a>\nFor LMIs exemple see <a href="matlab:open Exemple_Toolbox_LMI.mlx">Exemple_Toolbox_LMI</a>\n');
 fprintf('To verify the installation, you can <a href="matlab:test_PhasorArray_basic; test_PhasorArray_advanced">Run All Global Tests</a>\n');
 fprintf('To check optional features and solvers, run <a href="matlab:checkDependencies">checkDependencies</a>\n');
+
+%% =========================================================================
+function tf = isExcludedFolder(folder, rootFolder)
+%ISEXCLUDEDFOLDER  True for hidden folders (.git, .claude...) and scratch/.
+%   scratch/ is gitignored and machine-local: a file there whose name collides
+%   with a real function shadows it, on that machine only.
+tf = contains(folder, [filesep '.']) || ...
+     strcmp(folder, fullfile(rootFolder, 'scratch')) || ...
+     startsWith(folder, [fullfile(rootFolder, 'scratch') filesep]);
+end

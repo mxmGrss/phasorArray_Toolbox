@@ -89,7 +89,7 @@ A `PhasorArray` of dimension `[n × m]` truncated at harmonic order `h` is store
 | `SylvHarmonic.m` | Harmonic Sylvester equation solver |
 | `LyapHarmonic.m` | Harmonic Lyapunov solver |
 | `RicHarmonicKlein.m` | Iterative Riccati solver (adaptive h, LQR fallback) |
-| `array2TBlocks.m` / `array2BToepliz.m` | Harmonic array → Toeplitz-Block (TB) / Block-Toeplitz (BT) operators, harmonics ascending (−h..+h) in both |
+| `array2TBlocks.m` / `array2BToeplitz.m` | Harmonic array → Toeplitz-Block (TB) / Block-Toeplitz (BT) operators, harmonics ascending (−h..+h) in both |
 
 ### Version Compatibility
 

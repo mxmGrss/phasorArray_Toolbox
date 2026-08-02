@@ -1,0 +1,55 @@
+{
+  "_schemaVersion": "1.0.0",
+
+  "LyapHarmonic":
+  {
+     "inputs":
+     [
+        {"name":"Ahm",   "kind":"required", "type":["numeric"], "purpose":"A(t) phasors"},
+        {"name":"Qhm",   "kind":"required", "type":["numeric"], "purpose":"Q(t) phasors"},
+        {"name":"h",     "kind":"required", "type":["numeric"], "purpose":"Truncation order"},
+        {"name":"omega", "kind":"ordered",  "type":["numeric"], "purpose":"Pulsation 2*pi/T"},
+        {"name":"B",     "kind":"namevalue","type":["numeric"], "purpose":"B(t) phasors, for the Riccati-shaped variant"},
+        {"name":"R",     "kind":"namevalue","type":["numeric"], "purpose":"R(t) phasors, for the Riccati-shaped variant"},
+        {"name":"direction", "kind":"namevalue", "type":["choices={'backward','forward'}"], "purpose":"dP/dt + A'P + PA + Q = 0, or dP/dt = A'P + PA + Q"}
+     ]
+  },
+
+  "SylvHarmonic":
+  {
+     "inputs":
+     [
+        {"name":"Ahmad", "kind":"required", "type":["numeric"], "purpose":"A(t) phasors"},
+        {"name":"Bhmad", "kind":"required", "type":["numeric"], "purpose":"B(t) phasors"},
+        {"name":"Chmad", "kind":"required", "type":["numeric"], "purpose":"C(t) phasors"},
+        {"name":"h",     "kind":"required", "type":["numeric"], "purpose":"Truncation order"},
+        {"name":"omega", "kind":"required", "type":["numeric"], "purpose":"Pulsation 2*pi/T"},
+        {"name":"method","kind":"ordered",  "type":["choices={'rectangle','square'}"], "purpose":"Residual coverage: full Cauchy output, or Galerkin"},
+        {"name":"direction", "kind":"ordered", "type":["choices={'backward','forward'}"], "purpose":"dX/dt + AX + XB + C = 0, or dX/dt = AX + XB + C"}
+     ]
+  },
+
+  "RicHarmonicKlein":
+  {
+     "inputs":
+     [
+        {"name":"A",  "kind":"required", "type":["PhasorArray"], "purpose":"State matrix"},
+        {"name":"B",  "kind":"required", "type":["PhasorArray"], "purpose":"Input matrix"},
+        {"name":"Q",  "kind":"required", "purpose":"State weight"},
+        {"name":"R",  "kind":"required", "purpose":"Control weight"},
+        {"name":"K0", "kind":"ordered",  "purpose":"Initial stabilising gain; [] runs the fallback cascade"},
+        {"name":"T",  "kind":"ordered",  "type":["numeric"], "purpose":"Period"},
+        {"name":"h",                 "kind":"namevalue", "type":["numeric"], "purpose":"Fixed truncation order; [] is auto"},
+        {"name":"maxh",              "kind":"namevalue", "type":["numeric"], "purpose":"Upper bound on h"},
+        {"name":"autoUpdateh",       "kind":"namevalue", "type":["logical"], "purpose":"Adaptive h refinement"},
+        {"name":"maxIter",           "kind":"namevalue", "type":["numeric"], "purpose":"Max Kleinman iterations"},
+        {"name":"thresholdResidual", "kind":"namevalue", "type":["numeric"], "purpose":"Relative Riccati residual target"},
+        {"name":"warmStartFraction", "kind":"namevalue", "type":["numeric"], "purpose":"h_next = h_prev*f; 1.0 holds, f<1 steps back"},
+        {"name":"skipValidate",      "kind":"namevalue", "type":["logical"], "purpose":"Skip the Floquet check of a provided K0"},
+        {"name":"direction",         "kind":"namevalue", "type":["choices={'backward','forward'}"], "purpose":"Control (cost-to-go) or observation (covariance)"},
+        {"name":"E",                 "kind":"namevalue", "type":["PhasorArray"], "purpose":"Descriptor mass matrix; [] is the plain equation"},
+        {"name":"derivativeForm",    "kind":"namevalue", "type":["choices={'product','sandwich'}"], "purpose":"Where dE/dt sits in the descriptor form"},
+        {"name":"verbose",           "kind":"namevalue", "type":["numeric"], "purpose":"0 silent, 1-2 iteration table, 3 with the inner Lyapunov trace"}
+     ]
+  }
+}
