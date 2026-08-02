@@ -1,7 +1,7 @@
-function [x,t,dx] = hmq_sim(Aph,tfinal,x0,T,Uph,varg)
+function [x,t,dx] = hmq_sim(Aph,tfinal,x0,T,Uph,nvp)
     % HMQ_SIM Simulate the response of a time-periodic system.
     %
-    %   HMQ_SIM(Aph, tfinal, x0, T, Uph, varg) simulates the system:
+    %   HMQ_SIM(Aph, tfinal, x0, T, Uph, nvp) simulates the system:
     %       dx/dt = A(t)x + U(t)
     %   where `A(t)` and `U(t)` are `T`-periodic matrices, represented as phasor arrays.
     %
@@ -21,7 +21,7 @@ function [x,t,dx] = hmq_sim(Aph,tfinal,x0,T,Uph,varg)
     %                - If vector: Uses provided time grid.
     %     x0     - (vector, optional) Initial condition `x(0)`. 
     %                - Default: `ones(size(Aph,1),1)`.
-    %     T      - (double, optional) The period of `A(t)`. Default: `1`.
+    %     T      - (double, optional) The period of `A(t)`. Default: `2*pi`.
     %     Uph    - (PhasorArray or matrix, optional) The time-varying input matrix `U(t)`.
     %                - Default: `[]` (zero input).
     %
@@ -29,8 +29,16 @@ function [x,t,dx] = hmq_sim(Aph,tfinal,x0,T,Uph,varg)
     %     'odeOpts'           - (struct) Options for the ODE solver (e.g., tolerances). Default: `[]`.
     %     'plot'              - (logical) Plot the state trajectory. Default: `true`.
     %     'solver'            - (char) ODE solver method. Default: `'adaptative'`. Options:
-    %                              - `'adaptative'`, `'forward-euler'`, `'RK4'`, `'heuns'`, `'midpoint'`, 
+    %                              - `'adaptative'` (ode15s, stiff), `'ode78'`, `'ode89'`,
+    %                                `'forward-euler'`, `'RK4'`, `'heuns'`, `'midpoint'`,
     %                                `'leapfrog'`, `'backward-euler'`, `'trapezoidal'`, `'adams-bashforth'`.
+    %                              Prefer `'ode78'` when the system oscillates but is not stiff.
+    %                              Periodicity alone is oscillation, not stiffness, and ode15s pays
+    %                              its low order (<=5) in tiny steps there. Measured on a 4x4 with
+    %                              prescribed Floquet exponents, RelTol 1e-12: ode78 reaches 6.8e-12
+    %                              in 281 steps against 1.3e-08 in 4072 steps for ode15s, and is
+    %                              faster. Keep `'adaptative'` when the time constants really do
+    %                              span decades, as in a switching converter.
     %     'FSprecpow'         - (integer) Power of 2 for frequency sampling. Default: `8`.
     %     'checkReal'         - (logical) Check if `A(t)` and `U(t)` are real-valued. Default: `false`.
     %     'isRealValued'      - (logical) Force real-valued computation. Default: `auto-detected`.
@@ -65,29 +73,29 @@ arguments
     Aph
     tfinal=0
     x0=ones(size(Aph,1),1)
-    T=1
+    T=2*pi
     Uph=[]
-    varg.odeOpts = {}
-    varg.plot logical = true
-    varg.solver {mustBeMember(varg.solver,{'adaptative','forward-euler','RK4', 'heuns', 'midpoint', 'leapfrog', 'backward-euler', 'trapezoidal', 'adams-bashforth'})} ='adaptative'
-    varg.FSprecpow = 8
-    varg.checkReal  logical = false
-    varg.isRealValued logical = []
-    varg.providedPhasorForm {mustBeMember(varg.providedPhasorForm,["exp","SinCos"])} = "exp"
+    nvp.odeOpts = {}
+    nvp.plot logical = true
+    nvp.solver {mustBeMember(nvp.solver,{'adaptative','ode78','ode89','forward-euler','RK4', 'heuns', 'midpoint', 'leapfrog', 'backward-euler', 'trapezoidal', 'adams-bashforth'})} ='adaptative'
+    nvp.FSprecpow = 8
+    nvp.checkReal  logical = false
+    nvp.isRealValued logical = []
+    nvp.providedPhasorForm {mustBeMember(nvp.providedPhasorForm,["exp","SinCos"])} = "exp"
 end
 
-if isempty(varg.isRealValued)
+if isempty(nvp.isRealValued)
     try
         AA = PhasorArray(Aph);
         UU = PhasorArray(Uph);
         if isreal(AA) && isreal(UU)
-            varg.isRealValued=true;
+            nvp.isRealValued=true;
             warning('hmq_sim:appearsRealValued', 'Matrices appear to be real-valued. To enforce complex-valued computation, set ''isRealValued'' to false.')
         else
-            varg.isRealValued=false;
+            nvp.isRealValued=false;
         end
     catch
-        varg.isRealValued=false;
+        nvp.isRealValued=false;
     end
 end
 
@@ -100,8 +108,8 @@ end
 % ensure that the input matrices are valid and convert them to numerical arrays if they are symbolic or sdp variables
 [Aph, Uph] = validateAphUph(Aph, Uph);
 
-if  varg.isRealValued
-    switch varg.providedPhasorForm
+if  nvp.isRealValued
+    switch nvp.providedPhasorForm
         case "exp"
             % Compute the cosine-sine decomposition of the matrices Aph and Uph and use it to define the function to be integrated by the ODE solver
             % it will result in a faster computation of the time-varying matrix-vector product
@@ -133,7 +141,7 @@ nh=(size(Aph,3)-1)/2;
 % Define the time vector for the simulation
 % define time step for simulation, higher than the highest frequency of the system and 2^FSprecpow
 % selection of power of 2 for the frequency sampling
-p = nextpow2(max(nh*8,2^varg.FSprecpow));
+p = nextpow2(max(nh*8,2^nvp.FSprecpow));
 dt_sim=T/2^p;
 if isscalar(tfinal)
     t=0:dt_sim:tfinal;
@@ -143,24 +151,28 @@ else
     t= tfinal;
 end
 
-switch varg.solver
-    case 'adaptative'
+switch nvp.solver
+    case {'adaptative','ode78','ode89'}
         odeOpts = odeset('RelTol',1e-6,'AbsTol',1e-6,'MaxStep',dt_sim,'Stats','off','Jacobian',@(t,y) ATt(T,t));
         if nargout>2
             rDotDot = [];
-            odeOpts=odeset(odeOpts,OutputFcn=@outputFcn);
+            odeOpts=odeset(odeOpts,"OutputFcn", @outputFcn);
         end
-        if ~isempty(varg.odeOpts)
-            if isa(varg.odeOpts,"cell")
-                varg.odeOpts=odeset(varg.odeOpts{:});
+        if ~isempty(nvp.odeOpts)
+            if isa(nvp.odeOpts,"cell")
+                nvp.odeOpts=odeset(nvp.odeOpts{:});
             end
-            odeOpts=odeset(odeOpts,varg.odeOpts);
+            odeOpts=odeset(odeOpts,nvp.odeOpts);
         end
 
         %future version of matlab will have a better way to handle this problem with the new ode class
         %F = handleOdeProblem();
 
-        [t,x] = ode15s(fsim,t,double(x0),odeOpts);
+        switch nvp.solver
+            case 'ode78', [t,x] = ode78(fsim,t,double(x0),odeOpts);
+            case 'ode89', [t,x] = ode89(fsim,t,double(x0),odeOpts);
+            otherwise,    [t,x] = ode15s(fsim,t,double(x0),odeOpts);
+        end
 
         x=x.';
     case 'forward-euler'
@@ -263,7 +275,7 @@ end
 
 
 
-if varg.plot
+if nvp.plot
     if ishold
         holdvar='on';
     else
@@ -327,7 +339,7 @@ end
 
 function dydt = f_ph(t,y,Aph,T,Uph,checkReal )
 y=y(:);
-dydt = PhasorArray2time(Aph,T,t,checkReal =checkReal )*y+PhasorArray2time(Uph,T,t,checkReal =checkReal );
+dydt = PhasorArray2time(Aph,T,t,"checkReal", checkReal )*y+PhasorArray2time(Uph,T,t,"checkReal", checkReal );
 dydt=dydt(:);
 end
 function dydt = f_ph2(t,y,Aph,T,Uph )
@@ -348,19 +360,19 @@ function Mt = evalTimeCmplxTt(Phas,T,t)
 angle = 2*pi/T*t;
 h = (size(Phas,3)-1)/2;
 eit=exp(1i*(-h:h)'*angle);
-Mt=tensorprod(Phas,double(eit),3,1); %est un 3D array dont Mt(:,:,k) est M(t(k))
+Mt=harmonicCombine(Phas, double(eit)); %est un 3D array dont Mt(:,:,k) est M(t(k))
 end
 
 function Mt = evalTimeCmplxA(Phas,angle)
 h = (size(Phas,3)-1)/2;
 eit=exp(1i*(-h:h)'*angle);
-Mt=tensorprod(Phas,double(eit),3,1); %est un 3D array dont Mt(:,:,k) est M(t(k))
+Mt=harmonicCombine(Phas, double(eit)); %est un 3D array dont Mt(:,:,k) est M(t(k))
 end
 
 function Mt = evalTimeSinCos(PhasSC,angle)
 h = (size(PhasSC,3)-1)/2;
 eit=[sin((h:-1:1)'*angle); cos((0:h)'*angle) ];
-Mt=tensorprod(PhasSC,double(eit),3,1); %est un 3D array dont Mt(:,:,k) est M(t(k))
+Mt=harmonicCombine(PhasSC, double(eit)); %est un 3D array dont Mt(:,:,k) est M(t(k))
 end
 
 function [Aph, Uph] = validateAphUph(Aph, Uph)

@@ -1,5 +1,5 @@
 function D = PhasorArrayTimes2(A,B,m)
-%Takes 2 3D array as input, seen as a Matrix sequence indexed on Z and
+%PHASORARRAYTIMES2 Takes 2 3D array as input, seen as a Matrix sequence indexed on Z and
 %truncated, stored along the third dimension. 
 %Compute the matrix convolution
 % It is equivalent of computing the phasor of C(t) = A(t)B(t) from the
@@ -46,7 +46,6 @@ end
 if nA1==1 && nA2==1 && mA>0
     % scalar phasor -> diagonal broadcast, built slice-by-slice then cat'd.
     % cat() promotes double/sym/sdpvar/ndsdpvar uniformly (no per-type alloc).
-    % ponytail: cat is the type-agnostic constructor (was 3 isa branches).
     mrows   = size(B,1);
     Aslices = arrayfun(@(k) eye(mrows)*A(1,1,k), 1:2*mA+1, 'UniformOutput', false);
     A = cat(3, Aslices{:});
@@ -109,33 +108,4 @@ Dd=[];
     end
 end
     D=reshape(Dd,size(V,1),size(U,2),[]);
-%     D=ReduceArray(D);
-
-% %2 Initialize D as an zero array with the same size as the expected output
-% D2 = sdpvar(size(A,1), size(B,2), 2*m+1)*0;
-% 
-% % Loop over the third dimension of D
-% for k = -m:m
-%     % Calculate the limits of the convolution sum for the current value of k
-%     l1 = max(k-mB, -mA);
-%     l2 = min(k+mB, mA);
-% 
-%     % Initialize the current slice of D as a zero matrix
-%     % D2(:,:,m+1+k) = zeros(size(A,1), size(B,2));
-% 
-%     % Loop over the third dimension of A and B within the calculated limits
-%     for i = (mA+1+l1):(mA+1+l2)
-%         j = k+mB+1-(i-mA-1);
-% 
-%         % Extract the current slices of A and B
-%         V = A(:,:,i);
-%         U = B(:,:,j);
-% 
-% 
-%         % Perform the matrix multiplication and add the result to the current slice of D
-%         D2(:,:,m+1+k) = D2(:,:,m+1+k) + V*U;
-%     end
-% end
-% D2;
-% D=D2;
 end

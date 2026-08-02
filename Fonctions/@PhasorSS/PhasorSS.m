@@ -144,12 +144,12 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
     end
 
     methods
-        function obj = PhasorSS(A,B,C,D,T,varg)
+        function obj = PhasorSS(A,B,C,D,T,nvp)
             %PHASORSS Construct an instance of this PhasorSS
-            %   obj = PHASORSS(A,B,C,D,T,varg) creates an instance of the 
+            %   obj = PHASORSS(A,B,C,D,T,nvp) creates an instance of the 
             %   PhasorSS class with the specified system matrices A, B, C, D, 
             %   and period T. Additional parameters can be specified 
-            %   using the varg structure.
+            %   using the nvp structure.
             %
             %   Inputs:
             %       A - State matrix
@@ -157,7 +157,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             %       C - Output matrix (optional, default is identity matrix)
             %       D - Feedthrough matrix (optional, default is zero matrix)
             %       T - period of the system if set to LTV (optional, default is 1), if p is set and the system is LPV, T is not used as the phase is computed from p
-            %       varg - Structure containing additional parameters:
+            %       nvp - Name-Value arguments containing additional parameters:
             %           isReal - Logical flag indicating if the system is real (default is false)
             %           StateName - Cell array of state names (default is empty)
             %           StateUnit - Cell array of state units (default is empty)
@@ -203,20 +203,20 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 C = []
                 D = []
                 T = []
-                varg.isReal (1,1) logical = false
-                varg.StateName (1,:)  = {}
-                varg.StateUnit (1,:)  = {}
-                varg.InputName (1,:)  = {}
-                varg.InputUnit (1,:)  = {}
-                varg.InputGroup (1,:) struct = struct()
-                varg.OutputName (1,:)  = {}
-                varg.OutputUnit (1,:)  = {}
-                varg.OutputGroup (1,:) struct = struct()
-                varg.Name  = ''
-                varg.Notes (1,:)  = {}
-                varg.UserData = [];
-                varg.p = []
-                varg.verbose (1,1) logical = false
+                nvp.isReal (1,1) logical = false
+                nvp.StateName (1,:)  = {}
+                nvp.StateUnit (1,:)  = {}
+                nvp.InputName (1,:)  = {}
+                nvp.InputUnit (1,:)  = {}
+                nvp.InputGroup (1,:) struct = struct()
+                nvp.OutputName (1,:)  = {}
+                nvp.OutputUnit (1,:)  = {}
+                nvp.OutputGroup (1,:) struct = struct()
+                nvp.Name  = ''
+                nvp.Notes (1,:)  = {}
+                nvp.UserData = [];
+                nvp.p = []
+                nvp.verbose (1,1) logical = false
             end
 
             if nargin == 1
@@ -237,14 +237,14 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             obj.providedD = D;
             if isempty(C)
                 C=eye(size(A,1));
-                varg.OutputName = varg.StateName;
-                varg.OutputUnit = varg.StateUnit      ;
+                nvp.OutputName = nvp.StateName;
+                nvp.OutputUnit = nvp.StateUnit      ;
             end
             if isempty(D) || (isscalar(D) && all(D ==0))
                 D=zeros(size(C,1),size(B,2));
             end
             
-            %if only D is provided, A is empty matrix, B is 0xsize(D,2), C is size(D,1)x0, T is 1
+            %if only D is provided, A is empty matrix, B is 0xsize(D,2), C is size(D,1)x0, T is 2*pi
             if isempty(A)
                 if isempty(B) && isempty(C)
                 A = PhasorArray.empty(0);
@@ -273,43 +273,43 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             end
 
             % fill input, output, state with u, y, x if empty
-            if isempty(varg.InputName)
-                varg.InputName = cellstr(strcat('u',num2str((1:size(B,2))')))';
+            if isempty(nvp.InputName)
+                nvp.InputName = cellstr(strcat('u',num2str((1:size(B,2))')))';
             end
-            if isempty(varg.OutputName)
-                varg.OutputName = cellstr(strcat('y',num2str((1:size(C,1))')))';
+            if isempty(nvp.OutputName)
+                nvp.OutputName = cellstr(strcat('y',num2str((1:size(C,1))')))';
             end
-            if isempty(varg.StateName) && ~isempty(A)
-                varg.StateName = cellstr(strcat('x',num2str((1:size(A,1))')))';
+            if isempty(nvp.StateName) && ~isempty(A)
+                nvp.StateName = cellstr(strcat('x',num2str((1:size(A,1))')))';
             end
-            if isempty(varg.InputUnit)
-                varg.InputUnit = repmat({''},1,size(B,2));
+            if isempty(nvp.InputUnit)
+                nvp.InputUnit = repmat({''},1,size(B,2));
             end
-            if isempty(varg.OutputUnit)
-                varg.OutputUnit = repmat({''},1,size(C,1));
+            if isempty(nvp.OutputUnit)
+                nvp.OutputUnit = repmat({''},1,size(C,1));
             end
-            if isempty(varg.StateUnit) && ~isempty(A)
-                varg.StateUnit = repmat({''},1,size(A,1));
+            if isempty(nvp.StateUnit) && ~isempty(A)
+                nvp.StateUnit = repmat({''},1,size(A,1));
             end
 
             %check that all dimensions are consistent
-            if size(varg.InputName,2) ~= size(B,2)
-                error('PhasorSS:constructor:invalidPortNames', 'InputName has %d entries but B has %d columns.', size(varg.InputName,2), size(B,2))
+            if size(nvp.InputName,2) ~= size(B,2)
+                error('PhasorSS:constructor:invalidPortNames', 'InputName has %d entries but B has %d columns.', size(nvp.InputName,2), size(B,2))
             end
-            if size(varg.InputUnit,2) ~= size(B,2)
-                error('PhasorSS:constructor:invalidPortNames', 'InputUnit has %d entries but B has %d columns.', size(varg.InputUnit,2), size(B,2))
+            if size(nvp.InputUnit,2) ~= size(B,2)
+                error('PhasorSS:constructor:invalidPortNames', 'InputUnit has %d entries but B has %d columns.', size(nvp.InputUnit,2), size(B,2))
             end
-            if size(varg.OutputName,2) ~= size(C,1)
-                error('PhasorSS:constructor:invalidPortNames', 'OutputName has %d entries but C has %d rows.', size(varg.OutputName,2), size(C,1))
+            if size(nvp.OutputName,2) ~= size(C,1)
+                error('PhasorSS:constructor:invalidPortNames', 'OutputName has %d entries but C has %d rows.', size(nvp.OutputName,2), size(C,1))
             end
-            if size(varg.OutputUnit,2) ~= size(C,1)
-                error('PhasorSS:constructor:invalidPortNames', 'OutputUnit has %d entries but C has %d rows.', size(varg.OutputUnit,2), size(C,1))
+            if size(nvp.OutputUnit,2) ~= size(C,1)
+                error('PhasorSS:constructor:invalidPortNames', 'OutputUnit has %d entries but C has %d rows.', size(nvp.OutputUnit,2), size(C,1))
             end
-            if size(varg.StateName,2) ~= size(A,1)
-                error('PhasorSS:constructor:invalidPortNames', 'StateName has %d entries but A has %d rows.', size(varg.StateName,2), size(A,1))
+            if size(nvp.StateName,2) ~= size(A,1)
+                error('PhasorSS:constructor:invalidPortNames', 'StateName has %d entries but A has %d rows.', size(nvp.StateName,2), size(A,1))
             end
-            if size(varg.StateUnit,2) ~= size(A,1)
-                error('PhasorSS:constructor:invalidPortNames', 'StateUnit has %d entries but A has %d rows.', size(varg.StateUnit,2), size(A,1))
+            if size(nvp.StateUnit,2) ~= size(A,1)
+                error('PhasorSS:constructor:invalidPortNames', 'StateUnit has %d entries but A has %d rows.', size(nvp.StateUnit,2), size(A,1))
             end
 
 
@@ -318,27 +318,27 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             obj.C = PhasorArray(C);
             obj.D = PhasorArray(D);
             obj.T = T;
-            obj.isReal = varg.isReal;
-            obj.StateName = cellstr(varg.StateName);
-            obj.StateUnit = cellstr(varg.StateUnit);
-            obj.InputName = cellstr(varg.InputName);
-            obj.InputUnit = cellstr(varg.InputUnit);
-            obj.InputGroup = varg.InputGroup;
-            obj.OutputName = cellstr(varg.OutputName);
-            obj.OutputUnit = cellstr(varg.OutputUnit);
-            obj.OutputGroup = varg.OutputGroup;
-            obj.Name = varg.Name;
-            obj.Notes = cellstr(varg.Notes);
-            obj.UserData = varg.UserData;
+            obj.isReal = nvp.isReal;
+            obj.StateName = cellstr(nvp.StateName);
+            obj.StateUnit = cellstr(nvp.StateUnit);
+            obj.InputName = cellstr(nvp.InputName);
+            obj.InputUnit = cellstr(nvp.InputUnit);
+            obj.InputGroup = nvp.InputGroup;
+            obj.OutputName = cellstr(nvp.OutputName);
+            obj.OutputUnit = cellstr(nvp.OutputUnit);
+            obj.OutputGroup = nvp.OutputGroup;
+            obj.Name = nvp.Name;
+            obj.Notes = cellstr(nvp.Notes);
+            obj.UserData = nvp.UserData;
 
-            obj = obj.checkIfReal(1e-12,varg.verbose);
+            obj = obj.checkIfReal(1e-12,nvp.verbose);
 
-            if ~isempty(varg.p)	
-                obj = setLPV(obj,varg.p);
+            if ~isempty(nvp.p)	
+                obj = setLPV(obj,nvp.p);
             else
                 if isempty(obj.T)
-                    obj.T = 1;
-                    warning('PhasorSS:constructor:defaultPeriod', 'Period T not specified; defaulting to T=1 (LTV mode).')
+                    obj.T = 2*pi;
+                    warning('PhasorSS:constructor:defaultPeriod', 'Period T not specified; defaulting to T=2*pi (LTV mode).')
                 end
                 obj = setLTV(obj);
             end
@@ -565,7 +565,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 obj = obj.setC([]);
             end
         end
-        function obj = setB(obj,B,realTol,optargin)
+        function obj = setB(obj,B,realTol,nvp)
             %SETB Set the B matrix of the PhasorSS object and update the isReal property
             %   obj = SETB(obj,B,realTol) sets the B matrix of the PhasorSS object and updates the isReal property.
             %
@@ -582,9 +582,9 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 obj
                 B
                 realTol (1,1) double = 1e-12
-                optargin.InputName (1,:) cell = {}
-                optargin.InputUnit (1,:) cell = {}
-                optargin.InputGroup (1,:) struct = struct()
+                nvp.InputName (1,:) cell = {}
+                nvp.InputUnit (1,:) cell = {}
+                nvp.InputGroup (1,:) struct = struct()
             end
             %SETB Set the B matrix of the PhasorSS object and update the isReal property
             obj.B = PhasorArray(B);
@@ -596,19 +596,19 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             end
 
             %update name and unit
-            if isempty(optargin.InputName)
+            if isempty(nvp.InputName)
                 obj.InputName = cellstr(strcat('u',num2str((1:size(B,2))')))';
             else
-                obj.InputName = cellstr(optargin.InputName);
+                obj.InputName = cellstr(nvp.InputName);
             end
-            if isempty(optargin.InputUnit)
+            if isempty(nvp.InputUnit)
                 obj.InputUnit = repmat({''},1,size(B,2));
             else
-                obj.InputUnit = cellstr(optargin.InputUnit);
+                obj.InputUnit = cellstr(nvp.InputUnit);
             end
-            obj.InputGroup = optargin.InputGroup;
+            obj.InputGroup = nvp.InputGroup;
         end
-        function obj = setC(obj,C,realTol,optargin)
+        function obj = setC(obj,C,realTol,nvp)
             %SETC Set the C matrix of the PhasorSS object and update the isReal property
             %   obj = SETC(obj,C,realTol) sets the C matrix of the PhasorSS object and updates the isReal property.
             %
@@ -625,9 +625,9 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 obj
                 C
                 realTol (1,1) double = 1e-12
-                optargin.OutputName (1,:) cell = {}
-                optargin.OutputUnit (1,:) cell = {}
-                optargin.OutputGroup (1,:) struct = struct()
+                nvp.OutputName (1,:) cell = {}
+                nvp.OutputUnit (1,:) cell = {}
+                nvp.OutputGroup (1,:) struct = struct()
             end
 
             if isempty(C)
@@ -645,17 +645,17 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             obj = obj.checkIfReal(realTol);
 
             %update name and unit
-            if isempty(optargin.OutputName)
+            if isempty(nvp.OutputName)
                 obj.OutputName = cellstr(strcat('y',num2str((1:size(C,1))')))';
             else
-                obj.OutputName = cellstr(optargin.OutputName);
+                obj.OutputName = cellstr(nvp.OutputName);
             end
-            if isempty(optargin.OutputUnit)
+            if isempty(nvp.OutputUnit)
                 obj.OutputUnit = repmat({''},1,size(C,1));
             else
-                obj.OutputUnit = cellstr(optargin.OutputUnit);
+                obj.OutputUnit = cellstr(nvp.OutputUnit);
             end
-            obj.OutputGroup = optargin.OutputGroup;
+            obj.OutputGroup = nvp.OutputGroup;
         end
         function obj = setD(obj,D,realTol)
             %SETD Set the D matrix of the PhasorSS object and update the isReal property
@@ -730,9 +730,9 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             ny = size(obj.C,1);
         end
 
-        function obj = addOutput(obj,newC,newD,varg)
+        function obj = addOutput(obj,newC,newD,nvp)
             %ADDOUTPUT Add additionnal output to the current output of the PhasorSS object
-            %  obj = ADDOUTPUT(obj,newC,newD,varg) adds additionnal output to the current output of the PhasorSS object.
+            %  obj = ADDOUTPUT(obj,newC,newD,nvp) adds additionnal output to the current output of the PhasorSS object.
             %  If newC is empty, newD must be provided and vice versa.
             %  If newC and newD are empty, an error is thrown.
             %
@@ -740,7 +740,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             %      obj - Instance of the PhasorSS class
             %      newC - Output matrix (PhasorArray)
             %      newD - Feedthrough matrix (PhasorArray)
-            %      varg - Structure containing additional parameters:
+            %      nvp - Name-Value arguments containing additional parameters:
             %          OutputName - Cell array of output names (default is empty)
             %          OutputUnit - Cell array of output units (default is empty)
             %          OutputGroup - Structure of output groups (default is empty struct)
@@ -750,9 +750,9 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 obj
                 newC = []
                 newD = []
-                varg.OutputName (1,:) cell = {}
-                varg.OutputUnit (1,:) cell = {}
-                varg.OutputGroup (1,:) struct = struct()
+                nvp.OutputName (1,:) cell = {}
+                nvp.OutputUnit (1,:) cell = {}
+                nvp.OutputGroup (1,:) struct = struct()
             end
             if isempty(newC)
                 if isempty(newD)
@@ -778,27 +778,27 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             obj.D = [obj.D;PhasorArray(newD)];
 
             %update name and unit
-            if isempty(varg.OutputName)
+            if isempty(nvp.OutputName)
                 obj.OutputName = [obj.OutputName cellstr(strcat('y',num2str((size(obj.C,1)-size(newC,1)+1:size(obj.C,1))')))];
             else
-                obj.OutputName = [obj.OutputName cellstr(varg.OutputName)];
+                obj.OutputName = [obj.OutputName cellstr(nvp.OutputName)];
             end
-            if isempty(varg.OutputUnit)
+            if isempty(nvp.OutputUnit)
                 obj.OutputUnit = [obj.OutputUnit repmat({''},1,size(newC,1))];
             else
-                obj.OutputUnit = [obj.OutputUnit cellstr(varg.OutputUnit)];
+                obj.OutputUnit = [obj.OutputUnit cellstr(nvp.OutputUnit)];
             end
 
-            obj.OutputGroup = mergeStruct(obj.OutputGroup,varg.OutputGroup);
+            obj.OutputGroup = mergeStruct(obj.OutputGroup,nvp.OutputGroup);
             
             obj.providedC = obj.C;
             obj.providedD = obj.D;
 
         end
 
-        function obj = addInput(obj,newB,newD,varg)
+        function obj = addInput(obj,newB,newD,nvp)
             %ADDINPUT Add additionnal input to the current input of the PhasorSS object
-            %  obj = ADDINPUT(obj,newB,newD,varg) adds additionnal input to the current input of the PhasorSS object.
+            %  obj = ADDINPUT(obj,newB,newD,nvp) adds additionnal input to the current input of the PhasorSS object.
             %  If newB is empty, newD must be provided and vice versa.
             %  If newB and newD are empty, an error is thrown.
             %
@@ -806,7 +806,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             %      obj - Instance of the PhasorSS class
             %      newB - Input matrix (PhasorArray)
             %      newD - Feedthrough matrix (PhasorArray)
-            %      varg - Structure containing additional parameters:
+            %      nvp - Name-Value arguments containing additional parameters:
             %          InputName - Cell array of input names (default is empty)
             %          InputUnit - Cell array of input units (default is empty)
             %          InputGroup - Structure of input groups (default is empty struct)
@@ -819,9 +819,9 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 obj
                 newB = []
                 newD = []
-                varg.InputName (1,:) cell = {}
-                varg.InputUnit (1,:) cell = {}
-                varg.InputGroup (1,:) struct = struct()
+                nvp.InputName (1,:) cell = {}
+                nvp.InputUnit (1,:) cell = {}
+                nvp.InputGroup (1,:) struct = struct()
             end
             if isempty(newB)
                 if isempty(newD)
@@ -847,17 +847,17 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             obj.D = [obj.D PhasorArray(newD)];
 
             %update name and unit
-            if isempty(varg.InputName)
+            if isempty(nvp.InputName)
                 obj.InputName = [obj.InputName cellstr(strcat('u',num2str((size(obj.B,2)-size(newB,2)+1:size(obj.B,2))')))];
             else
-                obj.InputName = [obj.InputName cellstr(varg.InputName)];
+                obj.InputName = [obj.InputName cellstr(nvp.InputName)];
             end
-            if isempty(varg.InputUnit)
+            if isempty(nvp.InputUnit)
                 obj.InputUnit = [obj.InputUnit repmat({''},1,size(newB,2))];
             else
-                obj.InputUnit = [obj.InputUnit cellstr(varg.InputUnit)];
+                obj.InputUnit = [obj.InputUnit cellstr(nvp.InputUnit)];
             end
-            obj.InputGroup = mergeStruct(obj.InputGroup,varg.InputGroup);
+            obj.InputGroup = mergeStruct(obj.InputGroup,nvp.InputGroup);
         end
 
         function sys = toLPVss(obj,verbose)
@@ -1054,7 +1054,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             arguments
                 sys
                 x0 = ones(size(sys.A,1),1);
-                t  = 1;
+                t  = 2*pi;
             end
             sysltv = sys.toSS();
             if sys.isLPV
@@ -1086,7 +1086,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             end
             sysltv = sys.toSS();
             if sys.isLPV
-                respOpt = RespConfig(InitialState = 'x0',InitialParameter=0);
+                respOpt = RespConfig("InitialState",  'x0',"InitialParameter", 0);
                 %merge stepOpt with respOpt
                 if ~isempty(stepOpt)
                     fn = fieldnames(stepOpt);
@@ -1131,7 +1131,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             end
             sysltv = sys.toSS();
             if sys.isLPV
-                respOpt = RespConfig( InitialState = 'x0',InitialParameter=0);
+                respOpt = RespConfig( "InitialState",  'x0',"InitialParameter", 0);
 
                 if nargout > 0
                 [yout,t,x] = impulse(sysltv,t,sys.p,respOpt);
@@ -1280,7 +1280,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
 
             sysltv = sysBU.toSS();
             if sys.isLPV
-                respOpt = RespConfig(InitialState = 'x0',InitialParameter=0);
+                respOpt = RespConfig("InitialState",  'x0',"InitialParameter", 0);
                 %merge stepOption with respOpt
                 if ~isempty(stepOption)
                     fn = fieldnames(stepOption);
@@ -1349,7 +1349,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             end
         end
 
-        function [Hsel,H, ssTB] = HmqBode(o1, h, T, h_compute, varg)
+        function [Hsel,H, ssTB] = HmqBode(o1, h, T, h_compute, nvp)
             %HMQBODE Compute the Bode plot of the PhasorSS object in the harmonic domain
             %   [mag, phase, freq, ssTB] = HMQBODE(o1, h, T, h_compute) computes the Bode plot of the PhasorSS object in the harmonic domain.
             %
@@ -1380,16 +1380,16 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             arguments
                 o1
                 h
-                T = 1
+                T = 2*pi
                 h_compute = h
-                varg.inputHmRange = {':', -h:h}
-                varg.outputHmRange = {':', -h:h}
-                varg.freqRange = logspace(-2, 2, 100)
+                nvp.inputHmRange = {':', -h:h}
+                nvp.outputHmRange = {':', -h:h}
+                nvp.freqRange = logspace(-2, 2, 100)
             end
         
             %format input and output range
-            outputHmRange = formatInputRange(o1, varg.outputHmRange, 'output');
-            inputHmRange = formatInputRange(o1, varg.inputHmRange, 'input');
+            outputHmRange = formatInputRange(o1, nvp.outputHmRange, 'output');
+            inputHmRange = formatInputRange(o1, nvp.inputHmRange, 'input');
 
             % Compute the Toeplitz Matrix State-Space object
             ssTB = o1.toeplitzSS(h_compute,T);
@@ -1399,7 +1399,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
 
         
             % Frequency range for the Bode plot
-            freq = varg.freqRange;
+            freq = nvp.freqRange;
             
             H = freqresp(ssTB, 2*pi*freq);
 
@@ -1423,7 +1423,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             end
         end
         
-        function [dcGain,ssTB] = hmqDcGain(o1,h,T,h_compute,varg)
+        function [dcGain,ssTB] = hmqDcGain(o1,h,T,h_compute,nvp)
             %HMQDCGAIN Compute or plot the DC gain of the PhasorSS object in the harmonic domaine
             %   [dcGain,ssTB] = HMQDCGAIN(o1,h,T) computes the DC gain of the PhasorSS object in the harmonic domaine.
             %   HMQDCGAIN(o1,h,T) plot the DC gain of the PhasorSS object using barsurf.
@@ -1460,11 +1460,11 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 h (1,1) double
                 T double
                 h_compute = []
-                varg.inputHmRange = {':',-h:h};
-                varg.outputHmRange = {':',-h:h};
+                nvp.inputHmRange = {':',-h:h};
+                nvp.outputHmRange = {':',-h:h};
             end
-            outputHmRange = formatInputRange(o1, varg.outputHmRange,'output');
-            inputHmRange  = formatInputRange(o1, varg.inputHmRange,'input');
+            outputHmRange = formatInputRange(o1, nvp.outputHmRange,'output');
+            inputHmRange  = formatInputRange(o1, nvp.inputHmRange,'input');
             if isempty(h_compute)
                 h_compute = h;
             end 
@@ -1730,7 +1730,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
 
         end
 
-        function out = feedback(obj,obj2,varg)
+        function out = feedback(obj,obj2,nvp)
             %FEEDBACK Feedback connection of two PhasorSS objects
             %   out = FEEDBACK(obj,obj2) computes the negative output feedback connection of two PhasorSS objects.
             %
@@ -1763,9 +1763,9 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             arguments
                 obj
                 obj2 = 1;
-                varg.feedbackInput {mustBeMember(varg.feedbackInput,{'state','output'})} = 'output'
-                varg.uIndex = []
-                varg.yIndex = []
+                nvp.feedbackInput {mustBeMember(nvp.feedbackInput,{'state','output'})} = 'output'
+                nvp.uIndex = []
+                nvp.yIndex = []
             end
 
             if isa(obj2, 'double') || isa(obj2,'PhasorArray')
@@ -1775,9 +1775,9 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 obj2 = PhasorSS([], [], [], obj2,obj.T);
             end
 
-            switch varg.feedbackInput
+            switch nvp.feedbackInput
                 case 'state'
-                    if ~isempty(varg.yIndex)
+                    if ~isempty(nvp.yIndex)
                         warning('PhasorSS:feedback:yIndexIgnored', 'yIndex is ignored when feedbackInput is ''state''.')
                     end
 
@@ -2038,17 +2038,17 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 D = D.SinCosForm();
                 h = (size(A,3)-1)/2;
                 eit=[sin((h:-1:1)'*angle); cos((0:h)'*angle) ];
-                A=tensorprod(A,double(eit),3,1); %est un 3D array dont Mt(:,:,k) est M(t(k))
-                B=tensorprod(B,double(eit),3,1);
-                C=tensorprod(C,double(eit),3,1);
-                D=tensorprod(D,double(eit),3,1);
+                A=harmonicCombine(A,double(eit)); %est un 3D array dont Mt(:,:,k) est M(t(k))
+                B=harmonicCombine(B,double(eit));
+                C=harmonicCombine(C,double(eit));
+                D=harmonicCombine(D,double(eit));
             else
                 h = (size(A,3)-1)/2;
                 eit=exp(1i*(-h:h)'*angle);
-                A=tensorprod(A,double(eit),3,1); %est un 3D array dont Mt(:,:,k) est M(t(k))
-                B=tensorprod(B,double(eit),3,1);
-                C=tensorprod(C,double(eit),3,1);
-                D=tensorprod(D,double(eit),3,1);
+                A=harmonicCombine(A,double(eit)); %est un 3D array dont Mt(:,:,k) est M(t(k))
+                B=harmonicCombine(B,double(eit));
+                C=harmonicCombine(C,double(eit));
+                D=harmonicCombine(D,double(eit));
             end
         end
 
@@ -2376,8 +2376,8 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             D = sys.D;
             
             if isempty(T)
-            T = 1;
-            warning('PhasorSS:fromSS:defaultPeriod', 'Period T not specified; defaulting to T=1.')
+            T = 2*pi;
+            warning('PhasorSS:fromSS:defaultPeriod', 'Period T not specified; defaulting to T=2*pi.')
             end
             
             obj = PhasorSS(A, B, C, D, T, 'isReal', isreal(sys), ...
@@ -2412,7 +2412,7 @@ function Mt = phasor2time(Phas,angle)
     h = (size(Phas,3)-1)/2;
     eit=exp(1i*(-h:h)'*angle);
     try
-        Mt=tensorprod(Phas,double(eit),3,1); %est un 3D array dont Mt(:,:,k) est M(t(k))
+        Mt=harmonicCombine(Phas,double(eit)); %est un 3D array dont Mt(:,:,k) est M(t(k))
     catch
         Mt=0;
         for ii = 1:size(Phas,3)
@@ -2444,7 +2444,7 @@ function Mt = sincos2time(PhasSC,angle)
 
     h = (size(PhasSC,3)-1)/2;
     eit=[sin((h:-1:1)'*angle); cos((0:h)'*angle) ];
-    Mt=tensorprod(PhasSC,double(eit),3,1); %est un 3D array dont Mt(:,:,k) est M(t(k))
+    Mt=harmonicCombine(PhasSC,double(eit)); %est un 3D array dont Mt(:,:,k) est M(t(k))
 end
 
 function structout = mergeStruct(struct1,struct2)

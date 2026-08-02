@@ -1,5 +1,5 @@
-function D = PhasorArrayTimes(A,B,m,varg)
-%Takes 2 3D array as input, seen as a Matrix sequence indexed on Z and
+function D = PhasorArrayTimes(A,B,m,nvp)
+%PHASORARRAYTIMES Takes 2 3D array as input, seen as a Matrix sequence indexed on Z and
 %truncated, stored along the third dimension.
 %Compute the matrix convolution
 % It is equivalent of computing the phasor of C(t) = A(t)B(t) from the
@@ -16,18 +16,18 @@ arguments
     A
     B
     m=[]
-    varg.reduce = 0
-    varg.output {mustBeMember(varg.output,["Array","PhasorArray","Herited"])} = "Herited"
+    nvp.reduce = 0
+    nvp.output {mustBeMember(nvp.output,["Array","PhasorArray","Herited"])} = "Herited"
 end
 if ~isMATLABReleaseOlderThan("R2022a")
     if isa(A,'PhasorArray')
         A=A.Value;
-        if strcmp(varg.output,"Herited")
-            varg.output="PhasorArray";
+        if strcmp(nvp.output,"Herited")
+            nvp.output="PhasorArray";
         end
     else
-        if strcmp(varg.output,"Herited")
-            varg.output="Array";
+        if strcmp(nvp.output,"Herited")
+            nvp.output="Array";
         end
     end
 
@@ -98,7 +98,7 @@ if ~isMATLABReleaseOlderThan("R2022a")
         U=B(:,:,(k+mB+1-l1):-1:(k+mB+1-l2));
         D(:,:,m+1+k)=tensorprod(V,U,[2,3],[1,3]);
     end
-    if varg.reduce
+    if nvp.reduce
         D=ReduceArray(D);
     end
 

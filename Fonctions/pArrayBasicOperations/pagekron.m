@@ -1,9 +1,13 @@
 function [Cph] = pagekron(Aph,Bph)
-%TensorKron realise slicewise kron product between 3D array A and B
+%PAGEKRON Slicewise Kronecker product between the pages of two 3D arrays.
 %   ie C(:,:,i) = kron(Aph(:,:,i),Bph(:,:,i))
 %   if A or B is a matrix (size(A,3)==1), matrix is duplicated to match
 %   other arg size. 
 %   
+arguments
+    Aph
+    Bph
+end
 Bph = pvalue(Bph);
 Aph = pvalue(Aph);
 sa=size(Aph);

@@ -1,4 +1,4 @@
-function [x,t,dx] = freqVarying_hmqSim(Aph,tfinal,x0,omega,Bph,u,varg)
+function [x,t,dx] = freqVarying_hmqSim(Aph,tfinal,x0,omega,Bph,u,nvp)
 %freqVarying_hmqSim Simulate response of a frequency-varying periodic system.
 %   This function simulates the linear system \dot{x} = A(\theta(t))x + B(\theta(t))u(t)
 %   where A and B are 2pi-periodic matrices in the phase domain \theta,
@@ -38,15 +38,15 @@ arguments
     omega = @(t) 2 * pi
     Bph = []
     u = @(y,t) 1;
-    varg.opts = {}
-    varg.plot (1,1) logical = true
-    varg.solver (1,:) char {mustBeMember(varg.solver,{'adaptative','forward-euler','RK4'})} = 'adaptative'
-    varg.FSprecpow (1,1) double = 8
-    varg.checkReal (1,1) logical = false
-    varg.isRealValued (1,1) logical = false
+    nvp.opts = {}
+    nvp.plot (1,1) logical = true
+    nvp.solver (1,:) char {mustBeMember(nvp.solver,{'adaptative','forward-euler','RK4'})} = 'adaptative'
+    nvp.FSprecpow (1,1) double = 8
+    nvp.checkReal (1,1) logical = false
+    nvp.isRealValued (1,1) logical = false
 end
 
-opts=varg.opts;
+opts=nvp.opts;
 
 if isscalar(tfinal)&& tfinal==0
     tfinal=10;
@@ -69,27 +69,27 @@ else
         Bph=value(Bph);
     end
 end
-switch varg.solver
+switch nvp.solver
     case 'adaptative'
         nh=(size(Aph,3)-1)/2;
-        dt_sim=1/(2^nextpow2(max(nh*8,2^varg.FSprecpow)))
+        dt_sim=1/(2^nextpow2(max(nh*8,2^nvp.FSprecpow)))
         opts = odeset('RelTol',1e-6,'AbsTol',1e-6,'MaxStep',dt_sim,'Stats','on');
         if nargout>2
             rDotDot = [];
-            opts=odeset(opts,OutputFcn=@outputFcn);
+            opts=odeset(opts,"OutputFcn", @outputFcn);
         end
-        if ~isempty(varg.opts)
-            if isa(varg.opts,"cell")
-            varg.opts=odeset(varg.opts{:});
+        if ~isempty(nvp.opts)
+            if isa(nvp.opts,"cell")
+            nvp.opts=odeset(nvp.opts{:});
             end
             opts;
-            opts=odeset(opts,varg.opts);
+            opts=odeset(opts,nvp.opts);
         end
 
         if isscalar(tfinal)
             tfinal=[0:dt_sim:tfinal];
         end
-        if  varg.isRealValued
+        if  nvp.isRealValued
 
             h = (size(Aph,3)-1)/2;
             Aphr = real(Aph + flip(Aph,3))/2 + 1i * imag(Aph - flip(Aph,3))/2;
@@ -101,14 +101,14 @@ switch varg.solver
             
             fsim = @(t,y) f_cs(t,y,Acs,omega,Ucs,u);
         else
-            fsim = @(t,y) f_ph(t,y,Aph,omega,Bph,u,varg.checkReal );
+            fsim = @(t,y) f_ph(t,y,Aph,omega,Bph,u,nvp.checkReal );
         end
         [t,x] = ode15s(fsim,tfinal,double(x0),opts);
 
         x=x.';
     case 'forward-euler'
         nh=(size(Aph,3)-1)/2;
-        dt_sim=(1)/(2^(max(ceil(log((nh+1))/log(2)+1),varg.FSprecpow)));
+        dt_sim=(1)/(2^(max(ceil(log((nh+1))/log(2)+1),nvp.FSprecpow)));
         Tmax=tfinal;%-dt_sim;
         t=0:dt_sim:Tmax;
         x=zeros(numel(x0),numel(t));
@@ -127,7 +127,7 @@ switch varg.solver
     case 'RK4'
         nh=(size(Aph,3)-1)/2;
         %     max(ceil(log((nh+1))/log(2)+1),8)
-        dt_sim= ((1)/((2^(max(ceil(log((nh+1))/log(2)+1),varg.FSprecpow)))+0));
+        dt_sim= ((1)/((2^(max(ceil(log((nh+1))/log(2)+1),nvp.FSprecpow)))+0));
         Tmax=tfinal;%-dt_sim;
         t=0:dt_sim:Tmax;
         x=zeros(numel(x0)-1,numel(t));
@@ -186,7 +186,7 @@ switch varg.solver
 end
 
 
-if varg.plot
+if nvp.plot
     for ii = 1:(1):size(x,1)
         subplot(size(x,1),1+(nargout>2),(ii-1)*(1+(nargout>2))+1)
         plot(t,x(ii,:))
@@ -251,11 +251,11 @@ end
 function Mt = evalTimeCmplx(Phas,angle)
 h = (size(Phas,3)-1)/2;
 eit=exp(1i*(-h:h)'*angle);
-Mt=tensorprod(Phas,double(eit),3,1); %est un 3D array dont Mt(:,:,k) est M(t(k))
+Mt=harmonicCombine(Phas, double(eit)); %est un 3D array dont Mt(:,:,k) est M(t(k))
 end
 
 function Mt = evalTimeSinCos(PhasSC,angle)
 h = (size(PhasSC,3)-1)/2;
 eit=[sin((h:-1:1)'*angle); cos((0:h)'*angle) ];
-Mt=tensorprod(PhasSC,double(eit),3,1); %est un 3D array dont Mt(:,:,k) est M(t(k))
+Mt=harmonicCombine(PhasSC, double(eit)); %est un 3D array dont Mt(:,:,k) est M(t(k))
 end

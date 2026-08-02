@@ -10,6 +10,10 @@ function r = PhasorArrayPad(obj, delta_h)
     %
     %   Output Arguments:
     %   - r (PhasorArray)   : The padded PhasorArray object.
+arguments
+    obj
+    delta_h
+end
     if isa(obj,'PhasorArray')
         val = obj.value;
     else

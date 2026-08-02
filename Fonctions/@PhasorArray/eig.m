@@ -1,4 +1,4 @@
-function E = eig(o1, nPt, options)
+function E = eig(o1, nPt, nvp)
     % EIG Compute the continuous spectrum of the PhasorArray point-by-point.
     %
     %   E = EIG(o1) evaluates the PhasorArray at points in time over one period
@@ -21,7 +21,7 @@ function E = eig(o1, nPt, options)
     arguments
         o1 PhasorArray
         nPt = []
-        options.Track (1,1) logical = false
+        nvp.Track (1,1) logical = false
     end
     if isempty(nPt)
         if o1.h == 0
@@ -37,18 +37,18 @@ function E = eig(o1, nPt, options)
     A_t = o1.evalp(th);
     N = size(A_t, 1);
     
-    if verLessThan('matlab', '9.12')
-        % Before R2022a, pageeig is not available
+    % Capability check rather than a release number: the previous gate named
+    % R2022a, and being wrong by one release calls a function that is not there.
+    if isempty(which('pageeig'))
         E = zeros(N, 1, nPt);
         for k = 1:nPt
             E(:, 1, k) = eig(A_t(:, :, k));
         end
     else
-        % From R2022a onwards
         E = pageeig(A_t);
     end
     
-    if options.Track && nPt > 1
+    if nvp.Track && nPt > 1
         % Track eigenvalues using a predictor and optimal linear assignment
         for k = 2:nPt
             E_curr = E(:, 1, k);
