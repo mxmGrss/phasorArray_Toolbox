@@ -62,9 +62,8 @@ end
 
 n=2^m;
 t=0:T/n:nT*T-T/n;
-if isa(Aph,"ndsdpvar") || isa(Aph,"sdpvar")
-    Aph=value(Aph);
-end
+% The FFT route needs numbers; detLeibnizHmc is the symbolic one.
+Aph = solvedPayload(Aph, "PhasorDet", "detLeibnizHmc");
 
 Aph=ReduceArray(Aph);
 

@@ -629,6 +629,39 @@ classdef PhasorArrayCoreTest < matlab.unittest.TestCase
                 'the mask kept the class but lost every decision variable');
         end
 
+
+        function testNumericOnlyOperationsRefuseAnUnsolvedVariable(testCase)
+            % inv, det and expm read the decision variable's current value,
+            % which YALMIP reports as NaN until the problem is solved. They used
+            % to return a numeric array of NaN with no indication that the
+            % question had not been answered. inv(P) has no meaning on an
+            % unsolved P, det(P) would be a polynomial in every entry, and
+            % expm(P) is not an expressible constraint.
+            testCase.needYalmip();
+            P = PhasorArray.ndsdpvar(2, 2, 1, "symmetry", "real");
+            D = PhasorArray.random(2, 2, 1);
+
+            testCase.verifyError(@() inv(P),  'PhasorArray:PhasorInv:unsolvedVariable');
+            testCase.verifyError(@() det(P),  'PhasorArray:PhasorDet:unsolvedVariable');
+            testCase.verifyError(@() expm(P), 'PhasorArray:expm:unsolvedVariable');
+            % ldivide inverts entry by entry through the same route.
+            testCase.verifyError(@() P .\ D, 'PhasorArray:PhasorInv:unsolvedVariable');
+
+            % Once the value exists the operation is legitimate again.
+            assign(P.value, repmat(eye(2), 1, 1, 3));
+            Iv = inv(P);
+            testCase.verifyFalse(any(isnan(Iv.value), 'all'), ...
+                'inv should work on a solved variable');
+        end
+
+        function testNumericOnlyOperationsRefuseSym(testCase)
+            testCase.needSymbolic();
+            S = PhasorArray.sym(2, 2, 1, "A", "isreal", true);
+            testCase.verifyError(@() inv(S),  'PhasorArray:PhasorInv:symbolicPayload');
+            testCase.verifyError(@() det(S),  'PhasorArray:PhasorDet:symbolicPayload');
+            testCase.verifyError(@() expm(S), 'PhasorArray:expm:symbolicPayload');
+        end
+
     end
 
     methods (Test, TestTags = {'Install'})

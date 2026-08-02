@@ -118,9 +118,9 @@ if nvp.warnOnUseHmcDivide && hA > 0 && size(Aph, 1) > 1
         '  Suppress: warning(''off'',''phasorArray:PhasorInv:useHmcDivide'')'], n)
 end
 
-if isa(Aph,"ndsdpvar") || isa(Aph,"sdpvar")
-    Aph=value(Aph);
-end
+% Refuses an unsolved decision variable rather than inverting its NaN value.
+% Also guards ldivide, which inverts entry by entry through here.
+Aph = solvedPayload(Aph, "PhasorInv", "mlHmcDivide");
 
 Aph_orig = Aph;   % keep unreduced copy for phasor residual
 Aph=ReduceArray(Aph);

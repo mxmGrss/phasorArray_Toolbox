@@ -39,9 +39,8 @@ end
 if isa(Aph,'PhasorArray')
     Aph=Aph.Value;
 end
-if isa(Aph,"ndsdpvar") || isa(Aph,"sdpvar")
-    Aph=value(Aph);
-end
+% expm of a decision variable is not an expressible constraint.
+Aph = solvedPayload(Aph, "expm");
 
 nT = nvp.nT;
 T  = nvp.T;
