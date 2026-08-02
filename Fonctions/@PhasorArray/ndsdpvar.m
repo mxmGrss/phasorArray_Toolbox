@@ -6,8 +6,13 @@ function [P, held] = ndsdpvar(n1,n2,h,nvp)
     %
     %   Inputs:
     %     N1 - (integer) First dimension size.
-    %     N2 - (integer, optional) Second dimension size (default: N1).
+    %     N2 - (integer, optional) Second dimension size (default: N1). May differ
+    %          from N1, down to N2 = 1 for a column of decision variables.
     %     H  - (integer, optional) Number of harmonics (default: 0).
+    %
+    %   A rectangular P cannot be symmetric, so the default symmetry drops that
+    %   request with a PhasorArray:ndsdpvar:symmetryFallback warning and HELD
+    %   reports what survived.
     %
     %   Name-Value Arguments:
     %     'symmetry' (string array) - Symmetry class of P(t), same vocabulary as
@@ -27,6 +32,13 @@ function [P, held] = ndsdpvar(n1,n2,h,nvp)
     %
     %   Whenever the request maps onto a native YALMIP declaration the variable is
     %   declared with it, so no degree of freedom is created only to be projected out.
+    %
+    %   There is no "diagonal" or "triangular" symmetry: those are sparsity
+    %   patterns, not relations between P(t) and a transformed copy of itself, so
+    %   they do not compose in the closure the other names live in. Build a
+    %   diagonal variable from a column instead, which already costs exactly the
+    %   column: diag(PhasorArray.ndsdpvar(3,1,h)) is 3-by-3 with 3*(2h+1) free
+    %   entries, against 9*(2h+1) for the full square.
     %
     %   Example:
     %     P = PhasorArray.ndsdpvar(4,4,5);                             % real symmetric
