@@ -99,13 +99,27 @@ A `PhasorArray` of dimension `[n × m]` truncated at harmonic order `h` is store
 
 ---
 
-## Active Side-Project Branches
+## Branches
 
-| Branch | Status |
+A three-stage promotion pipeline. The name says the stage, not a claim about
+stability.
+
+| Branch | Stage |
 |---|---|
-| `stable_experimental` | Pre-main consolidation branch. Contains V3 Floquet solvers and unified docs. |
+| `dev` | Work in progress. No stability or compatibility guarantee. |
+| `stable` | Passed review, waiting out a soak period before being versioned. Created on the first promotion; does not exist yet. |
+| `main` | Tested, released, tagged, and the only branch carrying the Zenodo DOI. |
 
-Do **not** merge these into `main` without explicit instruction.
+Promotion gates:
+
+- `dev` -> `stable`: `run_all_tests()` green, the examples tour green, CHANGELOG up to date.
+- `stable` -> `main`: a soak period with no issue, version bump, tag, GitHub release, DOI, `CITATION.cff`.
+
+Do **not** merge into `main` without explicit instruction.
+
+`stable_experimental` was deleted in August 2026: it had been an exact
+duplicate of `main` throughout, and the pipeline it was meant to embody had
+never actually run.
 
 ---
 
