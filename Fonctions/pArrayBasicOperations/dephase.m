@@ -1,6 +1,10 @@
 function [B] = dephase(A,angle)
 %DEPHASE change phase of periodic matrix defined by its phasor A, by an
 %angle of angle. basically every phasor is multiplied by exp jk angle
+arguments
+    A
+    angle (1,1) double
+end
 h=(size(A,3)-1)/2;
 base(1,1,:)=exp((-h:h)*1i*angle);
 try

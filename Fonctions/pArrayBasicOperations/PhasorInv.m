@@ -1,4 +1,4 @@
-function [Ainvph,At,norm_err,norm_ref] = PhasorInv(Aph,varg)
+function [Ainvph,At,norm_err,norm_ref] = PhasorInv(Aph,nvp)
 %PHASORINV Compute the phasor representation of A(t)^-1 via pointwise inversion.
 %
 %   This function computes the **pointwise inverse** of the time-domain matrix A(t)
@@ -25,7 +25,7 @@ function [Ainvph,At,norm_err,norm_ref] = PhasorInv(Aph,varg)
 %
 %   Name-Value Pair Arguments:
 %   - 'nT' (integer, optional) : Number of periods used in the time-domain evaluation. Default: 1.
-%   - 'T' (double, optional) : The period used for simulation. Default: 1.
+%   - 'T' (double, optional) : The period used for simulation. Default: 2*pi.
 %   - 'm' (integer, optional) :
 %       - Power of two controlling time-domain discretization.
 %       - Can be set to [] for automatic selection based on the number of phasors.
@@ -51,7 +51,7 @@ function [Ainvph,At,norm_err,norm_ref] = PhasorInv(Aph,varg)
 %   Example:
 %   % Compute the phasors of A⁻¹(t) using default settings
 %   [Ainvph, At] = PhasorInv(A);
-%
+%   
 %   % Compute A⁻¹(t) over 2 periods with auto truncation
 %   [Ainvph, At] = PhasorInv(A, 'nT', 2, 'autoTrunc', true);
 %
@@ -62,23 +62,23 @@ function [Ainvph,At,norm_err,norm_ref] = PhasorInv(Aph,varg)
 
 arguments
     Aph
-    varg.nT=1
-    varg.T=1
-    varg.m=[]
-    varg.plot=false
-    varg.reduceThreshold = 4e-15
-    varg.reduceMethod = 'relative'
-    varg.autoTrunc = false
-    varg.verbose = false
-    varg.evalInv = false
-    varg.warnOnUseHmcDivide (1,1) logical = true
+    nvp.nT=1
+    nvp.T=2*pi
+    nvp.m=[]
+    nvp.plot=false
+    nvp.reduceThreshold = 4e-15
+    nvp.reduceMethod = 'relative'
+    nvp.autoTrunc = false
+    nvp.verbose = false
+    nvp.evalInv = false
+    nvp.warnOnUseHmcDivide (1,1) logical = true
 end
 
 Aph = pvalue(Aph);
 
-nT=varg.nT;
-T=varg.T;
-m=varg.m;
+nT=nvp.nT;
+T=nvp.T;
+m=nvp.m;
 
 hA=nHarm(Aph);
 
@@ -88,7 +88,7 @@ m_reco_min = max(nextpow2(hA*4),8);
 if isempty(m)
     m=m_reco_min;
 end
-if varg.verbose
+if nvp.verbose
     disph("Minimal m for Nyquist is mN = ",m_nyquist, ", recommanded m is mN + 1 =  ", m_reco_min,", used m is ", m)
 end
 
@@ -107,7 +107,7 @@ t=0:T/n:nT*T-T/n;
 % For a solution optimised in the harmonic domain (best L2 approximation for a
 % prescribed number of harmonics in X), use mlHmcDivide or mrHmcDivide explicitly.
 % Suppress this warning with: warning('off','phasorArray:PhasorInv:useHmcDivide')
-if varg.warnOnUseHmcDivide && hA > 0 && size(Aph, 1) > 1
+if nvp.warnOnUseHmcDivide && hA > 0 && size(Aph, 1) > 1
     warning('phasorArray:PhasorInv:useHmcDivide', ...
         ['PhasorInv: pointwise time-domain inversion on a grid of %d points.\n' ...
         '  Result is exact at the N samples; behaviour between grid points is unknown.\n' ...
@@ -140,8 +140,8 @@ catch e1
     end
 end
 Ainvph_compu=TimeArray2Phasors(Ainvt,nT);
-if varg.autoTrunc
-    Ainvph=ReduceArray(Ainvph_compu,'reduceMethod',varg.reduceMethod,'reduceThreshold',varg.reduceThreshold);
+if nvp.autoTrunc
+    Ainvph=ReduceArray(Ainvph_compu,'reduceMethod',nvp.reduceMethod,'reduceThreshold',nvp.reduceThreshold);
 else
     % Ainvph=ReduceArray(Ainvph_compu,find(filt_diff>0,1)+5);
     Ainvph=Ainvph_compu;
@@ -161,9 +161,7 @@ end
 % filt_diff= lowpass(diffPh,0.05);
 
 % Phasor-domain inversion residual: ||A * Ainv - I||_F
-% Computed on raw 3D arrays (no PhasorArray objects) to stay lightweight.
-% Cheaper than a second IFFT and captures both truncation and pageinv errors.
-if varg.verbose || varg.evalInv || nargout > 2
+if nvp.verbose || nvp.evalInv || nargout > 2
     n_sq     = size(Ainvph, 1);
     prod_arr = PhasorArrayTimes(Aph_orig, Ainvph);   % convolution in harmonic domain
     h_prod   = nHarm(prod_arr);
@@ -172,12 +170,12 @@ if varg.verbose || varg.evalInv || nargout > 2
     err_arr  = prod_arr - I_arr;
     norm_err = norm(err_arr(:));
     norm_ref = norm(Ainvph(:));
-    if varg.verbose
+    if nvp.verbose
         disph("inversion residual ||A*Ainv - I||_F / ||Ainv||_F = ", norm_err / norm_ref)
     end
 end
 
-if varg.plot
+if nvp.plot
     % Time-domain reconstruction needed only for plotting
     Ait        = PhasorArray2time(Ainvph, T, t, "plot", false);
     Err_recons = Ait - Ainvt;

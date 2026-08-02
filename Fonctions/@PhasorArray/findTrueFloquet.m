@@ -1,4 +1,4 @@
-function [true_mu, true_l, stats, ev_m, ev_l] = findTrueFloquet(o1, T, varg)
+function [true_mu, true_l, stats, ev_m, ev_l] = findTrueFloquet(o1, T, nvp)
 % FINDTRUEFLOQUET  Recover true Floquet exponents and multipliers (V3 Engine)
 %
 %   [true_mu, true_l, stats, ev_m, ev_l] = findTrueFloquet(o1, T, Name, Value)
@@ -8,37 +8,37 @@ function [true_mu, true_l, stats, ev_m, ev_l] = findTrueFloquet(o1, T, varg)
 arguments
     o1
     T    (1,1) double = 2*pi
-    varg.hinit             = []
-    varg.hmax              (1,1) {mustBeInteger, mustBePositive} = 200
-    varg.thresholdResidual (1,1) double = 1e-3
-    varg.trA0              = []
-    varg.verbose           = false
+    nvp.hinit             = []
+    nvp.hmax              (1,1) {mustBeInteger, mustBePositive} = 200
+    nvp.thresholdResidual (1,1) double = 1e-3
+    nvp.trA0              = []
+    nvp.verbose           = false
     
     % Ignored legacy arguments for drop-in compatibility
-    varg.stagnationWindow  = []
-    varg.stagnationRatio   = []
-    varg.method            = []
+    nvp.stagnationWindow  = []
+    nvp.stagnationRatio   = []
+    nvp.method            = []
 end
 
 if isa(o1, 'PhasorArray')
     nx = o1.size(1);
-    if isempty(varg.hinit), varg.hinit = o1.h; end
-    if isempty(varg.trA0), varg.trA0 = trace(o1.phas(0)); end
+    if isempty(nvp.hinit), nvp.hinit = o1.h; end
+    if isempty(nvp.trA0), nvp.trA0 = trace(o1.phas(0)); end
 else
     nx = size(o1, 1);
-    if isempty(varg.hinit), varg.hinit = 8; end
+    if isempty(nvp.hinit), nvp.hinit = 8; end
 end
 
 omega = 2*pi/T;
 prevMu = [];
 hist = [];
-h = varg.hinit;
+h = nvp.hinit;
 change = inf;
 
-while h <= varg.hmax
+while h <= nvp.hmax
     ev_m = HmqNEig(o1, h, T); ev_m = ev_m(:);
     ev_l = exp(T * ev_m);
-    [true_mu, true_l, st] = findTruelm(ev_m, T, nx, 'trA0', varg.trA0);
+    [true_mu, true_l, st] = findTruelm(ev_m, T, nx, 'trA0', nvp.trA0);
     
     if isempty(prevMu)
         change = inf;
@@ -47,11 +47,11 @@ while h <= varg.hmax
     end
     
     hist(end+1,:) = [h, change, st.liouvilleRes]; %#ok<AGROW>
-    if varg.verbose
+    if nvp.verbose
         fprintf('  h=%3d | dMu=%.2e | liou=%.2e\n', h, change, st.liouvilleRes);
     end
     
-    if change < varg.thresholdResidual
+    if change < nvp.thresholdResidual
         stats = struct('h',h,'change',change,'liouvilleRes',st.liouvilleRes, ...
                        'converged',true,'history',hist);
         return
@@ -63,7 +63,7 @@ end
 
 stats = struct('h',h,'change',change,'liouvilleRes',st.liouvilleRes, ...
                'converged',false,'history',hist);
-warning('findTrueFloquet:noConverge','did not converge by hmax=%d (dMu=%.2e)', varg.hmax, change);
+warning('findTrueFloquet:noConverge','did not converge by hmax=%d (dMu=%.2e)', nvp.hmax, change);
 end
 
 function c = maxMatchedChange(a, b, omega)

@@ -45,6 +45,6 @@ end
 
 B=real(flip(Apos,3))-1i*imag(flip(Apos,3));
 Aph=cat(3,B,A0,Apos);
-Aph=PhasorArray(Aph,reduce=0);
+Aph=PhasorArray(Aph,"reduce", 0);
 end
 

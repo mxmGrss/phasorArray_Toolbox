@@ -8,7 +8,7 @@ function r=evalTime(o1,T,t)
     %   Inputs:
     %     o1  - (PhasorArray) The `PhasorArray` object to be evaluated.
     %     T   - (double, optional) The period of the `PhasorArray`.
-    %              - Default: `1`.
+    %              - Default: `2*pi`.
     %     t   - (vector or scalar, optional) Time instants for evaluation.
     %              - If `t = []`: Uses a default grid `0:dt:T-dt`, with `dt = T/(20*h)`, where `h` is the highest harmonic.
     %              - If `t = [tmin tmax]`: Uses `t = tmin:dt:tmax` with automatic step size.
@@ -35,7 +35,7 @@ function r=evalTime(o1,T,t)
     %   See also: plot, PhasorArray2time.
     arguments
         o1
-        T=1
+        T=2*pi
         t=[]
     end
     argo=struct;

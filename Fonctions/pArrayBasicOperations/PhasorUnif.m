@@ -46,5 +46,5 @@ for i = 1:numel(phasorArray)
 end
 
 % Replace original PhasorArray elements with padded ones
-paddedPhasors(isPhasorArray)=cellfun(@(x) PhasorArray(x,reduce=false),paddedPhasors(isPhasorArray),'UniformOutput',false);
+paddedPhasors(isPhasorArray)=cellfun(@(x) PhasorArray(x,"reduce", false),paddedPhasors(isPhasorArray),'UniformOutput',false);
 end

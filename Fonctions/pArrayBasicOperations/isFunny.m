@@ -12,5 +12,8 @@ function tf = isFunny(x)
 %   sdpvar/ndsdpvar-only checks (use isa directly when sym must be excluded).
 %
 %   See also: isa, PhasorArrayTimes, sparray2TBlocks.
+arguments
+    x
+end
 tf = isa(x, 'sym') || isa(x, 'sdpvar') || isa(x, 'ndsdpvar');
 end

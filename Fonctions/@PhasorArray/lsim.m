@@ -1,7 +1,7 @@
-function [y,t,dy]=lsim(o1,tfinal,x0,T,Uph,varg)
+function [y,t,dy]=lsim(o1,tfinal,x0,T,Uph,nvp)
     % LSIM Simulate the response of a time-periodic linear system.
     %
-    %   LSIM(o1, tfinal, x0, T, Uph, varg) simulates the system:
+    %   LSIM(o1, tfinal, x0, T, Uph, nvp) simulates the system:
     %       dx/dt = A(t)x + U(t)
     %   where `A(t)` and `U(t)` are `T`-periodic matrices, represented as phasor arrays.
     %
@@ -21,7 +21,7 @@ function [y,t,dy]=lsim(o1,tfinal,x0,T,Uph,varg)
     %                - If vector: Uses provided time grid.
     %     x0     - (vector, optional) Initial condition `x(0)`.
     %                - Default: `ones(size(o1,1),1)`.
-    %     T      - (double, optional) The period of `A(t)`. Default: `1`.
+    %     T      - (double, optional) The period of `A(t)`. Default: `2*pi`.
     %     Uph    - (PhasorArray or matrix, optional) The time-varying input matrix `U(t)`.
     %                - Default: `[]` (zero input).
     %
@@ -63,23 +63,23 @@ function [y,t,dy]=lsim(o1,tfinal,x0,T,Uph,varg)
         o1
         tfinal=0
         x0=ones(size(o1,1),1)
-        T=1
+        T=2*pi
         Uph=[]
-        varg.opts=[] %odeset option
-        varg.plot=true
-        varg.solver='adaptative'
-        varg.FSprecpow=8
-        varg.checkReal=0
-        varg.isRealValued logical = false
+        nvp.opts=[] %odeset option
+        nvp.plot=true
+        nvp.solver='adaptative'
+        nvp.FSprecpow=8
+        nvp.checkReal=0
+        nvp.isRealValued logical = false
     end
     if isempty(x0)
         x0=ones(size(o1,1),1);
     end
     if isreal(o1)
-        varg.isRealValued = true;
+        nvp.isRealValued = true;
     end
 
-    C=namedargs2cell(varg);
+    C=namedargs2cell(nvp);
     C{1}="odeOpts";
 
     %asking derivative trigger more computation from hmq_sim,

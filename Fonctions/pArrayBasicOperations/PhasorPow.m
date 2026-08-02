@@ -1,4 +1,4 @@
-function [Apph] = PhasorPow(Aph,p,varg)
+function [Apph] = PhasorPow(Aph,p,nvp)
     % PHASORPOW Computes the matrix power \( A(t)^p \) for a periodic matrix \( A(t) \).
     %
     %   Apph = PhasorPow(Aph, p) computes the matrix power \( A(t)^p \) at each time instant,
@@ -7,9 +7,9 @@ function [Apph] = PhasorPow(Aph,p,varg)
     %   Inputs:
     %   - Aph: A PhasorArray (or a 3D array representing phasors) of a periodic matrix \( A(t) \).
     %   - p: The power exponent to apply (default: 1).
-    %   - varg (Name-Value Arguments):
+    %   - nvp (Name-Value Arguments):
     %       - nT (default: 1): Number of periods considered in the computation.
-    %       - T (default: 1): The fundamental period of \( A(t) \).
+    %       - T (default: 2*pi): The fundamental period of \( A(t) \).
     %       - m (default: []): Controls the discretization size; if empty, an automatic choice is made.
     %       - plot (default: false): If true, compares time-domain results before and after phasor conversion.
     %
@@ -27,23 +27,23 @@ function [Apph] = PhasorPow(Aph,p,varg)
     %   - For non-integer \( p \), matrix functions like `logm` and `expm` may be involved.
     %   - This function does **not** apply exponentiation directly to phasors.
     %
-    %   See also: power, mpower, logm, expm, PhasorArray2time, TimeArray2Phasors
+    %   See also: power, mpower, expm, PhasorArray2time, TimeArray2Phasors
 
 arguments
 Aph
 p=1
-varg.nT=1
-varg.T=1
-varg.m=[]
-varg.plot=false
+nvp.nT=1
+nvp.T=2*pi
+nvp.m=[]
+nvp.plot=false
 end
 
 
 Aph = pvalue(Aph);
 
-nT=varg.nT;
-T=varg.T;
-m=varg.m;
+nT=nvp.nT;
+T=nvp.T;
+m=nvp.m;
 
 hA=nHarm(Aph);
 if isempty(m)
@@ -69,9 +69,9 @@ end
 
 % toc(t1)
 
-Apph=TimeArray2Phasors(Atp,nT,t,isReal=false);
+Apph=TimeArray2Phasors(Atp,nT,t,"isReal", false);
 
-if varg.plot
+if nvp.plot
     plot(t,squeeze(reshape(Atp,[],1,numel(t))))
     hold on
     Aipt=PhasorArray2time(Apph,T,t,"plot",false);

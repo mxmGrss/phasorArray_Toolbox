@@ -1,7 +1,7 @@
-function [y,t,dy]=initial(o1,x0,T,tfinal,varg)
+function [y,t,dy]=initial(o1,x0,T,tfinal,nvp)
     % INITIAL Compute the system response to an initial state in a periodic state-space model.
     %
-    %   INITIAL(o1, x0, T, tfinal, varg) simulates the system response for:
+    %   INITIAL(o1, x0, T, tfinal, nvp) simulates the system response for:
     %       dx/dt = A(t)x
     %   where `A(t)` is a `T`-periodic state-space matrix. This function calls `lsim` to compute the response.
     %
@@ -13,7 +13,7 @@ function [y,t,dy]=initial(o1,x0,T,tfinal,varg)
     %     o1     - (PhasorArray) The time-varying system matrix `A(t)`, stored as a **3D phasor array**.
     %     x0     - (vector, optional) Initial state `x(0)`.
     %                - Default: `ones(size(o1,1),1)`.
-    %     T      - (double, optional) Period of the system. Default: `1`.
+    %     T      - (double, optional) Period of the system. Default: `2*pi`.
     %     tfinal - (scalar or vector, optional) Final simulation time.
     %                - Default: `10*T`.
     %                - If scalar: Simulates from `t=0` to `t=tfinal`.
@@ -51,19 +51,19 @@ function [y,t,dy]=initial(o1,x0,T,tfinal,varg)
     arguments
         o1
         x0=ones(size(o1,1),1)
-        T=1
+        T=2*pi
         tfinal=0
-        varg.opts=[] %odeset option
-        varg.plot=true
-        varg.solver='adaptative'
-        varg.FSprecpow=8
-        varg.checkReal=0
-        varg.isRealValued logical = false
+        nvp.opts=[] %odeset option
+        nvp.plot=true
+        nvp.solver='adaptative'
+        nvp.FSprecpow=8
+        nvp.checkReal=0
+        nvp.isRealValued logical = false
     end
     if isreal(o1)
-        varg.isRealValued = true;
+        nvp.isRealValued = true;
     end
-    vvarg = namedargs2cell(varg);
+    vvarg = namedargs2cell(nvp);
     if nargout == 3
         [y,t,dy]=lsim(o1,tfinal,x0,T,vvarg{:});
     else

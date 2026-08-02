@@ -1,5 +1,5 @@
 function [outM] = pr(A,B,h)
-%produit rond  B o A 
+%PR Produit rond (round product) B o A, block-wise Kronecker on a TB matrix.
 %where A is a block matrix of type 'TB'
 % B o A = [ B kron A11  | B kron A12  | ... | B kron A1(ny)   ]
 %         [ B kron A21  |                                     ]
@@ -12,6 +12,11 @@ function [outM] = pr(A,B,h)
 %    A can be provided as a 3D array of phasors, then A=array2TB(A, 2*h) is
 %    used
 %
+arguments
+    A
+    B
+    h (1,1) double
+end
 
 if isa(A,'PhasorArray')
     A=A.Value;

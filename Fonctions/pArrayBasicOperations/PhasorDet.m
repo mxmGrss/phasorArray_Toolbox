@@ -1,7 +1,7 @@
-function [Adetph,Adet_t] = PhasorDet(Aph,varg)
+function [Adetph,Adet_t] = PhasorDet(Aph,nvp)
     %PHASORDET Computes the phasors of the determinant of a time-varying matrix A(t)
     %
-    %   [Adetph, Adet_t] = PhasorDet(Aph, varg) calculates the phasors for the
+    %   [Adetph, Adet_t] = PhasorDet(Aph, nvp) calculates the phasors for the
     %   determinant of a matrix A(t) represented in phasor form, where the input
     %   matrix A(t) is assumed to be periodic in nature. The determinant is computed
     %   for each time slice, and the result is transformed back into phasor form.
@@ -9,9 +9,9 @@ function [Adetph,Adet_t] = PhasorDet(Aph,varg)
     %   Inputs:
     %       - Aph: The 3D array representing the phasors of A(t). The third dimension
     %         corresponds to the harmonic components of A(t).
-    %       - varg: Optional arguments, provided as a structure or name-value pairs:
+    %       - nvp: Optional arguments, provided as Name-Value pairs:
     %           - nT: The number of time steps (default is 1).
-    %           - T: The period of the matrix A(t) (default is 1).
+    %           - T: The period of the matrix A(t) (default is 2*pi).
     %           - m: The truncation order (default is calculated from the harmonic length).
     %           - plot: Boolean flag to plot results (default is false).
     %           - reduceThreshold: Threshold for reducing the phasors (default is 1e-15).
@@ -34,20 +34,20 @@ function [Adetph,Adet_t] = PhasorDet(Aph,varg)
 
 arguments
 Aph
-varg.nT=1
-varg.T=1
-varg.m=[]
-varg.plot=false
-varg.reduceThreshold = 1e-15
-varg.reduceMethod = 'relative'
-varg.autoTrunc = false
+nvp.nT=1
+nvp.T=2*pi
+nvp.m=[]
+nvp.plot=false
+nvp.reduceThreshold = 1e-15
+nvp.reduceMethod = 'relative'
+nvp.autoTrunc = false
 end
 
 Aph = pvalue(Aph);
 
-nT=varg.nT;
-T=varg.T;
-m=varg.m;
+nT=nvp.nT;
+T=nvp.T;
+m=nvp.m;
 
 hA=nHarm(Aph);
 
@@ -114,9 +114,9 @@ catch
     filt_diff = movmean(diffPh, 5);
 end
 
-if ~varg.autoTrunc
+if ~nvp.autoTrunc
     % Standard reduction based on threshold
-    Adetph = ReduceArray(Adetphcomp, 'reduceMethod', varg.reduceMethod, 'reduceThreshold', varg.reduceThreshold);
+    Adetph = ReduceArray(Adetphcomp, 'reduceMethod', nvp.reduceMethod, 'reduceThreshold', nvp.reduceThreshold);
 else
     % Auto-truncation: Cut where the smoothed slope turns positive (noise floor)
     % Find first positive slope + buffer
@@ -129,7 +129,7 @@ else
     Adetph = ReduceArray(Adetphcomp, trunc_h);
 end
 
-if varg.plot
+if nvp.plot
     clf
     tiledlayout("flow")
     nexttile
@@ -145,7 +145,7 @@ if varg.plot
     stem(0:h,squeeze(abs(Adetph(1,1,(h+1):end))))
     set(gca,'YScale','log')
     title('Stem of abs of phasor of det(A)')
-    if varg.autoTrunc
+    if nvp.autoTrunc
     nexttile
     plot(diffPh)
     hold on 

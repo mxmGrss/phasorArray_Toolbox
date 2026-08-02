@@ -1,4 +1,4 @@
-function [Aphr,ref,htrunc] = ReduceArray(Aph,htrunc,varg)
+function [Aphr,ref,htrunc] = ReduceArray(Aph,htrunc,nvp)
 %REDUCEARRAY Reduce the PhasorArray according to various methods
 %   [Aphr, ref, htrunc] = REDUCEARRAY(Aph) reduces the PhasorArray Aph by truncating excessive phasors.
 %   [Aphr, ref, htrunc] = REDUCEARRAY(Aph, htrunc) truncates the PhasorArray to the specified harmonic order htrunc.
@@ -8,7 +8,7 @@ function [Aphr,ref,htrunc] = ReduceArray(Aph,htrunc,varg)
 %   Input Arguments:
 %   Aph - The PhasorArray object or 3D array of phasors to be reduced.
 %   htrunc - (Optional) The harmonic order to truncate the PhasorArray to.
-%   varg - (Optional) Name-value pair arguments:
+%   nvp - (Optional) Name-value pair arguments:
 %       'reduceMethod' - The method to use for reduction ('absolute' or 'relative'). Default is 'absolute'.
 %       'reduceThreshold' - The threshold value for reduction. Default is 0.
 %       'exclude0Phasor' - Logical flag to exclude the 0th phasor from consideration. Default is false.
@@ -29,10 +29,10 @@ function [Aphr,ref,htrunc] = ReduceArray(Aph,htrunc,varg)
 arguments
     Aph
     htrunc=[]
-    varg.reduceMethod char {mustBeMember(varg.reduceMethod,{'absolute','relative'})} = 'absolute'
-    varg.reduceThreshold {mustBeNumeric,mustBeReal} = 0
-    varg.exclude0Phasor (1,1) logical = false
-    varg.hardThresholdPhasors = false
+    nvp.reduceMethod char {mustBeMember(nvp.reduceMethod,{'absolute','relative'})} = 'absolute'
+    nvp.reduceThreshold {mustBeNumeric,mustBeReal} = 0
+    nvp.exclude0Phasor (1,1) logical = false
+    nvp.hardThresholdPhasors = false
 end
 
 
@@ -47,17 +47,17 @@ if ~isempty(htrunc)
 else
 
     %maximal ref phasor for each coordinate
-    if varg.exclude0Phasor
+    if nvp.exclude0Phasor
         ref=max(abs(Aph(:,:,[1:nhA , (nhA+2):(2*nhA+1)])),[],3); %maximum harmonic on each coeef, excepting the phasor 0.
     else
         ref=max(abs(Aph),[],3); %maximum harmonic on each coeef.
     end
 
     kk=nhA;
-    switch varg.reduceMethod
+    switch nvp.reduceMethod
         case 'absolute'
             toto = abs(Aph(:,:,nhA+1-kk)) + abs(Aph(:,:,nhA+1+kk));
-            while isempty(find(toto>varg.reduceThreshold,1)) && kk>0
+            while isempty(find(toto>nvp.reduceThreshold,1)) && kk>0
                 kk=kk-1;
                 toto = abs(Aph(:,:,nhA+1-kk)) + abs(Aph(:,:,nhA+1+kk));
             end
@@ -65,15 +65,15 @@ else
             htrunc=kk;
 
 
-            if varg.hardThresholdPhasors
-                Aphr(abs(Aphr) < varg.reduceThreshold) = 0;
+            if nvp.hardThresholdPhasors
+                Aphr(abs(Aphr) < nvp.reduceThreshold) = 0;
             end
 
 
         case 'relative'
             toto = abs(Aph(:,:,nhA+1-kk)) + abs(Aph(:,:,nhA+1+kk));
             toto = toto./2./ref;
-            while isempty(find(toto>varg.reduceThreshold,1)) && kk>0
+            while isempty(find(toto>nvp.reduceThreshold,1)) && kk>0
                 kk=kk-1;
                 toto = abs(Aph(:,:,nhA+1-kk)) + abs(Aph(:,:,nhA+1+kk));
                 toto = toto./2./ref;
@@ -81,8 +81,8 @@ else
             Aphr=Aph(:,:,nhA+1+(-kk:kk));
             htrunc=kk;
 
-            if varg.hardThresholdPhasors
-                Aphr(abs(Aphr)./ref < varg.reduceThreshold) = 0;
+            if nvp.hardThresholdPhasors
+                Aphr(abs(Aphr)./ref < nvp.reduceThreshold) = 0;
             end
     end
 end

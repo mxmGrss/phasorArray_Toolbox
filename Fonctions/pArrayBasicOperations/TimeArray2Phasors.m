@@ -1,7 +1,7 @@
-function [Aph] = TimeArray2Phasors(At,nT,t,varg)
+function [Aph] = TimeArray2Phasors(At,nT,t,nvp)
     %TIMEARRAY2PHASORS Convert a time-dependent matrix to its phasor representation.
     %
-    %   TIMEARRAY2PHASORS(At, nT, t, varg) converts a 3D array representing a time-dependent
+    %   TIMEARRAY2PHASORS(At, nT, t, nvp) converts a 3D array representing a time-dependent
     %   matrix (with time stored along the third dimension) into its phasor representation. 
     %   The phasors are stored along the third dimension of the output array.
     %
@@ -11,7 +11,7 @@ function [Aph] = TimeArray2Phasors(At,nT,t,varg)
     %     nT         - (scalar) The number of time periods (default: 1).
     %     t          - (vector, optional) Time steps corresponding to the third dimension of `At`.
     %                  Default: `[]`, and the time steps are inferred.
-    %     varg       - (struct) Optional parameters:
+    %     nvp       - (Optional) Name-Value arguments:
     %                   'truncIndex'   - (numeric) Index up to which the phasor is truncated. Default: Inf.
     %                   'isReal'       - (logical) If true (default), the positive and negative phasors are 
     %                                     adjusted to satisfy Ak = conj(A-k).
@@ -41,21 +41,21 @@ arguments
     At
     nT=1
     t=[]
-    varg.truncIndex {mustBeNumeric(varg.truncIndex)} =Inf
-    varg.isReal logical = true
-    varg.timeDim  {mustBeLessThanOrEqual(varg.timeDim,3),mustBeGreaterThanOrEqual(varg.timeDim,1)} = 3
-    varg.procedeWithError = false
+    nvp.truncIndex {mustBeNumeric(nvp.truncIndex)} =Inf
+    nvp.isReal logical = true
+    nvp.timeDim  {mustBeLessThanOrEqual(nvp.timeDim,3),mustBeGreaterThanOrEqual(nvp.timeDim,1)} = 3
+    nvp.procedeWithError = false
 end
 %  INPUT VALIDATION
 if isvector(At) % vector input: reshape to [1 x 1 x n], timeDim is irrelevant
     At=At(:);
     At=permute(At,[2 3 1]);
-elseif varg.timeDim~=3 % permute time dimension to dim 3
+elseif nvp.timeDim~=3 % permute time dimension to dim 3
     if ~ismatrix(At)
-        warning('TimeArray2Phasors:timeDimPermutation', 'Non-matrix input with timeDim=%d: permuting dimension %d with dimension 3.', varg.timeDim, varg.timeDim)
+        warning('TimeArray2Phasors:timeDimPermutation', 'Non-matrix input with timeDim=%d: permuting dimension %d with dimension 3.', nvp.timeDim, nvp.timeDim)
     end
     perm         = 1:3;
-    perm([varg.timeDim, 3]) = perm([3, varg.timeDim]);
+    perm([nvp.timeDim, 3]) = perm([3, nvp.timeDim]);
     At           = permute(At, perm);
 end
 
@@ -71,7 +71,7 @@ end
 % n = nT * 2^m is valid even if n itself is not a power of 2 (e.g. nT=3, n=1536).
 nPerPeriod = n / nT;
 if ~(nPerPeriod == floor(nPerPeriod) && nPerPeriod > 0 && bitand(uint32(nPerPeriod), uint32(nPerPeriod)-1) == 0)
-    if varg.procedeWithError
+    if nvp.procedeWithError
         warning('TimeArray2Phasors:notPowerOf2', 'Samples per period n/nT=%g is not a power of 2; output accuracy may be reduced.', nPerPeriod)
     else
         error('TimeArray2Phasors:notPowerOf2', 'Samples per period n/nT=%g is not a power of 2; output would be inaccurate. Ensure n = nT * 2^m.', nPerPeriod)
@@ -90,7 +90,7 @@ else
     Aph=FST(:,:,I1(1:end));
 end
 
-Aph=ReduceArray(Aph,varg.truncIndex);
+Aph=ReduceArray(Aph,nvp.truncIndex);
 
 h=(size(Aph,3)-1)/2;
 
@@ -107,7 +107,7 @@ if ~isempty(t) && abs(t(1)) > eps
 end
 
 % Enforce conjugate symmetry Ak = conj(A-k) for real-valued signals (vectorized).
-if varg.isReal
+if nvp.isReal
     Aph_pos = (Aph(:,:,h+2:end) + conj(flip(Aph(:,:,1:h), 3))) / 2;
     Aph     = cat(3, conj(flip(Aph_pos,3)), ...
                      real(Aph(:,:,h+1)), ...

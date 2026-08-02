@@ -8,13 +8,13 @@ storage dimension, restricting to positive harmonics, and handling pre-converted
 cosine-sine data.
 
 Syntax:
-    [Mcs, hM] = Phasor2CosSin(Mph, varg)
+    [Mcs, hM] = Phasor2CosSin(Mph, nvp)
 
 Inputs:
     Mph - Input matrix or array representing the phasors. The dimensions and 
           interpretation depend on the optional arguments.
 
-    varg - optional name-value pairs:
+    nvp - optional name-value pairs:
         only_posk (logical, default: false) - If true, restricts the output to 
             positive harmonics only.
         harmodim (numeric, default: []) - Specifies the dimension along which 
@@ -43,25 +43,25 @@ Example:
     [Mcs, hM] = Phasor2CosSin(Mph, struct('only_posk', true));
 
 %}
-function [Mcs,hM] = Phasor2CosSin(Mph,varg)
+function [Mcs,hM] = Phasor2CosSin(Mph,nvp)
 arguments
     Mph
-    varg.only_posk=false
-    varg.harmodim=[]
-    varg.already_cs=false
+    nvp.only_posk=false
+    nvp.harmodim=[]
+    nvp.already_cs=false
 end
 
 if ismatrix(Mph)
-    if isempty(varg.harmodim)
+    if isempty(nvp.harmodim)
         warning('Phasor2CosSin:2DInputAmbiguous', '2D input interpreted as the 0th phasor of a constant matrix. Specify harmodim if the input is a vector of harmonics.')
-    elseif varg.harmodim==2
+    elseif nvp.harmodim==2
         Mph=permute(Mph,[1 3 2]);
-    elseif varg.harmodim==1
+    elseif nvp.harmodim==1
         Mph=permute(Mph,[2 3 1]);
     end
 end
 
-if varg.already_cs
+if nvp.already_cs
     Mcs = Mph;
     hM = (size(Mph,3)-1)/2;
     return
@@ -71,7 +71,7 @@ n4=size(Mph,4);
 n5=size(Mph,5);
 for iter_ii=1:n5
     for iter_i=1:n4
-        if ~varg.only_posk
+        if ~nvp.only_posk
             Mph_t=Mph(:,:,(end+1)/2:end,iter_i,iter_ii);
         end
         hM=size(Mph_t,3)-1;

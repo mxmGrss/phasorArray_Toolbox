@@ -1,7 +1,7 @@
-function obj= ScalarPhasorArray(varargin,varg)
+function obj= ScalarPhasorArray(varargin,nvp)
     % ScalarPhasorArray Creates a scalar phasor array from input data.
     %
-    %   obj = ScalarPhasorArray(varargin, varg) creates a scalar PhasorArray, ie a scalar periodic signal
+    %   obj = ScalarPhasorArray(varargin, nvp) creates a scalar PhasorArray, ie a scalar periodic signal
     %
     %   Inputs:
     %       varargin: 
@@ -9,7 +9,7 @@ function obj= ScalarPhasorArray(varargin,varg)
     %           - 2 arguments: The first input is a scalar (DC component of phasor array),
     %             and the second is a vector, the positive phasors of the signal. 
     %               The optional argument `isreal` is set to `true` by default if not provided.
-    %       varg:
+    %       nvp:
     %           - reduce: Boolean flag indicating whether to reduce the array (default: false).
     %           - isreal: Boolean flag to enforce positive parts of the phasor (default: false).
     %
@@ -29,8 +29,8 @@ arguments (Repeating)
     varargin
 end
 arguments
-    varg.reduce=false
-    varg.isreal=false
+    nvp.reduce=false
+    nvp.isreal=false
 end
 switch numel(varargin)
     case 1
@@ -46,14 +46,14 @@ switch numel(varargin)
             varargin{2}=varargin{2}.';
         end
         varargin{2}=permute(varargin{2},[2 3 1]);
-        if ~varg.isreal
+        if ~nvp.isreal
             warning('ScalarPhasorArray:isrealOverridden', 'Two arguments provided with isreal=false; switching to z_pos_part=true.')
-            varg.isreal=true;
+            nvp.isreal=true;
         end
     otherwise
         error('ScalarPhasorArray:invalidInputSize', 'Unexpected number of input arguments; check input sizes.')
 end
-C=[fieldnames(varg).'; struct2cell(varg).'];
+C=[fieldnames(nvp).'; struct2cell(nvp).'];
 C=C(:).';
 obj = PhasorArray(varargin{:},C{:});
 end
