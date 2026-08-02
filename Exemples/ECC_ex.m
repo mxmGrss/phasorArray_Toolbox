@@ -93,7 +93,7 @@ Q = PhasorArray.eye(2)*10;
 R = PhasorArray.eye(1);
 K0 = PhasorArray([10,10]);
 htrunc = 6; %initial truncation order for Riccati solution
-[K_final, S_final, info] = RicHarmonicKlein(A, B, Q, R, K0,T,'autoUpdateh',true,'maxIter',50,'thresholdResidual',1e-6,'h',htrunc,'maxh',500,'verbose',2,'warmStartFraction',.95)
+[K_final, S_final, info] = hare(A, B, Q, R, "K0", K0, "T", T, "autoUpdateh", true, "maxIter", 50, "thresholdResidual", 1e-6, "h", htrunc, "maxh", 500, "verbose", 2)
 
 %%
 eig_closedloop=HmqNEig(A-B*K_final,20,T,'fundamental')

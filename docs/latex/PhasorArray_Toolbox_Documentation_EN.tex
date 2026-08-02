@@ -466,7 +466,7 @@ AA = PhasorArray.random(nx,nx,5);
 La = PhasorArray(diag([-50, -25, -125]));
 
 % Generation of a positive definite G(t) matrix
-G = PhasorArray.random(nx,nx,5,"time_structure","sdp");
+G = PhasorArray.randomSPD(nx, 5);
 
 % Resolution of harmonic Sylvester equation, truncated to order 200
 P = PhasorArray(Sylv_harmonique(-AA, La, eye(nx)*G, 200, 2*pi/T));
@@ -579,9 +579,9 @@ R = PhasorArray.eye(1,1,0);
 K0 = PhasorArray([10, 10]);
 
 % Solve Riccati equation
-[K_final, S_final] = RicHarmonicKlein(A, B, Q, R, K0, T, ...
-    "autoUpdateh", true, "max_iter", 50, "residualThreshold", 1e-6, ...
-    "htrunc", 6, "hmax", 500);
+[K_final, S_final] = hare(A, B, Q, R, "K0", K0, "T", T, ...
+    "autoUpdateh", true, "maxIter", 50, "thresholdResidual", 1e-6, ...
+    "h", 6, "maxh", 500);
 
 % Verify closed-loop stability
 A_cl = A - B * K_final;
@@ -686,7 +686,7 @@ An alternative and numerically stable approach uses Hankel corrections to proper
 
 \begin{lstlisting}[style=matlabstyle]
 hp = 10;
-P = PhasorArray.ndsdpvar(nx,nx,hp,"PhasorType",'symmetric',"real",true);
+P = PhasorArray.ndsdpvar(nx,nx,hp);
 
 PT = P.T_tb(hp);
 ATB = A.T_tb(hp);

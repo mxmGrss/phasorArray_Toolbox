@@ -8,7 +8,7 @@
 %   §3  Strutt-Ince instability map (a,q)            [toggle: compute_strutt]
 %   §4  Backward Lyapunov certificate  det(P) > 0
 %   §5  Open-loop simulation (free + forced)
-%   §6  LQR synthesis (RicHarmonicKlein)
+%   §6  LQR synthesis (hare)
 %   §7  Kalman observer (KalHarmonicKleinGen)
 %   §8  Three closed-loop sims + disturbance problem (§8.4)   [toggle: add_noise]
 %   §9–13  Internal-model rejection: augmented observer + feedforward
@@ -108,10 +108,10 @@ max_re_mu_report = max(real(mu_report));
 
 fprintf('Floquet exponents (h=%d, fast scan):\n', h_check)
 fprintf('  max Re(μ) = %+.6f  →  %s\n', max_re_mu_check, ...
-    stability_str(max_re_mu_check < 0))
+    stability_str(max_re_mu_check))
 fprintf('Floquet exponents (h=%d, precision):\n', h_report)
 fprintf('  max Re(μ) = %+.6f  →  %s\n\n', max_re_mu_report, ...
-    stability_str(max_re_mu_report < 0))
+    stability_str(max_re_mu_report))
 
 %% ═══════════════════════════════════════════════════════════════════════════
 %  SECTION 3: STRUTT-INCE STABILITY DIAGRAM (OPTIONAL, EXPENSIVE)
@@ -224,7 +224,7 @@ for s = 1:3
 
     % Verify stability first
     flq = HmqNEig(A_sys, 10, T);
-    fprintf('  Floquet max Re(μ) = %+.6f → %s\n', max(real(flq)), stability_str(max(real(flq)) < 0))
+    fprintf('  Floquet max Re(μ) = %+.6f → %s\n', max(real(flq)), stability_str(max(real(flq))))
 
     % Solve backward Lyapunov
     [P_sys, info_sys] = lyap(A_sys, Q_lyap, [], 'T', T, 'direction', 'backward', ...
@@ -259,7 +259,7 @@ if exist('sdpvar', 'file') == 2
     % Method 1: Temporal Point of View
     % We define P(t) as a periodic variable and state the derivative directly in time.
     % The toolbox handles the Toeplitz conversion of the derivative under the hood.
-    P_temp = PhasorArray.ndsdpvar(2, 2, h_lmi_eq, PhasorType='symmetric', real=true);
+    P_temp = PhasorArray.ndsdpvar(2, 2, h_lmi_eq);
     LMI_temp = d(P_temp, T) + A1_stable'*P_temp + P_temp*A1_stable;
     F_temp = [LMI_temp.T_tb(h_lmi_eq) <= 0, P_temp.T_tb(h_lmi_eq) >= 0];
     
@@ -348,7 +348,7 @@ grid on
 %  ═══════════════════════════════════════════════════════════════════════════
 
 fprintf('%s\n', repmat('-', 1, 80))
-fprintf('SECTION 6: LQR Controller via RicHarmonicKlein (Kleinman Iteration)\n')
+fprintf('SECTION 6: LQR Controller via hare (Kleinman Iteration)\n')
 fprintf('%s\n\n', repmat('-', 1, 80))
 
 % LQR weights
@@ -360,8 +360,8 @@ K0_lqr{2} = 10; %initial guess is plain damping
 fprintf('LQR Weights:\n  Q = diag([%.1f, %.1f])\n  R = %.1f\n', 10, 1, 1)
 fprintf('Solving: dS/dt + A^T·S + S·A - S·B·R^-1·B^T·S + Q = 0\n')
 
-[K_lqr, S_lqr, info_ric_lqr] = RicHarmonicKlein(Ar, B_ctrl, Q_lqr, R_lqr, K0_lqr, T, ...
-    'autoUpdateh', true, 'maxIter', 150, 'thresholdResidual', 1e-6, 'verbose', 1, 'skipValidate', false);
+[K_lqr, S_lqr, info_ric_lqr] = hare(Ar, B_ctrl, Q_lqr, R_lqr, "K0", K0_lqr, "T", T, ...
+    "autoUpdateh", true, "maxIter", 150, "thresholdResidual", 1e-6, "verbose", 1, "skipValidate", false);
 
 % Closed-loop check
 Ar_cl_nom = Ar - B_ctrl * K_lqr;
@@ -370,7 +370,7 @@ max_re_mu_cl_nom = max(real(mu_cl_nom));
 
 fprintf('Riccati solved at h=%d\n', info_ric_lqr.h)
 fprintf('Closed-loop Floquet max Re(μ) = %+.6f  →  %s\n\n', max_re_mu_cl_nom, ...
-    stability_str(max_re_mu_cl_nom < 0))
+    stability_str(max_re_mu_cl_nom))
 
 % --- Inspecting a periodic matrix: the gain K(t) in time- and frequency-domain ---
 %   plot(K, T) reconstructs K(t) over one period ; stem(K) shows its harmonics K_k.
@@ -400,7 +400,7 @@ max_re_mu_obs = max(real(mu_obs));
 
 fprintf('Kalman gain computed at h=%d\n', info_kal.h)
 fprintf('Observer error loop max Re(μ) = %+.6f  →  %s\n\n', max_re_mu_obs, ...
-    stability_str(max_re_mu_obs < 0))
+    stability_str(max_re_mu_obs))
 
 % --- Same inspection on the observer gain L(t) ---
 figure('Name', 'Inspect L(t): time vs harmonics');
@@ -493,7 +493,7 @@ u3 = -squeeze(pagemtimes(K3, reshape(xhat3, nx, 1, [])))';
 x3_floor = mean(vecnorm(x3(:, end-99:end)));
 e3_floor = mean(vecnorm(e3(:, end-99:end)));
 fprintf('   closed-loop Floquet max Re(μ) = %+.4f → %s\n', max(real(mu_cl3)), ...
-    stability_str(max(real(mu_cl3)) < 0))
+    stability_str(max(real(mu_cl3))))
 fprintf('   floor ||x||≈%.3e | floor ||e||≈%.3e | max|u|=%.3f\n\n', ...
     x3_floor, e3_floor, max(abs(u3)))
 
@@ -613,7 +613,7 @@ V_aug = V_meas(1,1);
 mu_obs_aug = HmqNEig(Az - L_aug*Cz, info_kal_aug.h, T);
 fprintf('Augmented observer gain computed at h=%d\n', info_kal_aug.h)
 fprintf('Observer error Floquet max Re(μ) = %+.4f → %s\n\n', max(real(mu_obs_aug)), ...
-    stability_str(max(real(mu_obs_aug)) < 0))
+    stability_str(max(real(mu_obs_aug))))
 
 %% ═══════════════════════════════════════════════════════════════════════════
 %  SECTION 11: AUGMENTED CONTROL LAW  u = -[K  H]·ẑ
@@ -734,7 +734,7 @@ A0_int = phas(A_int, 0);
 B0_int = phas(B_int, 0);
 K0_int_dc = lqr(A0_int, B0_int, Q_int, phas(R_lqr, 0));
 K0_int = PhasorArray(K0_int_dc);
-[K_int, ~, info_int] = RicHarmonicKlein(A_int, B_int, Q_int, R_lqr, K0_int, T, 'autoUpdateh', true, 'h', 3, 'skipValidate', false);
+[K_int, ~, info_int] = hare(A_int, B_int, Q_int, R_lqr, "K0", K0_int, "T", T, "autoUpdateh", true, "h", 3, "thresholdResidual", 1e-6, "skipValidate", false);
 
 % Simulate closed loop with disturbances (direct injection into plant)
 A_cl_int = A_int - B_int * K_int;
@@ -783,40 +783,31 @@ A_per = [Ar, PhasorArray(zeros(nx, nz));
          A_mod, PhasorArray(zeros(nz, nz))];
 B_per = [B_ctrl; PhasorArray(zeros(nz, 1))];
 
-% === Initial Guess (K0) via Harmonic State Space (HSS) Lifting ===
-% Unlike Section 14, this system has strong periodic coupling due to the 
-% modulators. A simple DC LQR will fail to stabilize it.
-% We must use the "Lifted LQR" trick:
-% 1. Convert the periodic system to a large LTI system using Toeplitz matrices (TB).
-%    The dynamic matrix in HSS is A_hss = A_tb - N_tb (where N_tb is the derivative operator).
 Q_per = blkdiag(diag([10, 1]), 10*eye(nz));
-h_init = 7;
-A_tb = TB(A_per, h_init);
-B_tb = TB(B_per, h_init);
-Q_tb = TB(PhasorArray(Q_per), h_init);
-R_tb = TB(R_lqr, h_init);
-A_hss = A_tb - N_tb(size(A_per, 1), h_init, T);
 
-% 2. Solve a standard LTI LQR on this huge lifted system to get a lifted gain.
-K0_tb = lqr(A_hss, B_tb, Q_tb, R_tb);
+% === Initial Guess (K0): left to the solver ===
+% Unlike Section 14, this system has strong periodic coupling through the
+% modulators, and a DC LQR will not stabilise it.
+%
+% The lifted-LQR trick — build A_hss = T(A) - N at h = 7 and call lqr on the
+% 75x75 LTI system — is tempting but ill-posed here. The Mathieu plant is
+% undamped, so every lifted exponent mu + jk*omega sits on the imaginary axis,
+% and the modulator states are pure integrators reachable only through x. Six
+% modes come out neither stable nor controllable, smallest PBH singular value
+% 4.6e-16, and lqr refuses the problem as it should.
+%
+% Passing K0 = [] hands the initial gain to the solver's own fallback cascade,
+% which stabilises this system in 0.3 s.
+K0_per = [];
 
-% 3. Project the lifted gain back into a periodic time-domain PhasorArray.
-%    WARNING: K0_tb is NOT Toeplitz, but taking the average on every diagonal 
-%    (PhasorArray.fromTBMatrix) provides an initial K0 that is close enough 
-%    for the Riccati solver to converge.
-K0_per = PhasorArray.fromTBMatrix(K0_tb, 1, 'n1');
-
-% Ensure K0_per is strictly real in time domain to avoid complex residuals
-K0_per = mreal(K0_per);
-
-[K_per, ~, info_per] = RicHarmonicKlein(A_per, B_per, Q_per, R_lqr, K0_per, T, 'autoUpdateh', true, 'h', 3, 'skipValidate', false);
+[K_per, ~, info_per] = hare(A_per, B_per, Q_per, R_lqr, "K0", K0_per, "T", T, "autoUpdateh", true, "h", 3, "thresholdResidual", 1e-6, "skipValidate", false);
 
 % Self-validation: augmented closed loop must be (marginally) stable, with the
 % internal-model modes on the imaginary axis carrying the periodic disturbance.
 mu_per = HmqNEig(A_per - B_per*K_per, max(info_per.h, 8), T);
 fprintf('Periodic LQR computed at h=%d\n', info_per.h)
 fprintf('Augmented closed-loop Floquet max Re(μ) = %+.4f → %s\n', max(real(mu_per)), ...
-    stability_str(max(real(mu_per)) < 1e-6))
+    stability_str(max(real(mu_per))))
 fprintf('Purely periodic feedback K(t); rejection quantified by §16 (residual ||x||).\n\n')
 
 %% ═══════════════════════════════════════════════════════════════════════════
@@ -872,7 +863,8 @@ fprintf('%s\n', repmat('=', 1, 80))
 fprintf('SUMMARY: Mathieu Pedagogical Chain Complete\n')
 fprintf('%s\n\n', repmat('=', 1, 80))
 
-fprintf('✓ Stability (§2): open-loop Floquet max Re(μ) = %+.4f (UNSTABLE)\n', max_re_mu_report)
+fprintf('✓ Stability (§2): open-loop Floquet max Re(μ) = %+.4f (%s)\n', ...
+    max_re_mu_report, stability_str(max_re_mu_report))
 fprintf('✓ LQR (§6): closed-loop Floquet max Re(μ) = %+.4f\n', max_re_mu_cl_nom)
 fprintf('✓ Observer (§7): error loop max Re(μ) = %+.4f\n\n', max_re_mu_obs)
 
@@ -931,7 +923,7 @@ else
     A_cl_tb = TB(Ar - B_ctrl*K_lqr, h_lmi);
     A_cl_hss = A_cl_tb - N;
     
-    P_lyap = PhasorArray.ndsdpvar(nx, nx, h_lmi, PhasorType='symmetric', real=true);
+    P_lyap = PhasorArray.ndsdpvar(nx, nx, h_lmi);
     P_lyap_tb = P_lyap.T_tb(h_lmi);
     Q_lyap_tb = TB(PhasorArray(eye(nx)), h_lmi);
     
@@ -946,7 +938,7 @@ else
     
     % --- 2. LMI Riccati (LQR Optimal Control) ---
     fprintf('2) LMI Riccati (LQR Optimal Control)\n');
-    P_lqr = PhasorArray.ndsdpvar(nx, nx, h_lmi, PhasorType='symmetric', real=true);
+    P_lqr = PhasorArray.ndsdpvar(nx, nx, h_lmi);
     P_lqr_tb = P_lqr.T_tb(h_lmi);
     Q_lqr_tb = TB(Q_lqr, h_lmi);
     R_lqr_tb = TB(PhasorArray(R_lqr), h_lmi);
@@ -968,7 +960,7 @@ else
     
     % --- 3. LMI Kalman (Optimal Observer) ---
     fprintf('3) LMI Kalman (Optimal Observer)\n');
-    P_kal = PhasorArray.ndsdpvar(nx, nx, h_lmi, PhasorType='symmetric', real=true);
+    P_kal = PhasorArray.ndsdpvar(nx, nx, h_lmi);
     P_kal_tb = P_kal.T_tb(h_lmi);
     W_kal_tb = TB(PhasorArray(W_proc), h_lmi);
     V_kal_tb = TB(PhasorArray(V_meas(1,1)), h_lmi);
@@ -999,9 +991,21 @@ end
 %  LOCAL FUNCTIONS  (must sit at the end of the script — required before R2024a)
 %  ═══════════════════════════════════════════════════════════════════════════
 
-function s = stability_str(is_stable)
-    % One-liner stability formatter.
-    if is_stable, s = 'STABLE'; else, s = 'UNSTABLE'; end
+function s = stability_str(max_re_mu, tol)
+    % Verdict from the largest Floquet exponent.
+    %   STABLE    clearly in the left half-plane, the loop decays
+    %   MARGINAL  within tol of the imaginary axis: bounded, not decaying
+    %   UNSTABLE  clearly in the right half-plane
+    %
+    % The undamped Mathieu sits on a tongue boundary and the periodic integral
+    % action of §15 places a mode on the axis by construction; both land at
+    % exactly zero, so a two-way verdict has to call the same number STABLE in
+    % one section and UNSTABLE in the other.
+    if nargin < 2, tol = 1e-6; end
+    if     max_re_mu < -tol, s = 'STABLE';
+    elseif max_re_mu <  tol, s = 'MARGINAL';
+    else,                    s = 'UNSTABLE';
+    end
 end
 
 function y = simInput(A, t, x0, T, B, inp)

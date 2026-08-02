@@ -59,14 +59,14 @@ pA_spec = PhasorArray(A_pos(1,1,1), A_pos(1,1,2:end), 'isreal', true);
 
 figB = figure('Name', 'spectral_decay', 'Position', [100 100 600 400]);
 set(gcf, 'Color', 'none');
-pageEnergy(pA_spec, true, 'none', 'log');
+pageEnergy(pA_spec, 'normalized', true, 'plot', 'log');
 sgtitle('Normalised Energy per Harmonic (log scale)');
 exportgraphics(figB, fullfile(assetDir, 'spectral_decay.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
 
 
 %% --- Figure C1: Toeplitz Structure (Spy) ---
 fprintf('Generating Figure C1: Toeplitz Spy (SVG)...\n');
-Ar = PhasorArray.random(3, 3, 5,"time_structure","cmplx"); 
+Ar = PhasorArray.random(3, 3, 5, "symmetry",[]); 
 h_tb = 5;
 TBM = Ar.T_tb(h_tb);
 
@@ -213,20 +213,20 @@ end
 %% --- Figure F: Harmonic Growth (Arithmetic-Operations page) ---
 fprintf('Generating Figure F: Harmonic Growth after Multiplication (SVG)...\n');
 rng(42);
-A_arith = PhasorArray.random(2, 2, 3, "time_structure", "cmplx");
-B_arith = PhasorArray.random(2, 2, 5, "time_structure", "cmplx");
+A_arith = PhasorArray.random(2, 2, 3, "symmetry",[]);
+B_arith = PhasorArray.random(2, 2, 5, "symmetry",[]);
 C_arith = A_arith * B_arith; % h_C = 3 + 5 = 8
 
 figF = figure('Name', 'harmonic_growth', 'Position', [100 100 900 350]);
 set(gcf, 'Color', 'none');
 subplot(1,3,1);
-pageEnergy(A_arith, true, 'none', 'linear');
+pageEnergy(A_arith, 'normalized', true, 'plot', 'linear');
 title(sprintf('A (h=%d)', A_arith.h)); xlabel('Harmonic'); ylabel('Norm. Energy');
 subplot(1,3,2);
-pageEnergy(B_arith, true, 'none', 'linear');
+pageEnergy(B_arith, 'normalized', true, 'plot', 'linear');
 title(sprintf('B (h=%d)', B_arith.h)); xlabel('Harmonic'); ylabel('Norm. Energy');
 subplot(1,3,3);
-pageEnergy(C_arith, true, 'none', 'linear');
+pageEnergy(C_arith, 'normalized', true, 'plot', 'linear');
 title(sprintf('C = A*B (h=%d)', C_arith.h)); xlabel('Harmonic'); ylabel('Norm. Energy');
 sgtitle('Harmonic Growth: h_C = h_A + h_B after Cauchy Product');
 exportgraphics(figF, fullfile(assetDir, 'harmonic_growth_multiplication.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');

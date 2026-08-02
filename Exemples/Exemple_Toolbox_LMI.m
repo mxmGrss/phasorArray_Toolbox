@@ -7,6 +7,7 @@
 %[text] Let's define an autonomous periodic system:
 %[text] $$ \\dot{x}(t) = A(t) x(t) $$
 %[text] We generate a random $A(t)$ with a Hurwitz structure (prescribed stable Floquet exponents) and 5 harmonics.
+rng(42);   % reproducible: the plant and B are drawn at random, like the templates
 h = 15;
 nx = 6;
 T = 1; % period
@@ -38,7 +39,7 @@ sgtitle('Harmonic Spectrum of A(t)'); %[output:832dc1b8]
 %[text] $$ \\mathcal{T}(A^T P + P A) - (N \\mathcal{T}(P) - \\mathcal{T}(P) N) \\leq -\\epsilon I $$
 
 h_lmi = 10;
-P = PhasorArray.ndsdpvar(nx, nx, h_lmi, 'PhasorType', 'symmetric', 'real', true);
+P = PhasorArray.ndsdpvar(nx, nx, h_lmi);
 
 % 1. Form the time-domain products (convolutions in frequency)
 ATPpPA = (A.')*P + P*A;
@@ -71,37 +72,46 @@ end %[output:group:06cc19bb]
 %[text] ## Periodic State-Feedback (Stabilization)
 %[text] Consider the controlled system:
 %[text] $$ \\dot{x}(t) = A(t)x(t) + B(t)u(t) $$
-%[text] We seek a state-feedback control law $u(t) = K(t)x(t)$ that stabilizes the system. Using the variable change $Y(t) = K(t)Q(t)$ and $Q(t) = P(t)^{-1}$, the LMI condition is:
-%[text] $$ A(t)Q(t) + Q(t)A(t)^T - \\dot{Q}(t) + B(t)Y(t) + Y(t)^T B(t)^T \\leq -2\\alpha Q(t) $$
+%[text] We seek a state-feedback control law $u(t) = K(t)x(t)$ that stabilizes the system. Using the variable change $Y(t) = K(t)Q(t)$ and $Q(t) = P(t)^{-1}$, the LQ cost is imposed through a Schur complement:
+%[text] $$ \\begin{bmatrix} A Q + Q A^T + BY + Y^T B^T - \\dot Q & Q & Y^T \\\\ Q & -Q_\\ell^{-1} & 0 \\\\ Y & 0 & -R_\\ell^{-1} \\end{bmatrix} \\preceq 0 $$
+%[text] A bare decay-rate inequality $A Q + Q A^T - \\dot Q + BY + Y^T B^T \\preceq -2\\alpha Q$ is homogeneous of degree 1 in $(Q,Y)$ and leaves $Q$ free to drift onto its bounds. The quadratic blocks tie $Q$ and $Y$ together, which is what makes $K = Y Q^{-1}$ usable.
 
 nu = 2;
 hb = 3;
 B = mreal(PhasorArray(rand_phasor(nx, nu, hb)));
 
-Q = PhasorArray.ndsdpvar(nx, nx, h_lmi, 'PhasorType', 'symmetric', 'real', true);
-Y = PhasorArray.ndsdpvar(nu, nx, h_lmi, 'PhasorType', 'full', 'real', true);
+% LQ weights
+Ql = PhasorArray(diag(10*ones(nx,1)));   % state weight
+Rl = PhasorArray(diag( 1*ones(nu,1)));   % control weight
 
-% 1. Time-domain products
-QA_AQ = Q*(A.') + A*Q;
+Q = PhasorArray.ndsdpvar(nx, nx, h_lmi);
+Y = PhasorArray.ndsdpvar(nu, nx, h_lmi, "symmetry","real");
+
+% 1. Bilinear terms are formed in the time domain and lifted afterwards:
+%    truncation does not commute with the product, T_h(B*Y) ~= T_h(B)*T_h(Y),
+%    and B*Y reaches harmonic order hb + h_lmi, well past the truncation.
+LMI_top = (A*Q + B*Y) + (A*Q + B*Y).';
 
 % 2. Toeplitz equivalents
 QT = Q.T_tb(h_lmi);
-QA_AQ_T = QA_AQ.T_tb(h_lmi);
-BT = B.T_tb(h_lmi);
 YT = Y.T_tb(h_lmi);
-Qdot_T = N_lmi * QT - QT * N_lmi;
+LMI_top_tb = LMI_top.T_tb(h_lmi) - (N_lmi*QT - QT*N_lmi);   % -dQ/dt lifting
+LMI_top_tb = 0.5 * (LMI_top_tb + LMI_top_tb');              % exact symmetry
 
-% 3. Formulate the LMI
-alpha_decay = 4; % Desired decay rate
-F_syn = [QT >= 1e-6 * eye(size(QT))];
-% Bound Q to prevent the objective from scaling to infinity
-F_syn = [F_syn, QT <= 1e4 * eye(size(QT))]; 
+% 3. Formulate the LMI. The alpha shift on the (1,1) block asks for a decay
+%    rate: A_cl Q + Q A_cl' - dQ/dt <= -2*alpha*Q. It stays inside the Schur
+%    complement, so the quadratic blocks keep bounding Y relative to Q.
+alpha_decay = 4;   % binding: the open loop only decays at ~2.2
+F_syn = [QT >= 1e-4 * eye(size(QT))];
+F_syn = [F_syn, [ ...
+    LMI_top_tb + 2*alpha_decay*QT,  QT,                 YT';
+    QT,          -T_tb(Ql^-1, h_lmi),                   zeros((2*h_lmi+1)*nx, (2*h_lmi+1)*nu);
+    YT,          zeros((2*h_lmi+1)*nu, (2*h_lmi+1)*nx), -T_tb(Rl^-1, h_lmi)] <= 0];
 
-G2 = QA_AQ_T - Qdot_T + BT*YT + YT'*BT';
-F_syn = [F_syn, G2 <= -2 * alpha_decay * QT];
-
-% Objective: Minimize Q to limit the magnitude of the Lyapunov function
-obj = trace(Q.phas(0)); 
+% Objective: MAXIMISE trace(Q_0), i.e. push Q away from the singular boundary.
+% Minimising it drives Q onto its lower bound, and K = Y/Q blows up while the
+% solver still reports success.
+obj = -trace(Q.phas(0));
 
 disp('Solving Synthesis LMI...'); %[output:40ae50fc]
 sol_syn = optimize(F_syn, obj, sdpsettings('solver', 'mosek', 'verbose', 0));
@@ -110,12 +120,41 @@ if sol_syn.problem ~= 0 %[output:group:1cd6a627]
 else
     disp('Synthesis LMI Solved Successfully!'); %[output:395ff913]
     % 4. Recover Gain K(t)
-    K = sdpval(Y) / sdpval(Q);
+    Q_opt = sdpval(Q);
+    K = sdpval(Y) / Q_opt;
     K = K.reduce('reduceMethod', 'relative', 'reduceThreshold', 1e-4);
-    
+
+    % 5. Certify the gain. The LMI is solved on the TRUNCATED operators, so a
+    %    feasible solve proves nothing by itself. Rebuilding the residual with
+    %    untruncated products does prove it: Q(t) > 0 together with
+    %       R(t) = A Q + Q A' + B Y + Y' B' - dQ/dt  <  0
+    %    is the Lyapunov inequality for A_cl = A + B*K, since B*Y = B*K*Q.
+    tchk = linspace(0, T, 129); tchk(end) = [];
+    R    = A*Q_opt + Q_opt*A.' + B*sdpval(Y) + sdpval(Y).'*B.' - d(Q_opt, T);
+    Qt   = PhasorArray2time(Q_opt, T, tchk, "plot", false, "forceReal", false);
+    Rt   = PhasorArray2time(R,     T, tchk, "plot", false, "forceReal", false);
+    minEigQ = inf;  maxEigR = -inf;
+    for kk = 1:numel(tchk)
+        minEigQ = min(minEigQ, min(real(eig(0.5*(Qt(:,:,kk) + Qt(:,:,kk)')))));
+        maxEigR = max(maxEigR, max(real(eig(0.5*(Rt(:,:,kk) + Rt(:,:,kk)')))));
+    end
+    fprintf('  min_t lambda_min(Q(t)) = %+.3e   (certificat, doit etre > 0)\n', minEigQ);
+    fprintf('  max_t lambda_max(R(t)) = %+.3e   (residu exact, doit etre < 0)\n', maxEigR);
+    if minEigQ <= 0 || maxEigR >= 0
+        warning('Exemple_Toolbox_LMI:unusableGain', ...
+            'LMI feasible but the certificate does not hold: minEig(Q)=%.2e, maxEig(R)=%.2e.', ...
+            minEigQ, maxEigR);
+    else
+        fprintf('  -> boucle fermee exponentiellement stable (certificat de Lyapunov).\n');
+    end
+
     figure(31); clf; %[output:41c3e663]
     plot(K); %[output:41c3e663]
     sgtitle('Optimal Periodic Gain K(t)'); %[output:41c3e663]
+
+    figure(32); clf;
+    plot(HmqNEig(A + B*K, h_lmi, T), 'o');
+    sgtitle('Closed-loop Floquet exponents');
 end %[output:group:1cd6a627]
 
 %[appendix]{"version":"1.0"}

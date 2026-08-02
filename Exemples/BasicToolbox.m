@@ -167,7 +167,7 @@ plot(B,title='B(t)') %[output:05e44c82]
 hold on  %[output:05e44c82]
 plot(B*AA,title='B(t)*AA(t)')  %[output:05e44c82]
 
-C=rand_phasor(2,2,5,"output","PhasorArray","time_structure","real") %[output:28565cc8]
+C=rand_phasor(2,2,5,"output","PhasorArray") %[output:28565cc8]
 figure %[output:1ae1323a]
 plot(C,title='C(t)') %[output:1ae1323a]
 figure %[output:9f0215b1]
@@ -212,7 +212,7 @@ plot(A.^5) %[output:12337371]
 %[text] ## Simulation of system
 %[text] Lets take a random periodic matrix with imposed eigen value on S-N
 figure %[output:651990ad]
-S=mreal(rand_phasor(2,2,7,"hurwitzeig",[-1 -0.3],"time_structure","hurwitz",output="PhasorArray")) %[output:5b19e0ca]
+S=PhasorArray.randomWithNPole(diag([-1 -0.3]), 7) %[output:5b19e0ca]
 
 tmax=15;
 T=1 %[output:8a61a4d8]
@@ -230,7 +230,7 @@ plot(S.HmqNEig([],T),'*') %[output:285702b9]
 title('eig(S-N)') %[output:285702b9]
 
 %[text] We now add an input to the simulation
-B=PhasorArray.random(2,1,5,"time_structure","real")+3 %[output:4298248b]
+B=PhasorArray.random(2,1,5)+3 %[output:4298248b]
 figure %[output:379c93a9]
 plot(B,T,0:0.01:tmax) %[output:379c93a9]
 
@@ -242,7 +242,7 @@ title('x(t)') %[output:0735f29c]
 %[text] 
 %[text] ## Advanded manipulation
 %[text] Take a complexe valued phasor array, you can extract the real part of A(t) and imag part of A(t), conjugate phasor, and transpose conjugate phasor with '
-X = rand_phasor(2,2,5,"time_structure","cmplx",output="PhasorArray") %[output:9f8b1336]
+X = rand_phasor(2,2,5,"symmetry",[],"output","PhasorArray") %[output:9f8b1336]
 figure %[output:8561baec]
 plot(X,1,0:0.01:2,"DispImag",1,"DispReal",1) %[output:8561baec]
 
@@ -323,7 +323,7 @@ P = PosPart2PhasorArray(P1,P2) %[output:6fb4a619]
 PT=P.T_tb(h) %[output:4eb56510]
 
 %ou directement avec la methode statique de PhasorArray
-P = PhasorArray.ndsdpvar(2,2,5,PhasorType='symmetric',real=true) %[output:05347b3c]
+P = PhasorArray.ndsdpvar(2,2,5) %[output:05347b3c]
 
 P=sdpval(P) %[output:7b90b08e]
 % P = value(value(P))
@@ -343,14 +343,14 @@ SymTimesR=T_tb(S*R,3) %[output:71e52764]
 vpa(SymTimesR,3) %[output:7613882e]
 %%
 %[text] ## Lyapunov and Sylvester eq
-A=mreal(rand_phasor(4,4,7,"hurwitzeig",[-1 -0.7 -0.1 -0.3],"time_structure","hurwitz",output="PhasorArray")) %[output:888c4f33]
+A=PhasorArray.randomWithNPole(diag([-1 -0.7 -0.1 -0.3]), 7) %[output:888c4f33]
 Q=PhasorArray(eye(4));
 
 hp=10;
 T0=1;
 
 %A^TP + PA +Q =0
-P=PhasorArray(SylvHarmonic(A',A,Q,2*hp,2*pi/T0));
+P = lyap(A, Q, "h", 2*hp, "T", T0);
 figure %[output:603e3cb9]
 clf %[output:603e3cb9]
 plot(P) %[output:603e3cb9]
@@ -365,11 +365,11 @@ plot(real(P.HmqEig(40)),'*') %[output:1bdad028]
 nx=size(A,1) %[output:07b1e2e8]
 nz=2 %[output:5c6a2bdb]
 
-C=PhasorArray(rand_phasor(nz,nx,4,"time_structure","real")) %[output:9481e6ff]
+C=PhasorArray(rand_phasor(nz,nx,4)) %[output:9481e6ff]
 O=rand(nz,nz) %[output:3055a150]
 
 %-OM + MA -C =0
-M=PhasorArray(SylvHarmonic(-O,A,-C,2*hp,2*pi/T0));
+M = lyap(-O, A, -C, "h", 2*hp, "T", T0);
 plot(M) %[output:1bdad028]
 
 %%
