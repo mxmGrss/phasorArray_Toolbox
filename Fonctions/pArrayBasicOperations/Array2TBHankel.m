@@ -1,14 +1,14 @@
-function [HpJ,JHm,Hp,Hm] = Array2TBHankel(Aph,m,varg)
+function [HpJ,JHm,Hp,Hm] = Array2TBHankel(Aph,m,nvp)
 % ARRAY2TBHANKEL Construct Toeplitz Block Hankel matrices from a 3D array.
 %
-%   ARRAY2TBHANKEL(Aph, m, varg) constructs the Toeplitz Block Hankel (TBH) and J-Hankel
+%   ARRAY2TBHANKEL(Aph, m, nvp) constructs the Toeplitz Block Hankel (TBH) and J-Hankel
 %   matrices from a 3D array containing Fourier coefficients of a periodic matrix function.
 %
 %   Inputs:
 %     Aph     - (3D array) A Fourier coefficient array, typically of size `N×N×(2*nh+1)`.
 %     m       - (integer, optional) The truncation order for harmonics.
 %                   - Default: The full length of `Aph`.
-%     varg    - (optional) Additional parameters:
+%     nvp    - (optional) Additional parameters:
 %                   - 'method' (char): Specifies the assembly method:
 %                       - 'cell2mat' (default): Efficient for numeric arrays.
 %                       - 'cat': Compatible with symbolic or SDP variables.
@@ -32,7 +32,7 @@ function [HpJ,JHm,Hp,Hm] = Array2TBHankel(Aph,m,varg)
 arguments
     Aph
     m=[]
-    varg.method {mustBeMember(varg.method,{'cell2mat','cat'})} = 'cell2mat'
+    nvp.method {mustBeMember(nvp.method,{'cell2mat','cat'})} = 'cell2mat'
 end
 if isa(Aph,'PhasorArray')
     Aph=Aph.Value;
@@ -41,7 +41,7 @@ end
 
 
 if isFunny(Aph)
-    varg.method='cat';
+    nvp.method='cat';
 end
 if nargin == 1
     [n1,n2,nhlenbis]=size(Aph);
@@ -57,7 +57,7 @@ end
         Aph=Aph(:,:,(nh+1+(-2*m-1:2*m+1)));
         nh=2*m+1;
     elseif nh<2*m+1
-        switch varg.method
+        switch nvp.method
             case 'cell2mat'
         %         Aph=padarray(Aph,[0 0 (m-nh)]);
         %             nh=m
@@ -67,7 +67,7 @@ end
 
 
 
-switch varg.method
+switch nvp.method
     case 'cell2mat'
 % OutM=zeros(n1*(m+1),n2*(m+1));
 cp=cell(n1,n2);

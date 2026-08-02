@@ -1,4 +1,4 @@
-function [HpJ,JHm,Hp,Hm] = spArray2BTHankel(Aph,m,varg)
+function [HpJ,JHm,Hp,Hm] = spArray2BTHankel(Aph,m,nvp)
 % SPARRAY2BTHANKEL Sparse Block Toeplitz Hankel matrices from a 3D array.
 %
 %   Sparse counterpart of ARRAY2BTHANKEL: same outputs as SPARRAY2TBHANKEL
@@ -9,9 +9,9 @@ function [HpJ,JHm,Hp,Hm] = spArray2BTHankel(Aph,m,varg)
 arguments
     Aph
     m (1,1) {mustBeInteger, mustBeNonnegative}
-    varg.method {mustBeMember(varg.method,{'cell2mat','cat'})} = 'cell2mat'
+    nvp.method {mustBeMember(nvp.method,{'cell2mat','cat'})} = 'cell2mat'
 end
-[HpJ,JHm,Hp,Hm] = spArray2TBHankel(Aph, m, method=varg.method);
+[HpJ,JHm,Hp,Hm] = spArray2TBHankel(Aph, m, "method", nvp.method);
 
 nb = m + 1;
 vr = shufflePerm(size(HpJ,1)/nb, nb);

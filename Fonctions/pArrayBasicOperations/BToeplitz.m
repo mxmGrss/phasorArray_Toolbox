@@ -1,6 +1,5 @@
 function [Tmat,Mat] = BToeplitz(Lmat1,Lmat2)
-
-%BToeplitz Summary of this function goes here
+%BTOEPLITZ Build a Toeplitz block matrix.
 %   Tmat =BToeplitz(LMat1,LMat2) build the toeplitz block matrix of dim ni*nbloc x nj*nbloc, where Lmat1 is a 3D (ni,nj,nbloc) array of nbloc (ni,nj) matrix and def the first
 %   colomn of the resulting toeplitz matrix, with its first element being the upper left element of the
 %   block matrix. if specified Lmat2 (ni,nj,nbloc) define the first row of matrix
@@ -23,6 +22,11 @@ function [Tmat,Mat] = BToeplitz(Lmat1,Lmat2)
 %   complex valued, 
 %   if a is real,  BToeplitz(a)=BToeplitz(a,1)=BToeplitz(a,a)
 %   
+arguments
+    Lmat1
+    Lmat2 = []
+end
+
 
     [nx,nj,nk] = size(Lmat1);
     if nargin==1

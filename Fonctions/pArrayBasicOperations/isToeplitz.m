@@ -1,10 +1,11 @@
 function isT = isToeplitz(A,opt)
-    if nargin ==1
-        opt = 0;
-    end
-    % Check if the input matrix A is Toeplitz
+    %ISTOEPLITZ Check if the input matrix A is Toeplitz.
     % A Toeplitz matrix has constant diagonals, i.e., 
     % A(i, j) == A(i+1, j+1) for all valid i, j.
+    arguments
+        A
+        opt (1,1) double = 0
+    end
 
     % Validate input
     if ~ismatrix(A)

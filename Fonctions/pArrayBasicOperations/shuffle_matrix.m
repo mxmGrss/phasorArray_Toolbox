@@ -24,6 +24,10 @@ function [Sm] = shuffle_matrix(p,q)
     %     Sm = shuffle_matrix(3, 2);
     %
     %   See also: kron, eye, TB_2_BT, BT_2_TB.
+arguments
+    p (1,1) double
+    q (1,1) double
+end
 r=p*q;
 Sm=[];
 Ir=eye(r);

@@ -1,4 +1,4 @@
-function [HpJ,JHm,Hp,Hm] = Array2BTHankel(Aph,m,varg)
+function [HpJ,JHm,Hp,Hm] = Array2BTHankel(Aph,m,nvp)
 % ARRAY2BTHANKEL Construct Block Toeplitz Hankel matrices from a 3D array.
 %
 %   Same outputs as ARRAY2TBHANKEL but in the Block-Toeplitz (BT) layout:
@@ -9,7 +9,7 @@ function [HpJ,JHm,Hp,Hm] = Array2BTHankel(Aph,m,varg)
 %   Inputs:
 %     Aph     - (3D array or PhasorArray) Fourier coefficient array.
 %     m       - (integer) Truncation order for harmonics.
-%     varg    - 'method': 'cell2mat' (default) or 'cat' (symbolic/SDP).
+%     nvp    - 'method': 'cell2mat' (default) or 'cat' (symbolic/SDP).
 %
 %   Outputs:
 %     HpJ, JHm, Hp, Hm - ((m+1)N × (m+1)N) matrices, BT layout.
@@ -18,9 +18,9 @@ function [HpJ,JHm,Hp,Hm] = Array2BTHankel(Aph,m,varg)
 arguments
     Aph
     m (1,1) {mustBeInteger, mustBeNonnegative}
-    varg.method {mustBeMember(varg.method,{'cell2mat','cat'})} = 'cell2mat'
+    nvp.method {mustBeMember(nvp.method,{'cell2mat','cat'})} = 'cell2mat'
 end
-[HpJ,JHm,Hp,Hm] = Array2TBHankel(Aph, m, method=varg.method);
+[HpJ,JHm,Hp,Hm] = Array2TBHankel(Aph, m, "method", nvp.method);
 
 % state-outer -> harmonic-outer: same permutation as TB_2_BT, applied by
 % indexing so that sparse and symbolic inputs are preserved.

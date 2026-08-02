@@ -18,6 +18,10 @@ function [outM] = BT_2_TB(Ahm,nbloc)
     %       outM  - The resulting matrix in Toeplitz-block form.
     %
     %   See also: kron, shuffle_matrix
+arguments
+    Ahm
+    nbloc (1,1) double
+end
     
 [ni,nj]=size(Ahm);
 nia=ni/nbloc;

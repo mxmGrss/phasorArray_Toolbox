@@ -1,5 +1,5 @@
 function r= array2TFTB(o1,m)
-%F_tb Compute the Fourier representation of A in a form compatible with T_tb(A, m).
+%ARRAY2TFTB Compute the Fourier representation of A in a form compatible with T_tb(A, m).
 %
 %   This function computes the **Fourier representation** of A(t) up to order `m`, 
 %   but instead of forming a **square Toeplitz Block matrix** (T_tb(A, m)), it **stacks

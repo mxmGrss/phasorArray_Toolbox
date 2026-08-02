@@ -1,4 +1,4 @@
-function [HpJ,JHm,Hp,Hm] = spArray2TBHankel(Aph,m,varg)
+function [HpJ,JHm,Hp,Hm] = spArray2TBHankel(Aph,m,nvp)
 %SPARRAY2TBHANKEL Converts a 3D array to a Hankel * J positive Toeplitz-blocks matrix
 %   Takes a list of matrices (3D array) [A-nh1 ... A0 ... Anh1] and
 %   constructs a matrix made of Toeplitz blocks, each representing the
@@ -11,13 +11,13 @@ function [HpJ,JHm,Hp,Hm] = spArray2TBHankel(Aph,m,varg)
 arguments
     Aph
     m=[]
-    varg.method='cell2mat'
+    nvp.method='cell2mat'
 end
 
 Aph = pvalue(Aph);
 
 if isa(Aph,"ndsdpvar") || isa(Aph,"sdpvar")
-    varg.method='cat';
+    nvp.method='cat';
 end
 if nargin == 1
     [n1,n2,nhlenbis]=size(Aph);
@@ -27,7 +27,7 @@ if nargin == 1
 
 
 
-varg.method
+nvp.method
 
 elseif nargin>1
 
@@ -44,7 +44,7 @@ elseif nargin>1
 
 end
 
-switch varg.method
+switch nvp.method
     case 'cell2mat'
 % OutM=zeros(n1*(m+1),n2*(m+1));
 cp=cell(n1,n2);

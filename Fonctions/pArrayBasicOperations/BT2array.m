@@ -32,6 +32,10 @@ function [pA,Acell,outcat] = BT2array(A,nbloc)
     %       outcat - A concatenated version of the phasors in matrix form.
     %
     %   See also: num2cell, cell2mat
+arguments
+    A
+    nbloc (1,1) double
+end
 
 [nia,nja] = size(A);
 nia = nia/nbloc;

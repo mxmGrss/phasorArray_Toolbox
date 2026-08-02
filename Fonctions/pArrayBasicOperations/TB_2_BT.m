@@ -28,6 +28,10 @@ function [outM] = TB_2_BT(chm,nbloc)
     %     outM = TB_2_BT(chm, 3);
     %
     %   See also: kron, shuffle_matrix.
+arguments
+    chm
+    nbloc (1,1) double
+end
 [ni,nj]=size(chm);
 nia=ni/nbloc;
 nja=nj/nbloc ;
