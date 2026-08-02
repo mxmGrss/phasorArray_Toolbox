@@ -623,6 +623,42 @@ classdef PhasorArraySolversTest < matlab.unittest.TestCase
             testCase.verifyEqual(sqrt(energy(A)), norm(v, 'fro'), 'RelTol', 1e-12);
         end
 
+
+        function testInfoEstimatesTheOrderForANearZeroResidual(testCase)
+            % hForTargetResidual reuses the stepper's own extrapolation at a
+            % different target, so it costs nothing. It is an indication: NaN
+            % when there is nothing to fit, Inf when the fit blows up. What it
+            % must not do is mislead, so a loose solve has to predict roughly
+            % the order a tight one actually needs.
+            [~, tight] = lyap(testCase.A, testCase.Q, ...
+                'thresholdResidual', 1e-12, 'maxh', 300);
+            [~, loose] = lyap(testCase.A, testCase.Q, ...
+                'thresholdResidual', 5e-4, 'maxh', 300);
+
+            testCase.verifyTrue(isfield(loose, 'hForTargetResidual'));
+            testCase.verifyEqual(loose.targetResidual, 1e-12);
+
+            est = loose.hForTargetResidual;
+            if isfinite(est)
+                testCase.verifyGreaterThan(est, loose.h, ...
+                    'a tighter target cannot need a smaller order');
+                % An extrapolation, held to an order of magnitude rather than a
+                % value, and erring high is the safe direction. What this must
+                % catch is a fit that has blown up -- the same one that predicted
+                % 1e15 and made the loop give up at h=5.
+                testCase.verifyLessThan(est, 5*tight.h + 10, ...
+                    sprintf('estimate %g against the %d actually needed', est, tight.h));
+                testCase.verifyGreaterThan(est, tight.h/5, ...
+                    sprintf('estimate %g against the %d actually needed', est, tight.h));
+            end
+
+            % Present on every path, refined or not. Its value is an indication,
+            % so NaN or Inf are legitimate answers -- the contract is that the
+            % field is there and never silently wrong.
+            [~, fixedH] = lyap(testCase.A, testCase.Q, 'autoUpdateh', false);
+            testCase.verifyTrue(isfield(fixedH, 'hForTargetResidual'));
+        end
+
     end
 
     methods (Test, TestTags = {'Install'})

@@ -26,6 +26,9 @@ function [res, info] = lyap(pA1, pA2, pA3, nvp)
 %                         curve, not accuracy alone; ADAPTIVEHSOLVE documents
 %                         what that costs, and info.resrel_history against
 %                         info.h_history is the curve for your own problem.
+%                         info.hForTargetResidual estimates the order a
+%                         near-zero residual would take, so the cost of asking
+%                         for more is known before paying it.
 %     autoUpdateh         Enable adaptive h-refinement loop (default: false)
 %     maxh                Hard upper bound on h during adaptive loop; [] = h0*20 (default: [])
 %     stagnationWindow    Look-back window for stagnation detection (default: 5)
@@ -166,6 +169,8 @@ if ~autoUpdateh
     [res, resnorm, resrelnorm, resPhasor] = solveAtH(h);
     info = packInfo(3, sprintf('Fixed h=%d.', h), ...
         resrelnorm, resnorm, h, [], [], [], [], {}, [], [], res, resPhasor, nvp);
+    info.hForTargetResidual = NaN;   % no refinement, nothing to extrapolate
+    info.targetResidual     = NaN;
     return
 end
 
@@ -194,6 +199,9 @@ info = packInfo(trace.status, trace.statusMsg, best.resrelnorm, best.resnorm, be
     trace.h_history, trace.resrel_history, trace.res_history, trace.time_history, ...
     trace.regime_history, trace.s_alg_history, trace.s_exp_history, ...
     best.sol, best.resPhasor, nvp);
+% The order a near-zero residual would need, extrapolated at the exit.
+info.hForTargetResidual = trace.hForTargetResidual;
+info.targetResidual     = trace.targetResidual;
 
 end % lyap
 

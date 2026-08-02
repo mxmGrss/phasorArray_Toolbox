@@ -164,6 +164,9 @@ info = packInfo(trace.status, trace.statusMsg, best.resrelnorm, best.resnorm, be
     trace.h_history, trace.res_history, trace.resrel_history, trace.time_history, ...
     trace.regime_history, trace.s_alg_history, trace.s_exp_history, ...
     best.sol, best.resPhasor, nvp);
+% The order a near-zero residual would need, extrapolated at the exit.
+info.hForTargetResidual = trace.hForTargetResidual;
+info.targetResidual     = trace.targetResidual;
 
 end % mlHmcDivide
 
@@ -186,6 +189,8 @@ function info = packInfo(status, statusMsg, resrelnorm, resnorm, h, ...
 info.status         = status;
 info.statusMsg      = statusMsg;
 info.resrelnorm     = resrelnorm;
+info.hForTargetResidual = NaN;   % overwritten below when refinement ran
+info.targetResidual     = NaN;
 info.resnorm        = resnorm;
 info.h              = h;
 info.h_history      = h_history;
