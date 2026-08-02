@@ -587,6 +587,42 @@ classdef PhasorArraySolversTest < matlab.unittest.TestCase
             testCase.verifyWarningFree(@() mldivide(Ad, Bd));
         end
 
+
+        function testRelativeResidualIsScaleInvariant(testCase)
+            % Every solver divides the residual by the right-hand side, never by
+            % the solution. That makes resrelnorm invariant when the whole
+            % problem is scaled: multiplying Q by 1000 multiplies P, and the
+            % residual, by the same 1000. A solver normalising by anything else
+            % -- the solution, or nothing at all -- would move by three orders.
+            k = 1000;
+
+            [~, i1] = lyap(testCase.A, testCase.Q);
+            [~, i2] = lyap(testCase.A, k * testCase.Q);
+            testCase.verifyEqual(i2.resrelnorm, i1.resrelnorm, 'RelTol', 1e-6, ...
+                'lyap: relative residual moved with the scale of Q');
+
+            Ad = 0.2*PhasorArray.random(2, 2, 1) + PhasorArray.eye(2);
+            Bd = PhasorArray.random(2, 1, 1);
+            [~, i3] = mlHmcDivide(Ad, Bd);
+            [~, i4] = mlHmcDivide(Ad, k * Bd);
+            testCase.verifyEqual(i4.resrelnorm, i3.resrelnorm, 'RelTol', 1e-6, ...
+                'mlHmcDivide: relative residual moved with the scale of B');
+
+            % And the absolute one must move, otherwise nothing was scaled.
+            testCase.verifyEqual(i2.resnorm / i1.resnorm, k, 'RelTol', 1e-3, ...
+                'lyap: the absolute residual did not follow the scaling');
+        end
+
+        function testEnergyAndFrobeniusAgreeOnThePayload(testCase)
+            % The solvers write the same quantity two ways -- norm(X.value,'fro')
+            % in lyap and mlHmcDivide, sqrt(energy(X)) in place. They must be one
+            % metric, which by Parseval is the L2 norm of X(t) over a period.
+            A = PhasorArray.random(3, 3, 4);
+            v = A.value;
+            testCase.verifyEqual(sqrt(energy(A)), norm(v(:)), 'RelTol', 1e-12);
+            testCase.verifyEqual(sqrt(energy(A)), norm(v, 'fro'), 'RelTol', 1e-12);
+        end
+
     end
 
     methods (Test, TestTags = {'Install'})
