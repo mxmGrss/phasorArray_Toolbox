@@ -1,4 +1,4 @@
-function [K, X, info] = hare(A, B, Q, R, options)
+function [K, X, info] = hare(A, B, Q, R, nvp)
 %HARE  Harmonic Algebraic Riccati Equation solver ((G)HARE) for a periodic system.
 %
 %   [K, X, info] = HARE(A, B, Q, R) solves the periodic (LTP) control PDRE for
@@ -15,7 +15,7 @@ function [K, X, info] = hare(A, B, Q, R, options)
 %   MATLAB-style: A is the object; B, Q, R are positional; everything else is
 %   name-value. Mirrors care/icare in spirit.
 %
-%   Name-value options:
+%   Name-value nvp:
 %     E               Descriptor mass matrix; [] → base HARE (default []).
 %     direction       'backward' (control, default) | 'forward' (filter /
 %                     covariance integration, the dual HARE).
@@ -24,19 +24,24 @@ function [K, X, info] = hare(A, B, Q, R, options)
 %                     fallback inside the solver (default []).
 %     T               Period (default 2*pi).
 %     h               Fixed harmonic truncation; [] → auto (default []).
+%     maxh            Hard upper bound on h; [] → h0*20 (default []).
 %     autoUpdateh     Adaptive h-refinement (default true).
 %     maxIter         Max Kleinman iterations (default 100).
 %     thresholdResidual  Convergence threshold (default 1e-8).
+%     skipValidate    Skip the Floquet check of a provided K0 (default true).
+%                     Set false to re-check it and fall back if it fails.
 %     verbose         Iteration print level (default 0).
+%
+%   Deeper solver tuning — updateMethod, stagnationWindow, warmStartFraction,
+%   reduceThreshold — stays on RicHarmonicKlein, which this forwards to.
 %
 %   Outputs:
 %     K     PhasorArray optimal gain.
 %     X     PhasorArray Riccati solution.
 %     info  Solver diagnostics struct.
 %
-%   The standard (E = [], backward, product) case routes to RicHarmonicKlein;
-%   any descriptor / forward / sandwich request routes to RicHarmonicKleinGen
-%   (with E = I when E is omitted).
+%   All cases route to RicHarmonicKlein, which takes the mass matrix as
+%   name-value 'E' and branches internally where the formulations differ.
 %
 %   See also: lyap, RicHarmonicKlein, RicHarmonicKleinGen, KalHarmonicKleinGen.
 
@@ -45,33 +50,34 @@ arguments
     B
     Q
     R
-    options.E                                   = []
-    options.direction      {mustBeMember(options.direction,     {'backward','forward'})} = 'backward'
-    options.derivativeForm {mustBeMember(options.derivativeForm,{'product','sandwich'})} = 'product'
-    options.K0                                  = []
-    options.T              (1,1) double         = 2*pi
-    options.h                                   = []
-    options.autoUpdateh    (1,1) logical        = true
-    options.maxIter        (1,1) {mustBeInteger, mustBePositive} = 100
-    options.thresholdResidual (1,1) double      = 1e-8
-    options.verbose        (1,1) {mustBeInteger, mustBeNonnegative} = 0
+    nvp.E                                   = []
+    nvp.direction      {mustBeMember(nvp.direction,     {'backward','forward'})} = 'backward'
+    nvp.derivativeForm {mustBeMember(nvp.derivativeForm,{'product','sandwich'})} = 'product'
+    nvp.K0                                  = []
+    nvp.T              (1,1) double         = 2*pi
+    nvp.h                                   = []
+    nvp.maxh                                = []
+    nvp.autoUpdateh    (1,1) logical        = true
+    nvp.maxIter        (1,1) {mustBeInteger, mustBePositive} = 100
+    nvp.thresholdResidual (1,1) double      = 1e-8
+    nvp.skipValidate   (1,1) logical        = true
+    nvp.verbose        (1,1) {mustBeInteger, mustBeNonnegative} = 0
 end
 
-common = {'maxIter', options.maxIter, 'h', options.h, ...
-          'autoUpdateh', options.autoUpdateh, ...
-          'thresholdResidual', options.thresholdResidual, ...
-          'verbose', options.verbose};
+common = {'maxIter', nvp.maxIter, 'h', nvp.h, 'maxh', nvp.maxh, ...
+          'skipValidate', nvp.skipValidate, ...
+          'autoUpdateh', nvp.autoUpdateh, ...
+          'thresholdResidual', nvp.thresholdResidual, ...
+          'verbose', nvp.verbose};
 
-useGen = ~isempty(options.E) ...
-      || strcmp(options.direction, 'forward') ...
-      || strcmp(options.derivativeForm, 'sandwich');
-
-if useGen
-    E = options.E;
-    if isempty(E), E = PhasorArray(eye(size(A,1))); end   % E = I → reduces to base HARE
-    [K, X, info] = RicHarmonicKleinGen(A, B, Q, R, E, options.K0, options.T, ...
-        common{:}, 'direction', options.direction, 'derivativeForm', options.derivativeForm);
+% Forward 'E' only if given: an absent E keeps the fast path (~1.6x cheaper
+% than solving with E = I). direction/derivativeForm work on both paths.
+if isempty(nvp.E)
+    mass = {};
 else
-    [K, X, info] = RicHarmonicKlein(A, B, Q, R, options.K0, options.T, common{:});
+    mass = {'E', nvp.E};
 end
+
+[K, X, info] = RicHarmonicKlein(A, B, Q, R, nvp.K0, nvp.T, common{:}, ...
+    'direction', nvp.direction, 'derivativeForm', nvp.derivativeForm, mass{:});
 end

@@ -1,4 +1,4 @@
-function [L, Y, info] = KalHarmonicKleinGen(A, C, W, V, E, L0, T, options)
+function [L, Y, info] = KalHarmonicKleinGen(A, C, W, V, E, L0, T, nvp)
 %KALHARMONICKLEINGEN  Periodic descriptor Kalman filter via dual GPDRE-LTP.
 %
 %   Computes the steady-state (T-periodic) Kalman filter for the linear
@@ -151,21 +151,21 @@ arguments
     E                                                    = []               % mass matrix; [] → identity
     L0                                                   = []               % initial gain; [] → DC fallback
     T                            (1,1) double            = 2*pi             % period
-    options.maxIter              (1,1) {mustBeInteger, mustBePositive} = 100
-    options.h                                            = []               % [] → auto
-    options.autoUpdateh          (1,1) logical           = false
-    options.maxh                                         = []               % [] → h0*20
-    options.systemType           {mustBeMember(options.systemType,    {'rectangle','square'})}    = 'rectangle'
-    options.updateMethod         {mustBeMember(options.updateMethod,  {'adaptive','incremental'})} = 'adaptive'
-    options.thresholdResidual    (1,1) double            = 1e-6
-    options.relChangeThreshold   (1,1) double            = 1e-14
-    options.reduceThreshold      (1,1) double            = 0               % 0 → τ_ric/100
-    options.warmStartFraction    (1,1) double            = 0.7             % ∈ (0,1]
-    options.stagnationWindow     (1,1) {mustBeInteger, mustBePositive} = 5
-    options.stagnationRatio      (1,1) double            = 0.05
-    options.verbose              (1,1) {mustBeInteger, mustBeNonnegative} = 0
-    options.storeIterates        (1,1) logical           = false
-    options.skipValidate         (1,1) logical           = true
+    nvp.maxIter              (1,1) {mustBeInteger, mustBePositive} = 100
+    nvp.h                                            = []               % [] → auto
+    nvp.autoUpdateh          (1,1) logical           = false
+    nvp.maxh                                         = []               % [] → h0*20
+    nvp.systemType           {mustBeMember(nvp.systemType,    {'rectangle','square'})}    = 'rectangle'
+    nvp.updateMethod         {mustBeMember(nvp.updateMethod,  {'adaptive','incremental'})} = 'adaptive'
+    nvp.thresholdResidual    (1,1) double            = 1e-6
+    nvp.relChangeThreshold   (1,1) double            = 1e-14
+    nvp.reduceThreshold      (1,1) double            = 0               % 0 → τ_ric/100
+    nvp.warmStartFraction    (1,1) double            = 0.7             % ∈ (0,1]
+    nvp.stagnationWindow     (1,1) {mustBeInteger, mustBePositive} = 5
+    nvp.stagnationRatio      (1,1) double            = 0.05
+    nvp.verbose              (1,1) {mustBeInteger, mustBeNonnegative} = 0
+    nvp.storeIterates        (1,1) logical           = false
+    nvp.skipValidate         (1,1) logical           = true
 end
 
 W = PhasorArray(W);
@@ -192,7 +192,7 @@ else
 end
 
 %% --- Solve the dual control GPDRE (forward + sandwich — see theory §3-§4) ---
-opts = namedargs2cell(options);
+opts = namedargs2cell(nvp);
 [Kc, Y, info] = RicHarmonicKleinGen(Ac, Bc, W, V, Ec, K0c, T, ...
     opts{:}, 'derivativeForm', 'sandwich', 'direction', 'forward');
 
