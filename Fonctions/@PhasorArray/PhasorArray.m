@@ -796,7 +796,8 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 nvp.updateMethod    {mustBeMember(nvp.updateMethod,{'adaptive','incremental'})} = 'adaptive'
             end
             C = namedargs2cell(nvp);
-            r = mrHmcDivide(PhasorArray(pA1), PhasorArray(pA2), C{:});
+            [r, residual] = mrHmcDivide(PhasorArray(pA1), PhasorArray(pA2), C{:});
+            warnIfNotConverged(residual, 'mrHmcDivide(B, A, ...)');
         end
         function r = mldivide(pA1,pA2,nvp)
             %MLDIVIDE Overloads the left matrix division operator (\) for PhasorArray.
@@ -826,7 +827,10 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 nvp.updateMethod    {mustBeMember(nvp.updateMethod,{'adaptive','incremental'})} = 'adaptive'
             end
             C = namedargs2cell(nvp);
-            r = mlHmcDivide(PhasorArray(pA1), PhasorArray(pA2), C{:});
+            [r, residual] = mlHmcDivide(PhasorArray(pA1), PhasorArray(pA2), C{:});
+            % The operator form takes no options, so a caller who hits a
+            % non-converged solve has nowhere to turn unless told where.
+            warnIfNotConverged(residual, 'mlHmcDivide(A, B, ...)');
         end
 
 
@@ -856,7 +860,8 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             A PhasorArray
             nvp.h                = []
             nvp.thresholdResidual = 5e-4
-            nvp.autoUpdateh      = false
+            nvp.autoUpdateh      = true   % as mlHmcDivide: the mirror operation
+                                          % had the opposite default for no reason
             nvp.maxh             = []    % hard upper bound on h (default: h0 * 20)
             nvp.stagnationWindow = 15     % look-back window for stagnation detection
             nvp.stagnationRatio  = 0.02  % relative improvement threshold (< 5% = stagnation)

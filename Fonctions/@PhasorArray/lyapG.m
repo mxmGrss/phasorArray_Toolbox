@@ -109,7 +109,7 @@ arguments
     nvp.T                   (1,1) double  = 2*pi
     nvp.h                                 = []            % [] triggers autoUpdateh
     nvp.thresholdResidual   (1,1) double  = 1e-6
-    nvp.autoUpdateh         (1,1) logical = false
+    nvp.autoUpdateh         (1,1) logical = true
     nvp.maxh                              = []            % default: h0 * 20
     nvp.stagnationWindow    (1,1) {mustBeInteger, mustBePositive} = 5
     nvp.stagnationRatio     (1,1) double  = 0.05

@@ -544,6 +544,49 @@ classdef PhasorArraySolversTest < matlab.unittest.TestCase
             testCase.verifyLessThan(iAd.resrelnorm, 1e-10, 'residual not converged');
         end
 
+
+        function testEverySolverRefinesByDefault(testCase)
+            % The five entry points share one driver and must share one default,
+            % otherwise the same problem converges or not depending on which one
+            % the caller reached for. mrHmcDivide used to default to a fixed
+            % order while its mirror mlHmcDivide refined.
+            Ad = 0.2*PhasorArray.random(2, 2, 1) + PhasorArray.eye(2);
+            Bd = PhasorArray.random(2, 1, 1);
+            E  = 0.1*PhasorArray.random(2, 2, 1) + PhasorArray.eye(2);
+
+            [~, iL]  = lyap(testCase.A, testCase.Q);
+            [~, iG]  = lyapG(testCase.A, testCase.Q, E);
+            [~, iMl] = mlHmcDivide(Ad, Bd);
+            [~, iMr] = mrHmcDivide(PhasorArray.random(1, 2, 1), Ad);
+            [~, ~, ~, iP] = place(testCase.A, PhasorArray([1; 0.5]), [-6; -7]);
+
+            names = {'lyap', 'lyapG', 'mlHmcDivide', 'mrHmcDivide', 'place'};
+            infos = {iL, iG, iMl, iMr, iP};
+            for k = 1:numel(infos)
+                testCase.verifyNotEqual(infos{k}.status, 3, ...
+                    sprintf('%s did not refine with its default settings', names{k}));
+                testCase.verifyEqual(infos{k}.status, 0, ...
+                    sprintf('%s did not converge: %s', names{k}, infos{k}.statusMsg));
+            end
+        end
+
+        function testOperatorFormPointsAtTheMethodWhenItFails(testCase)
+            % \ and / take no name-value pairs, so a caller who hits a
+            % non-converged solve needs to be told where the knobs live.
+            % Independent of the ambient warning state: a suite run with
+            % warnings off would otherwise see nothing to catch.
+            prev = warning('on', 'PhasorArray:divide:notConverged');
+            restore = onCleanup(@() warning(prev));
+
+            Ad = 0.2*PhasorArray.random(2, 2, 1) + PhasorArray.eye(2);
+            Bd = PhasorArray.random(2, 1, 1);
+            testCase.verifyWarning( ...
+                @() mldivide(Ad, Bd, 'maxh', 1, 'thresholdResidual', 1e-14), ...
+                'PhasorArray:divide:notConverged');
+            % A converged solve stays silent.
+            testCase.verifyWarningFree(@() mldivide(Ad, Bd));
+        end
+
     end
 
     methods (Test, TestTags = {'Install'})
