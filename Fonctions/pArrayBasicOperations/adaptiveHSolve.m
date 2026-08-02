@@ -8,9 +8,9 @@ function [best, trace] = adaptiveHSolve(solveAtH, h0, cfg)
 %   Repeatedly solves a harmonic equation at increasing truncation order h until
 %   the relative residual falls below cfg.thresholdResidual, the residual
 %   stagnates, or h reaches cfg.maxh. Shared by PhasorArray/lyap,
-%   PhasorArray/lyapG and PhasorArray/mlHmcDivide, which differ only in the
-%   equation being solved (supplied as the solveAtH callback) and in the info
-%   struct they finally publish.
+%   PhasorArray/lyapG, PhasorArray/mlHmcDivide, PhasorArray/mrHmcDivide and
+%   PhasorArray/place, which differ only in the equation being solved (supplied
+%   as the solveAtH callback) and in the info struct they finally publish.
 %
 %   STEP-SIZE STRATEGY
 %   The relative residual e(h) of a harmonic truncation typically decays either
@@ -41,7 +41,10 @@ function [best, trace] = adaptiveHSolve(solveAtH, h0, cfg)
 %                Closes over the caller's operands. Called once per order.
 %     h0       - Initial harmonic order (non-negative integer).
 %     cfg      - Configuration struct with fields:
-%                  .thresholdResidual  Target relative residual.
+%                  .thresholdResidual  Target relative residual. The callback
+%                                      owns the normalisation; every solver
+%                                      here divides by the right-hand side,
+%                                      never by the solution.
 %                  .maxh               Upper bound on h; [] = max(h0*20, h0+20).
 %                  .stagnationWindow   Look-back length for stagnation detection,
 %                                      which watches the residual and aborts.
@@ -79,7 +82,8 @@ function [best, trace] = adaptiveHSolve(solveAtH, h0, cfg)
 %                    'preamble', "", 'label', "h");
 %     [best, trace] = adaptiveHSolve(solve, 4, cfg);
 %
-%   See also: PhasorArray/lyap, PhasorArray/lyapG, PhasorArray/mlHmcDivide
+%   See also: PhasorArray/lyap, PhasorArray/lyapG, PhasorArray/mlHmcDivide,
+%             PhasorArray/mrHmcDivide, PhasorArray/place, warnIfNotConverged
 
 arguments
     solveAtH (1,1) function_handle

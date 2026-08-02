@@ -13,7 +13,9 @@ function [r, info] = mlHmcDivide(A, B, nvp)
 %
 %   Options (name-value):
 %     h                   Fixed hIn; [] = max(A.h, B.h) + A.h (default: [])
-%     thresholdResidual   Convergence threshold on relative residual (default: 5e-4)
+%     thresholdResidual   Convergence threshold on the relative residual
+%                         (default: 5e-4). Relative to the right-hand side:
+%                         norm(A*X-B,'fro') / norm(B,'fro'), never to X.
 %     autoUpdateh         Enable adaptive hIn-refinement loop (default: false)
 %     maxh                Hard upper bound on hIn; [] = max(hIn*20, hIn+20) (default: [])
 %     stagnationWindow    Look-back window for stagnation detection (default: 15)

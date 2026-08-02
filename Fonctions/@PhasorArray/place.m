@@ -23,8 +23,9 @@ function [K,P,res,info] = place(A,B,poles,nvp)
     %         'tolCheckP' (double, default: 1e-8)     - Tolerance for that check.
     %         'autoUpdateh' (logical, default: true)  - Refine the order until the
     %                     Sylvester residual converges.
-    %         'thresholdResidual' (double, default: 1e-10) - Target relative
-    %                     residual for the refinement.
+    %         'thresholdResidual' (double, default: 1e-10) - Target residual for
+    %                     the refinement, relative to the forcing term B*G and
+    %                     never to P.
     %         'maxh', 'stagnationWindow', 'stagnationRatio', 'updateMethod',
     %         'verbose' - passed through to ADAPTIVEHSOLVE.
     %

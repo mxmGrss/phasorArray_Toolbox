@@ -18,7 +18,10 @@ function [res, info] = lyap(pA1, pA2, pA3, nvp)
 %   Options (name-value):
 %     T                   Period of the periodic system (default: 2*pi)
 %     h                   Fixed harmonic truncation order; [] = auto (default: [])
-%     thresholdResidual   Convergence threshold on relative residual (default: 1e-6)
+%     thresholdResidual   Convergence threshold on the relative residual
+%                         (default: 1e-6). Relative to the constant term:
+%                         norm(residual,'fro') / norm(Q,'fro'), never to the
+%                         solution, so a large P cannot flatter a bad answer.
 %     autoUpdateh         Enable adaptive h-refinement loop (default: false)
 %     maxh                Hard upper bound on h during adaptive loop; [] = h0*20 (default: [])
 %     stagnationWindow    Look-back window for stagnation detection (default: 5)
