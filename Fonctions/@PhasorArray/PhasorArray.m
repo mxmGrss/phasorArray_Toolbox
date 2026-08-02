@@ -651,21 +651,25 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %   R = TIMES(O1,O2) returns a PhasorArray containing the element-wise
             %   multiplication of O1 and O2. Both inputs must be PhasorArray objects
             %   (or unify to the same dimension).
-            d=PhasorUnif(pA1,pA2);
-            pA1=d{1};
-            pA2=d{2};
-            for ii = 1:size(pA1,1)
-                for jj = 1:size(pA1,2)
-                    if ii==1 && jj==1
-                        rr=PhasorArrayTimes(pA1(ii,jj,:),pA2(ii,jj,:),"reduce", false);
-                        r=zeros(size(pA1,1),size(pA1,2),size(rr,3));
-                        r(ii,jj,:)=rr;
-                    else
-                        r(ii,jj,:)=PhasorArrayTimes(pA1(ii,jj,:),pA2(ii,jj,:),"reduce", false);
-                    end
+            % Assembled with cat rather than written into a preallocated array:
+            % zeros() is double, and assigning an sdpvar into it dropped the
+            % decision variables silently, a sym one raised outright.
+            % PhasorArrayTimes reads each operand's order on its own, so padding
+            % them to a common one beforehand only inflated the result -- a
+            % constant mask against an order-5 array came back at order 10.
+            a = pvalue(PhasorArray(pA1));
+            b = pvalue(PhasorArray(pA2));
+            [n1, n2, ~] = size(a);
+            rows = cell(n1, 1);
+            for ii = 1:n1
+                cols = cell(1, n2);
+                for jj = 1:n2
+                    cols{jj} = PhasorArrayTimes(a(ii,jj,:), b(ii,jj,:), [], ...
+                        "reduce", false, "output", "Array");
                 end
+                rows{ii} = cat(2, cols{:});
             end
-            r = PhasorArray(r);
+            r = PhasorArray(cat(1, rows{:}));
             try
                 if ~isreal(r) && isreal(pA1) && isreal(pA2) %warning very costly for big phasorArray
                     r = mreal(r);

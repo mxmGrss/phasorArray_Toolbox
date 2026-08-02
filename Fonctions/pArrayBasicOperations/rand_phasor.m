@@ -36,13 +36,12 @@ function [A] = rand_phasor(nx,ny,h,nvp)
     %     - 'symmetry' constrains structure, never the spectrum. For prescribed
     %       Floquet exponents use PhasorArray.randomWithNPole; for positive
     %       definiteness use PhasorArray.randomSPD.
-    %     - A sparsity pattern is not a symmetry and has no name here. Mask the
-    %       coefficients instead; the 2-D mask broadcasts over the harmonics, and
-    %       zeroing entries preserves realness:
+    %     - A sparsity pattern is not a symmetry and has no name here. Multiply by
+    %       a constant mask instead. The mask has order 0, so the product leaves
+    %       the order alone, and zeroing entries preserves realness:
     %           A = PhasorArray.random(3, 3, 5);
-    %           U = PhasorArray(A.value .* triu(ones(3)));   % A(t) upper triangular
-    %       For an ndsdpvar the mask has to match all three dimensions:
-    %           M = repmat(triu(ones(3)), 1, 1, 2*h+1);
+    %           U = A .* PhasorArray(triu(ones(3)));         % A(t) upper triangular
+    %       This works on sym and sdpvar payloads too.
     %
     %   Example
     %       A = rand_phasor(3, 3, 5, "symmetry", ["real" "symmetric"]);

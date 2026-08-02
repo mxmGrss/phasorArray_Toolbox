@@ -366,6 +366,35 @@ classdef PhasorArrayCalculusTest < matlab.unittest.TestCase
                 'the energy of cos is |1/2|^2 twice');
         end
 
+
+        function testElementwiseProductMatchesTheTimeDomain(testCase)
+            % A .* B is the entrywise product of the two periodic matrices, so its
+            % order is the sum of the operands' and it must agree pointwise.
+            A = PhasorArray.random(3, 3, 5);
+            B = PhasorArray.random(3, 3, 3);
+            C = A .* B;
+            testCase.verifyEqual(C.h, A.h + B.h, 'the order must be the sum');
+
+            th = linspace(0, 2*pi, 17);
+            testCase.verifyEqual(evalp(C, th), evalp(A, th) .* evalp(B, th), 'AbsTol', 1e-12);
+        end
+
+        function testConstantMaskDoesNotInflateTheOrder(testCase)
+            % Multiplying by a constant mask must leave the order alone. It used to
+            % pad both operands to a common order first, so an order-5 array came
+            % back at order 10, zeros above 5.
+            A = PhasorArray.random(3, 3, 5);
+            U = A .* PhasorArray(triu(ones(3)));
+
+            testCase.verifyEqual(U.h, A.h, 'a constant mask changed the order');
+            testCase.verifyTrue(isrealp(U), 'masking must preserve realness');
+            Ut = evalp(U, linspace(0, 2*pi, 17));
+            for k = 1:size(Ut, 3)
+                testCase.verifyEqual(tril(Ut(:,:,k), -1), zeros(3), 'AbsTol', 1e-14, ...
+                    'A(t) is not upper triangular');
+            end
+        end
+
     end
 
     methods (Test, TestTags = {'Install'})

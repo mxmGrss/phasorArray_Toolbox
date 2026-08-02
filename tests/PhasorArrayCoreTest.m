@@ -594,6 +594,26 @@ classdef PhasorArrayCoreTest < matlab.unittest.TestCase
             testCase.verifyError(@() reduce(P), 'PhasorArray:reduce:symbolicPayload');
             testCase.verifyError(@() reduce(P, 1), 'PhasorArray:reduce:symbolicPayload');
         end
+
+        function testElementwiseProductKeepsSymbolicPayloads(testCase)
+            % times assembled its result into a preallocated zeros() array, which
+            % is double: an sdpvar operand came back as a constant with no
+            % decision variables left, and a sym one raised outright.
+            D = PhasorArray.random(2, 2, 1);
+
+            testCase.needSymbolic();
+            S = PhasorArray.sym(2, 2, 1, "A", "isreal", true);
+            testCase.verifySym(S .* D, 'sym .* double');
+            testCase.verifySym(D .* S, 'double .* sym');
+
+            testCase.needYalmip();
+            P = PhasorArray.ndsdpvar(2, 2, 1, "symmetry", "real");
+            testCase.verifySdp(P .* D, 'sdpvar .* double');
+            R = P .* D;
+            testCase.verifyGreaterThan(numel(depends(R.value)), 0, ...
+                'the product kept the class but lost every decision variable');
+        end
+
     end
 
     methods (Test, TestTags = {'Install'})
