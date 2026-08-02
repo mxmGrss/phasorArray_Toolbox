@@ -332,6 +332,40 @@ classdef PhasorArrayCalculusTest < matlab.unittest.TestCase
             testCase.verifyTrue(d.h == 2, 'det of 2x2 with h=1 should have h=2');
         end
 
+
+        function testParkMapsBalancedThreePhaseToConstantDq0(testCase)
+            % The defining property, and the one that fixes the operand order:
+            % Park(0) applied to a balanced set gives d = 1, q = 0, zero = 0,
+            % constant in time. testParkOrthogonal cannot see the order --
+            % swapping the two factors changes the matrix by 0.577 yet leaves
+            % P*P' diagonal, because both factors are orthogonal.
+            P = PhasorArray.Park(0);
+            th = linspace(0, 2*pi, 17);
+            th(end) = [];
+            abc = [cos(th); cos(th - 2*pi/3); cos(th + 2*pi/3)];
+            Pt = evalp(P, th);
+
+            dq0 = zeros(3, numel(th));
+            for k = 1:numel(th)
+                dq0(:, k) = Pt(:, :, k) * abc(:, k);
+            end
+            testCase.verifyEqual(dq0(1, :), ones(1, numel(th)), 'AbsTol', 1e-10, 'd is not 1');
+            testCase.verifyEqual(dq0(2, :), zeros(1, numel(th)), 'AbsTol', 1e-10, 'q is not 0');
+            testCase.verifyEqual(dq0(3, :), zeros(1, numel(th)), 'AbsTol', 1e-10, 'the zero sequence is not 0');
+        end
+
+        function testEnergyEqualsSumOfSquaredCoefficients(testCase)
+            % Parseval as an absolute value. The E = Edc + Eac and
+            % E = Ereal + Eimag checks are invariant under a common scale
+            % factor, so they cannot detect an energy that is uniformly wrong.
+            A = PhasorArray.random(3, 3, 5);
+            testCase.verifyEqual(energy(A), sum(abs(A.value).^2, 'all'), 'RelTol', 1e-12);
+
+            % A single harmonic of known amplitude: cos has c_1 = c_-1 = 1/2.
+            testCase.verifyEqual(energy(PhasorArray.cos()), 0.5, 'AbsTol', 1e-12, ...
+                'the energy of cos is |1/2|^2 twice');
+        end
+
     end
 
     methods (Test, TestTags = {'Install'})

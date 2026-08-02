@@ -79,6 +79,33 @@ classdef PhasorArrayCompatibilityTest < matlab.unittest.TestCase
             testCase.verifyEqual(full(sparseM), dense, 'AbsTol', testCase.tol);
         end
 
+
+        function testDerivativeFallbackHandlesSymbolicPayloads(testCase)
+            % d() multiplies by jk*omega through bsxfun, and catches the failure
+            % to loop slice by slice for payloads that cannot broadcast. The
+            % catch is silent -- the warnings in it are commented out -- so a
+            % break in the fast path would degrade quietly. Only a symbolic
+            % operand reaches the loop.
+            testCase.assumeTrue(logical(exist('sym', 'file')), 'Symbolic Math Toolbox required');
+            A = PhasorArray.sym(2, 2, 1, "A", "isreal", true);
+            dA = d(A, 2*pi);
+
+            testCase.verifyClass(dA.value, 'sym', 'the derivative dropped the sym payload');
+            testCase.verifyEqual(dA.h, A.h, 'differentiating must not change the order');
+            % omega = 1, so harmonic k is multiplied by 1i*k and the mean dies.
+            testCase.verifyEqual(simplify(dA{1,1,0}), sym(0), 'the DC term must vanish');
+            testCase.verifyEqual(simplify(dA{1,1,1} - 1i*A{1,1,1}), sym(0), ...
+                'harmonic +1 must be multiplied by 1i');
+        end
+
+        function testDerivativeFallbackKeepsTheSdpvarPayload(testCase)
+            testCase.assumeTrue(exist('sdpvar', 'file') == 2, 'YALMIP required');
+            P = PhasorArray.ndsdpvar(2, 2, 1, "symmetry", "real");
+            dP = d(P, 2*pi);
+            testCase.verifyTrue(isa(dP.value, 'ndsdpvar') || isa(dP.value, 'sdpvar'), ...
+                'the derivative dropped the sdpvar payload');
+        end
+
     end
 
     methods (Test, TestTags = {'Install'})
