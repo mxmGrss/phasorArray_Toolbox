@@ -88,6 +88,9 @@ results(end+1) = runTest('Park: P * P^T = I (orthogonality)', @() test_Park_orth
 results(end+1) = runTest('Lyapunov: LTI case (constant A, Q)', @() test_lyap_LTI(tol));
 results(end+1) = runTest('Lyapunov: LTP case (periodic A)', @() test_lyap_LTP(tol));
 results(end+1) = runTest('Sylvester: (A+N)X + X(B-N) + C = 0', @() test_sylvester(tol));
+results(end+1) = runTest('adaptiveHSolve: h strictly increases', @() test_adaptiveH_progress());
+results(end+1) = runTest('adaptiveHSolve: status + best-iterate contract', @() test_adaptiveH_status());
+results(end+1) = runTest('adaptiveHSolve: shared by lyap/lyapG/mlHmcDivide', @() test_adaptiveH_infoFields());
 
 %% ========================================================================
 %  6. LTP SIMULATION (initial, lsim)
@@ -200,31 +203,31 @@ end
 %  2. YALMIP TESTS
 %  ========================================================================
 function test_ndsdpvar_construct()
-    P = PhasorArray.ndsdpvar(3, 3, 2, 'PhasorType', 'symmetric', 'real', true);
+    P = PhasorArray.ndsdpvar(3, 3, 2);
     assert(isa(P, 'PhasorArray'), 'Should be PhasorArray');
     assert(P.h == 2, 'Harmonic order should be 2');
     assert(size(P, 1) == 3 && size(P, 2) == 3, 'Size should be 3x3');
 end
 
 function test_ndsdpvar_add()
-    P = PhasorArray.ndsdpvar(2, 2, 1, 'PhasorType', 'full', 'real', true);
-    Q = PhasorArray.ndsdpvar(2, 2, 1, 'PhasorType', 'full', 'real', true);
+    P = PhasorArray.ndsdpvar(2, 2, 1, "symmetry", "real");
+    Q = PhasorArray.ndsdpvar(2, 2, 1, "symmetry", "real");
     R = P + Q;
     assert(isa(R, 'PhasorArray'), 'Sum should be PhasorArray');
 end
 
 function test_ndsdpvar_diag()
-    P = PhasorArray.ndsdpvar(3, 3, 1, 'PhasorType', 'symmetric', 'real', true);
+    P = PhasorArray.ndsdpvar(3, 3, 1);
     d = diag(P);
     assert(size(d, 1) == 3 && size(d, 2) == 1, 'diag should extract 3x1 vector');
     % blkdiag with ndsdpvar
-    Q = PhasorArray.ndsdpvar(2, 2, 0, 'PhasorType', 'full', 'real', true);
+    Q = PhasorArray.ndsdpvar(2, 2, 0, "symmetry", "real");
     R = blkdiag(P, Q);
     assert(size(R, 1) == 5 && size(R, 2) == 5, 'blkdiag should give 5x5');
 end
 
 function test_ndsdpvar_detLeibniz()
-    P = PhasorArray.ndsdpvar(2, 2, 3, 'PhasorType', 'full', 'real', true);
+    P = PhasorArray.ndsdpvar(2, 2, 3, "symmetry", "real");
     d = detLeibnizHmc(P);
     assert(isa(d, 'PhasorArray'), 'det should return PhasorArray');
     % The result should contain sdpvar expressions
@@ -340,6 +343,75 @@ function test_lyap_LTI(~)
     X_ref = lyap(A_const', eye(n));
     err = max(abs(X_dc - X_ref), [], 'all');
     assert(err < 1e-6, sprintf('LTI Lyapunov DC vs MATLAB lyap: %e', err));
+end
+
+function test_adaptiveH_progress()
+    % The refinement order must strictly increase at every step, whatever the
+    % step rule decides. This is the guard that makes a non-terminating loop
+    % structurally impossible; it is exercised here through a deliberately
+    % pathological callback whose residual never improves, so the step rule
+    % lands in the 'stagnated' regime and proposes deltah = 1 forever.
+    stuck = @(h) deal(PhasorArray.eye(2), 1, 1, PhasorArray.eye(2));  % residual never moves
+    cfg = struct('thresholdResidual', 1e-12, 'maxh', 8, ...
+        'stagnationWindow', 100, 'stagnationRatio', 0, ...
+        'updateMethod', 'adaptive', 'verbose', false, 'hOp', 1, ...
+        'hOutFcn', @(h) h, 'preamble', '', 'label', 'h');
+
+    [best, trace] = adaptiveHSolve(stuck, 0, cfg);
+
+    assert(all(diff(trace.h_history) >= 1), ...
+        sprintf('h_history is not strictly increasing: %s', mat2str(trace.h_history)));
+    assert(trace.h_history(end) <= 8, 'maxh was exceeded.');
+    assert(trace.status == 2, sprintf('Expected status 2 (maxh), got %d.', trace.status));
+    assert(best.h == trace.h_history(1), 'Best iterate should be the first (no improvement occurred).');
+end
+
+function test_adaptiveH_status()
+    % Convergence must be reported as status 0 and must publish the CONVERGED
+    % iterate, not merely the smallest-residual one seen so far.
+    % Residual model: e(h) = 10^-h, so the threshold is crossed at a known h.
+    solve = @(h) deal(PhasorArray.eye(2)*(h+1), 10^-h, 10^-h, PhasorArray.eye(2));
+    cfg = struct('thresholdResidual', 1e-3, 'maxh', 20, ...
+        'stagnationWindow', 100, 'stagnationRatio', 0, ...
+        'updateMethod', 'incremental', 'verbose', false, 'hOp', 0, ...
+        'hOutFcn', @(h) h, 'preamble', '', 'label', 'h');
+
+    [best, trace] = adaptiveHSolve(solve, 0, cfg);
+
+    assert(trace.status == 0, sprintf('Expected status 0 (converged), got %d.', trace.status));
+    assert(best.resrelnorm <= 1e-3, 'Returned iterate does not meet the threshold.');
+    assert(best.h == 3, sprintf('Expected convergence at h=3, got h=%d.', best.h));
+    % best.sol must be the solution computed AT best.h
+    assert(isequal(value(best.sol), value(PhasorArray.eye(2)*(best.h+1))), ...
+        'best.sol does not correspond to best.h.');
+    assert(numel(trace.h_history) == numel(trace.resrel_history), 'History lengths disagree.');
+    assert(numel(trace.h_history) == numel(trace.time_history), 'time_history length disagrees.');
+end
+
+function test_adaptiveH_infoFields()
+    % All three solvers now share the driver, so all three must publish the
+    % same diagnostics contract (mlHmcDivide gained time_history in the process).
+    need = {'status','statusMsg','resrelnorm','resnorm','h', ...
+            'h_history','resrel_history','res_history','time_history', ...
+            'regime_history','s_alg_history','s_exp_history'};
+
+    A = PhasorArray.random(2,2,2) - 2*PhasorArray.eye(2);
+    [~, iL] = lyap(A, PhasorArray.eye(2), autoUpdateh=true, maxh=8);
+
+    E = 0.1*PhasorArray.random(2,2,1) + PhasorArray.eye(2);
+    [~, iG] = lyapG(A, PhasorArray.eye(2), E, autoUpdateh=true, maxh=8);
+
+    Ad = 0.2*PhasorArray.random(2,2,1) + PhasorArray.eye(2);
+    [~, iD] = mlHmcDivide(Ad, PhasorArray.random(2,1,1), autoUpdateh=true, maxh=8);
+
+    for s = {iL, iG, iD}
+        missing = need(~isfield(s{1}, need));
+        assert(isempty(missing), sprintf('info is missing: %s', strjoin(missing, ', ')));
+        assert(numel(s{1}.h_history) == numel(s{1}.time_history), ...
+            'h_history and time_history lengths disagree.');
+        assert(ismember(s{1}.status, [0 1 2 4]), ...
+            sprintf('Unexpected status %d from an adaptive run.', s{1}.status));
+    end
 end
 
 function test_lyap_LTP(~)
@@ -564,13 +636,13 @@ function test_yalmip_LMI()
     
     nx = 2;
     h = 1;
-    T = 1; % Period
+    T = 2*pi; % Period
     
     % Stable system A = -eye(2)
     A = PhasorArray(-eye(nx));
     
     % Lyapunov Matrix P(t) as ndsdpvar
-    P = PhasorArray.ndsdpvar(nx, nx, h, "PhasorType", 'symmetric', "real", true);
+    P = PhasorArray.ndsdpvar(nx, nx, h);
     
     PT = P.T_tb(h);
     PA  = P*A;
@@ -649,7 +721,7 @@ function test_yalmip_LMI_vs_Lyap()
     
     h_sol = 10;
     nx = 2;
-    T = 1; % Assume default period T=1 (omega=2pi)
+    T = 2*pi; % Assume default period T=2*pi (omega=1)
     
     % 1. Solve using lyap (Arithmetic)
     % Note: lyap(A, Q, ...) uses defaults if T not specified.
@@ -659,8 +731,7 @@ function test_yalmip_LMI_vs_Lyap()
     % Equation: A'X + XA + dX/dt + Q = 0
     % We solve this as a feasibility problem with equality constraints.
     
-    X_yalmip = PhasorArray.ndsdpvar(nx, nx, h_sol, ...
-        "PhasorType", 'symmetric', "real", true);
+    X_yalmip = PhasorArray.ndsdpvar(nx, nx, h_sol);
     
     XT = X_yalmip.T_tb(h_sol);
     ATX = A'*X_yalmip;
@@ -715,7 +786,7 @@ function test_riccati_lmi_vs_kleinman()
 % System: stable open-loop (A0 has eigs -3, -2) with periodic perturbation.
 % K0=0 is valid; Lyapunov solver converges cleanly.
 
-    T  = 1;
+    T  = 2*pi;
     h  = 8;
     A0 = [-3 0.5; 0 -2];
     A1 = [0.1 0; 0 0.05];
@@ -730,7 +801,7 @@ function test_riccati_lmi_vs_kleinman()
         'maxIter', 200, 'thresholdResidual', 1e-8, 'autoUpdateh', true);
 
     % --- 2. Riccati Schur LMI (wiki template §4) ---
-    P  = PhasorArray.ndsdpvar(2, 2, h, 'PhasorType', 'symmetric', 'real', true);
+    P  = PhasorArray.ndsdpvar(2, 2, h);
     PT = P.T_tb(h);
     N  = N_tb(2, h, T);
 
