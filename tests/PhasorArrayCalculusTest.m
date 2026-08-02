@@ -395,6 +395,36 @@ classdef PhasorArrayCalculusTest < matlab.unittest.TestCase
             end
         end
 
+
+        function testTriangularMasksKeepTheOrderAndReconstruct(testCase)
+            % triu and tril are a product with a constant mask, so the order is
+            % untouched and the three parts must add back to the original.
+            A = PhasorArray.random(3, 3, 5);
+            U = triu(A);
+            L = tril(A);
+            Dg = PhasorArray(A.value .* eye(3));
+
+            testCase.verifyEqual(U.h, A.h, 'triu changed the order');
+            testCase.verifyEqual(L.h, A.h, 'tril changed the order');
+            testCase.verifyTrue(isrealp(U), 'masking must preserve realness');
+
+            R = U + L - Dg;
+            testCase.verifyEqual(R.value, A.value, 'AbsTol', 1e-14, ...
+                'triu + tril - diag does not rebuild A');
+
+            th = linspace(0, 2*pi, 17);
+            Ut = evalp(U, th);
+            for k = 1:size(Ut, 3)
+                testCase.verifyEqual(tril(Ut(:,:,k), -1), zeros(3), 'AbsTol', 1e-14);
+            end
+
+            % The offset argument reaches the diagonal itself.
+            U1 = evalp(triu(A, 1), th);
+            for k = 1:size(U1, 3)
+                testCase.verifyEqual(tril(U1(:,:,k), 0), zeros(3), 'AbsTol', 1e-14);
+            end
+        end
+
     end
 
     methods (Test, TestTags = {'Install'})

@@ -614,6 +614,21 @@ classdef PhasorArrayCoreTest < matlab.unittest.TestCase
                 'the product kept the class but lost every decision variable');
         end
 
+
+        function testTriangularMasksKeepSymbolicPayloads(testCase)
+            testCase.needSymbolic();
+            S = PhasorArray.sym(2, 2, 1, "A", "isreal", true);
+            testCase.verifySym(triu(S), 'triu(sym)');
+            testCase.verifySym(tril(S), 'tril(sym)');
+
+            testCase.needYalmip();
+            P = PhasorArray.ndsdpvar(2, 2, 1, "symmetry", "real");
+            testCase.verifySdp(triu(P), 'triu(sdpvar)');
+            R = triu(P);
+            testCase.verifyGreaterThan(numel(depends(R.value)), 0, ...
+                'the mask kept the class but lost every decision variable');
+        end
+
     end
 
     methods (Test, TestTags = {'Install'})

@@ -677,6 +677,40 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             catch
             end
         end
+        function r = triu(pA1, k)
+            %TRIU Keep the upper triangular part of A(t).
+            %   TRIU(A) zeroes every entry below the main diagonal, at every
+            %   instant. TRIU(A, K) zeroes below the K-th diagonal.
+            %
+            %   A sparsity pattern is not a symmetry, so it has no name in the
+            %   PHASORSYMMETRY vocabulary. It is a product with a constant mask,
+            %   which leaves the harmonic order alone and preserves realness. The
+            %   payload class survives, so this works on sym and sdpvar too.
+            %
+            %   Example
+            %       U = triu(PhasorArray.random(3, 3, 5));
+            %
+            %   See also tril, diag, phasorSymmetry.
+            arguments
+                pA1 PhasorArray
+                k (1,1) {mustBeInteger} = 0
+            end
+            r = pA1 .* PhasorArray(triu(ones(size(pA1,1), size(pA1,2)), k));
+        end
+
+        function r = tril(pA1, k)
+            %TRIL Keep the lower triangular part of A(t).
+            %   TRIL(A) zeroes every entry above the main diagonal, at every
+            %   instant. TRIL(A, K) zeroes above the K-th diagonal.
+            %
+            %   See also triu, diag, phasorSymmetry.
+            arguments
+                pA1 PhasorArray
+                k (1,1) {mustBeInteger} = 0
+            end
+            r = pA1 .* PhasorArray(tril(ones(size(pA1,1), size(pA1,2)), k));
+        end
+
         function r = mtimes(pA1,pA2)
             %MTIMES Overloads the matrix multiplication operator for PhasorArray.
             %   R = MTIMES(O1,O2) performs the time-domain product of the two
