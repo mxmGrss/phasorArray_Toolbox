@@ -1,12 +1,12 @@
-function Tout = stem(o1,nvp)
+function Tout = stem(pA1,nvp)
     % STEM Generate a stem plot for one or more `PhasorArray` objects.
     %
-    %   STEM(o1, nvp) generates a stem plot to visualize the phasors of one or more
+    %   STEM(pA1, nvp) generates a stem plot to visualize the phasors of one or more
     %   `PhasorArray` objects. Each input object is plotted with a distinct marker style,
     %   and the function integrates seamlessly with existing figures, axes, or tiled layouts.
     %
     %   Inputs:
-    %     o1          - (Repeating, `PhasorArray`) One or more `PhasorArray` objects to be plotted.
+    %     pA1          - (Repeating, `PhasorArray`) One or more `PhasorArray` objects to be plotted.
     %
     %   Name-Value Pair Arguments:
     %     'scale'     - (char) Y-axis scale. Options:
@@ -32,7 +32,7 @@ function Tout = stem(o1,nvp)
     %     Tout        - (tiledlayout object) Handle to the tiled layout used for the plot.
     %
     %   Behavior:
-    %     - Multiple `PhasorArray` Objects: Each object in `o1` is plotted separately using unique markers.
+    %     - Multiple `PhasorArray` Objects: Each object in `pA1` is plotted separately using unique markers.
     %       If more objects are provided than marker styles, markers are cycled.
     %     - Real vs. Complex Phasors: Automatically adjusts `side` to 'both' if any input contains complex values.
     %
@@ -55,7 +55,7 @@ function Tout = stem(o1,nvp)
     %
     %   See also: stemPhasor, tiledlayout.
     arguments (Repeating)
-        o1
+        pA1
     end
     arguments
         nvp.scale {mustBeMember(nvp.scale,{'log','linear'})}='log'
@@ -72,11 +72,11 @@ function Tout = stem(o1,nvp)
     % --- Inline-marker syntax: stem(A1,'o', A2,'*', ...) ---
     % Even count: strict alternating PhasorArray / string pairs.
     % Odd count:  must be all PhasorArray (normal mode).
-    if mod(numel(o1), 2) == 0
-        hasInlineMarkers = all(cellfun(@(x) isa(x,'PhasorArray'), o1(1:2:end))) && ...
-            all(cellfun(@(x) ischar(x) || (isstring(x) && isscalar(x)), o1(2:2:end)));
+    if mod(numel(pA1), 2) == 0
+        hasInlineMarkers = all(cellfun(@(x) isa(x,'PhasorArray'), pA1(1:2:end))) && ...
+            all(cellfun(@(x) ischar(x) || (isstring(x) && isscalar(x)), pA1(2:2:end)));
     else
-        if ~all(cellfun(@(x) isa(x,'PhasorArray'), o1))
+        if ~all(cellfun(@(x) isa(x,'PhasorArray'), pA1))
             error('PhasorArray:stem:badInput', ...
                 ['Invalid input: when an odd number of arguments is provided, ' ...
                 'all must be PhasorArray objects.\n' ...
@@ -92,8 +92,8 @@ function Tout = stem(o1,nvp)
                 ['Markers were specified both inline and via the ''marker'' name-value argument. ' ...
                 'Inline markers take precedence; ''marker'' is ignored.']);
         end
-        nvp.marker = o1(2:2:end);
-        o1 = o1(1:2:end);
+        nvp.marker = pA1(2:2:end);
+        pA1 = pA1(1:2:end);
     end
 
     % Apply default marker list if none was provided (neither inline nor name-value)
@@ -101,12 +101,12 @@ function Tout = stem(o1,nvp)
         nvp.marker = {"o","*","x","square","diamond","^","v",">","<"};
     end
 
-    % Check if all PhasorArray objects in o1 are real
-    if ~all(cellfun(@(x) isreal(x), o1))
+    % Check if all PhasorArray objects in pA1 are real
+    if ~all(cellfun(@(x) isreal(x), pA1))
         nvp.side = 'both';
     end
 
-    if isscalar(o1{1})
+    if isscalar(pA1{1})
         nvp.explosed = false;
     end
 
@@ -114,11 +114,11 @@ function Tout = stem(o1,nvp)
         nvp.marker = {nvp.marker};
     end
     varhold = ishold;
-    T = stemPhasor(o1{1}, "scale", nvp.scale, "hold", varhold, "explosed", nvp.explosed, "display", nvp.display, "marker", nvp.marker{1}, "side", nvp.side, "parent", nvp.parent, "uniformYLim", nvp.uniformYLim);
-    n = numel(o1);
+    T = stemPhasor(pA1{1}, "scale", nvp.scale, "hold", varhold, "explosed", nvp.explosed, "display", nvp.display, "marker", nvp.marker{1}, "side", nvp.side, "parent", nvp.parent, "uniformYLim", nvp.uniformYLim);
+    n = numel(pA1);
     nmarker = numel(nvp.marker);
     for n_iter = 2:n
-        oi = o1{n_iter};
+        oi = pA1{n_iter};
         ni = mod(n_iter - 1, nmarker) + 1;   % 1-based cyclic index
         hold on
         stemPhasor(oi, "scale", nvp.scale, "hold", true, "explosed", nvp.explosed, ...

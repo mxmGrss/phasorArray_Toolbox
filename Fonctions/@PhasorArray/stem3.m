@@ -1,12 +1,12 @@
-function Tout = stem3(o1,nvp)
+function Tout = stem3(pA1,nvp)
     % STEM3 Generate a 3D stem plot for one or more `PhasorArray` objects.
     %
-    %   STEM3(o1, nvp) generates a 3D stem plot to visualize the phasors of one or more
+    %   STEM3(pA1, nvp) generates a 3D stem plot to visualize the phasors of one or more
     %   `PhasorArray` objects. Each input object is plotted with a distinct marker style,
     %   and the function integrates seamlessly with existing figures, axes, or tiled layouts.
     %
     %   Inputs:
-    %     o1          - (Repeating, `PhasorArray`) One or more `PhasorArray` objects to be plotted.
+    %     pA1          - (Repeating, `PhasorArray`) One or more `PhasorArray` objects to be plotted.
     %
     %   Name-Value Pair Arguments:
     %     'scale'     - (char) Y-axis scale. Options:
@@ -34,7 +34,7 @@ function Tout = stem3(o1,nvp)
     %
     %   See also: quiver3, tiledlayout.
     arguments (Repeating)
-        o1
+        pA1
     end
     arguments
         nvp.scale {mustBeMember(nvp.scale,{'log','linear'})}='log'
@@ -50,13 +50,13 @@ function Tout = stem3(o1,nvp)
         nvp.marker= { nvp.marker};
     end
 
-    n = numel(o1);
+    n = numel(pA1);
     if nvp.explosed
-        Tout = tiledlayout(o1{1}.size(1),o1{1}.size(2),'Parent',nvp.parent);
-        for ii = 1:numelt(o1{1})
+        Tout = tiledlayout(pA1{1}.size(1),pA1{1}.size(2),'Parent',nvp.parent);
+        for ii = 1:numelt(pA1{1})
             ax=nexttile;
             for jj = 1:n
-                stem3Scalar(o1{jj}{ii}, 'marker', nvp.marker{jj}, 'parent', ax, 'scale', nvp.scale);
+                stem3Scalar(pA1{jj}{ii}, 'marker', nvp.marker{jj}, 'parent', ax, 'scale', nvp.scale);
                 hold on
             end
             hold off

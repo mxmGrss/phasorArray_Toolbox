@@ -1,7 +1,7 @@
-function [y,t,dy]=initial(o1,x0,T,tfinal,nvp)
+function [y,t,dy]=initial(pA1,x0,T,tfinal,nvp)
     % INITIAL Compute the system response to an initial state in a periodic state-space model.
     %
-    %   INITIAL(o1, x0, T, tfinal, nvp) simulates the system response for:
+    %   INITIAL(pA1, x0, T, tfinal, nvp) simulates the system response for:
     %       dx/dt = A(t)x
     %   where `A(t)` is a `T`-periodic state-space matrix. This function calls `lsim` to compute the response.
     %
@@ -10,9 +10,9 @@ function [y,t,dy]=initial(o1,x0,T,tfinal,nvp)
     %     [y, t, dy] = INITIAL(A, x0, T, tfinal, Name, Value)
     %
     %   Inputs:
-    %     o1     - (PhasorArray) The time-varying system matrix `A(t)`, stored as a **3D phasor array**.
+    %     pA1     - (PhasorArray) The time-varying system matrix `A(t)`, stored as a **3D phasor array**.
     %     x0     - (vector, optional) Initial state `x(0)`.
-    %                - Default: `ones(size(o1,1),1)`.
+    %                - Default: `ones(size(pA1,1),1)`.
     %     T      - (double, optional) Period of the system. Default: `2*pi`.
     %     tfinal - (scalar or vector, optional) Final simulation time.
     %                - Default: `10*T`.
@@ -30,13 +30,13 @@ function [y,t,dy]=initial(o1,x0,T,tfinal,nvp)
     %     'isRealValued'     - (logical) Force real-valued computation. Default: `false`.
     %
     %   Outputs:
-    %     y  - (matrix) State trajectory of the system (`size(y,1) = size(o1,1)`).
+    %     y  - (matrix) State trajectory of the system (`size(y,1) = size(pA1,1)`).
     %     t  - (vector) Time instants at which `y(t)` is evaluated.
     %     dy - (matrix, optional) Derivative of the state trajectory (only if `nargout > 2`).
     %
     %   Behavior:
     %     - This function is a **wrapper for `lsim`**, automatically setting `U(t) = 0`.
-    %     - If `isRealValued` is **not provided**, it is automatically detected from `o1`.
+    %     - If `isRealValued` is **not provided**, it is automatically detected from `pA1`.
     %     - If `tfinal = 0`, the function **automatically sets** `tfinal = 10*T`.
     %
     %   Example Usage:
@@ -49,8 +49,8 @@ function [y,t,dy]=initial(o1,x0,T,tfinal,nvp)
     %
     %   See also: LSIM, HMQ_SIM.
     arguments
-        o1
-        x0=ones(size(o1,1),1)
+        pA1
+        x0=ones(size(pA1,1),1)
         T=2*pi
         tfinal=0
         nvp.opts=[] %odeset option
@@ -60,14 +60,14 @@ function [y,t,dy]=initial(o1,x0,T,tfinal,nvp)
         nvp.checkReal=0
         nvp.isRealValued logical = false
     end
-    if isreal(o1)
+    if isreal(pA1)
         nvp.isRealValued = true;
     end
     vvarg = namedargs2cell(nvp);
     if nargout == 3
-        [y,t,dy]=lsim(o1,tfinal,x0,T,vvarg{:});
+        [y,t,dy]=lsim(pA1,tfinal,x0,T,vvarg{:});
     else
-        [y,t]=lsim(o1,tfinal,x0,T,vvarg{:});
+        [y,t]=lsim(pA1,tfinal,x0,T,vvarg{:});
     end
 
 end

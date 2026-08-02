@@ -1,12 +1,12 @@
-function [true_mu, true_l, stats, ev_m, ev_l] = findTrueFloquet(o1, T, nvp)
+function [true_mu, true_l, stats, ev_m, ev_l] = findTrueFloquet(pA1, T, nvp)
 % FINDTRUEFLOQUET  Recover true Floquet exponents and multipliers (V3 Engine)
 %
-%   [true_mu, true_l, stats, ev_m, ev_l] = findTrueFloquet(o1, T, Name, Value)
+%   [true_mu, true_l, stats, ev_m, ev_l] = findTrueFloquet(pA1, T, Name, Value)
 %
 %   Replaces the legacy k-means solver with the V3 topological solver.
 
 arguments
-    o1
+    pA1
     T    (1,1) double = 2*pi
     nvp.hinit             = []
     nvp.hmax              (1,1) {mustBeInteger, mustBePositive} = 200
@@ -20,12 +20,12 @@ arguments
     nvp.method            = []
 end
 
-if isa(o1, 'PhasorArray')
-    nx = o1.size(1);
-    if isempty(nvp.hinit), nvp.hinit = o1.h; end
-    if isempty(nvp.trA0), nvp.trA0 = trace(o1.phas(0)); end
+if isa(pA1, 'PhasorArray')
+    nx = pA1.size(1);
+    if isempty(nvp.hinit), nvp.hinit = pA1.h; end
+    if isempty(nvp.trA0), nvp.trA0 = trace(pA1.phas(0)); end
 else
-    nx = size(o1, 1);
+    nx = size(pA1, 1);
     if isempty(nvp.hinit), nvp.hinit = 8; end
 end
 
@@ -36,7 +36,7 @@ h = nvp.hinit;
 change = inf;
 
 while h <= nvp.hmax
-    ev_m = HmqNEig(o1, h, T); ev_m = ev_m(:);
+    ev_m = HmqNEig(pA1, h, T); ev_m = ev_m(:);
     ev_l = exp(T * ev_m);
     [true_mu, true_l, st] = findTruelm(ev_m, T, nx, 'trA0', nvp.trA0);
     

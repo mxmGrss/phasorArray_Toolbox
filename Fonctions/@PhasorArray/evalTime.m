@@ -1,12 +1,12 @@
-function r=evalTime(o1,T,t)
+function r=evalTime(pA1,T,t)
     % EVALTIME Evaluate a `PhasorArray` in the time domain for a given period `T`.
     %
-    %   EVALTIME(o1, T, t) computes the time-domain representation of a `PhasorArray`,
+    %   EVALTIME(pA1, T, t) computes the time-domain representation of a `PhasorArray`,
     %   assuming it is `T`-periodic. The function returns `A(t)`, evaluated at specified
     %   time instants `t`, without generating any plots.
     %
     %   Inputs:
-    %     o1  - (PhasorArray) The `PhasorArray` object to be evaluated.
+    %     pA1  - (PhasorArray) The `PhasorArray` object to be evaluated.
     %     T   - (double, optional) The period of the `PhasorArray`.
     %              - Default: `2*pi`.
     %     t   - (vector or scalar, optional) Time instants for evaluation.
@@ -16,10 +16,10 @@ function r=evalTime(o1,T,t)
     %              - If `t` is a scalar: Evaluates `A(t)` at a single instant.
     %
     %   Outputs:
-    %     r - (m × n × length(t) array) Evaluated time-domain representation of `o1`.
+    %     r - (m × n × length(t) array) Evaluated time-domain representation of `pA1`.
     %
     %   Behavior:
-    %     - Uses `plot(o1, T, t, ...)` internally but **without plotting** (`'plot', false`).
+    %     - Uses `plot(pA1, T, t, ...)` internally but **without plotting** (`'plot', false`).
     %     - Automatically generates a time grid if `t = []`.
     %     - Designed for numerical evaluation without visualization.
     %
@@ -34,7 +34,7 @@ function r=evalTime(o1,T,t)
     %
     %   See also: plot, PhasorArray2time.
     arguments
-        o1
+        pA1
         T=2*pi
         t=[]
     end
@@ -47,5 +47,5 @@ function r=evalTime(o1,T,t)
     argo.ZeroCentered=false;
     argo.title=[];
     C=namedargs2cell(argo);
-    r=plot(o1,T,t,C{:});
+    r=plot(pA1,T,t,C{:});
 end

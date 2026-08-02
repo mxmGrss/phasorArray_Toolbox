@@ -1,7 +1,7 @@
-function [r,t] = plot(o1,T,t,nvp)
+function [r,t] = plot(pA1,T,t,nvp)
     % PLOT Evaluate and plot a T-periodic `PhasorArray`.
     %
-    %   PLOT(o1, T, t, nvp) computes and plots the time-domain representation of a
+    %   PLOT(pA1, T, t, nvp) computes and plots the time-domain representation of a
     %   `PhasorArray`, assuming it is `T`-periodic.
     %
     %   This method evaluates the time-domain representation of a `PhasorArray` and
@@ -10,7 +10,7 @@ function [r,t] = plot(o1,T,t,nvp)
     %   and axis linking.
     %
     %   Inputs:
-    %     o1  - (PhasorArray) The `PhasorArray` object to be evaluated and plotted.
+    %     pA1  - (PhasorArray) The `PhasorArray` object to be evaluated and plotted.
     %     T   - (double, optional) Period of the `PhasorArray`.
     %              - Default: `2*pi`.
     %     t   - (vector or scalar, optional) Time instants for evaluation.
@@ -29,16 +29,16 @@ function [r,t] = plot(o1,T,t,nvp)
     %              - 'LineStyle' (string): Line style for the plot (default: `'-'`).
     %              - 'GlobalYLim' (logical): Apply the same Y-limits across subplots (default: `false`).
     %              - 'linkaxes' (string): Link axes of subplots (`'x'`, `'y'`, `'xy'`, etc.) (default: `'x'`).
-    %              - 'forceReal' (logical): Assume `o1` is real-valued and simplify computation (default: `false`).
+    %              - 'forceReal' (logical): Assume `pA1` is real-valued and simplify computation (default: `false`).
     %
     %   Outputs:
-    %     r - (m × n × length(t) array) Evaluated time-domain representation of `o1`.
-    %     t - (vector) Time instants at which `o1` is evaluated.
+    %     r - (m × n × length(t) array) Evaluated time-domain representation of `pA1`.
+    %     t - (vector) Time instants at which `pA1` is evaluated.
     %
     %   Behavior:
     %     - **Evaluation**: Computes `A(t)` using `PhasorArray2time`, which performs an inverse Fourier summation.
     %     - **Automatic Time Grid**: If `t = []`, it generates a default time grid based on `T` and harmonics.
-    %     - **Real-Valued Constraints**: If `o1` is real-valued, `forceReal` is automatically set to `true`.
+    %     - **Real-Valued Constraints**: If `pA1` is real-valued, `forceReal` is automatically set to `true`.
     %     - **Plot Customization**:
     %         - Supports separate subplots for each matrix element (`explosed = true`).
     %         - Can plot only the real or imaginary part (`DispReal`, `DispImag`).
@@ -58,7 +58,7 @@ function [r,t] = plot(o1,T,t,nvp)
     %
     %   See also: PhasorArray2time.
     arguments
-        o1
+        pA1
         T=2*pi
         t=[]
         nvp.plot logical =true
@@ -75,17 +75,17 @@ function [r,t] = plot(o1,T,t,nvp)
         nvp.grid = 'on'
     end
 
-    if isscalar(o1)
+    if isscalar(pA1)
         nvp.explosed = false;
     end
 
-    if isspecial(o1)
-        o1 = PhasorArray(value(o1.value));
+    if isspecial(pA1)
+        pA1 = PhasorArray(value(pA1.value));
     end
     if ishold
         nvp.hold = true;
     end
-    if isreal(o1)
+    if isreal(pA1)
         nvp.forceReal = true;
         if isempty(nvp.DispImag)
             nvp.DispImag = false;
@@ -101,7 +101,7 @@ function [r,t] = plot(o1,T,t,nvp)
             nvp.DispReal = true;
         end
     end
-    [rr,tt]=PhasorArray2time(o1,T,t,"plot", nvp.plot, "DispImag", nvp.DispImag, ...
+    [rr,tt]=PhasorArray2time(pA1,T,t,"plot", nvp.plot, "DispImag", nvp.DispImag, ...
         DispReal=nvp.DispReal,explosed=nvp.explosed,hold=nvp.hold,ZeroCentered=nvp.ZeroCentered, ...
         title=nvp.title,LineStyle=nvp.LineStyle,GlobalYLim=nvp.GlobalYLim,linkaxes=nvp.linkaxes,forceReal=nvp.forceReal,grid = nvp.grid);
 

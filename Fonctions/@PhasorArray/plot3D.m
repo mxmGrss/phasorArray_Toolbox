@@ -1,12 +1,12 @@
-function r=plot3D(o1,T,t,nvp)
+function r=plot3D(pA1,T,t,nvp)
     %PLOT3D Produce a 3D plot where x-axis is the real part, y-axis is the imaginary part, and z-axis is time
     %
-    %   r = PLOT3D(o1, T, t, nvp) produces a 3D plot where the x-axis is the real part of A(t),
+    %   r = PLOT3D(pA1, T, t, nvp) produces a 3D plot where the x-axis is the real part of A(t),
     %   the y-axis is the imaginary part of A(t), and the z-axis is time.
     %   For each element of A, a subplot is created.
     %
     %   Input Arguments:
-    %   o1 - The PhasorArray object to be plotted.
+    %   pA1 - The PhasorArray object to be plotted.
     %   T  - The period of the PhasorArray. Default is 2*pi.
     %   t  - Time instants at which to evaluate the PhasorArray. Can be:
     %       - [] (empty), then t takes the value [0 T].
@@ -23,12 +23,12 @@ function r=plot3D(o1,T,t,nvp)
     %   r - The evaluated PhasorArray at the specified time instants.
     %
     %   Example:
-    %   r = plot3D(o1, 2*pi, []);
-    %   r = plot3D(o1, 2*pi, [0 2*pi], 'ZeroCentered', true, 'title', '3D Plot');
+    %   r = plot3D(pA1, 2*pi, []);
+    %   r = plot3D(pA1, 2*pi, [0 2*pi], 'ZeroCentered', true, 'title', '3D Plot');
     %
     %   See also: PhasorArray2time
     arguments
-        o1
+        pA1
         T=2*pi
         t=[0 T]
         nvp.ZeroCentered=false
@@ -39,7 +39,7 @@ function r=plot3D(o1,T,t,nvp)
     if numel(t)==1
         t=sort([0 t]);
     end
-    rr=PhasorArray2time(o1,T,t,"plot", true,"plot3D", true, "DispImag", false, "DispReal", true,"explosed", true,"ZeroCentered", nvp.ZeroCentered,"title", nvp.title,"GlobalYLim", nvp.GlobalYLim,"linkaxes", nvp.linkaxes);
+    rr=PhasorArray2time(pA1,T,t,"plot", true,"plot3D", true, "DispImag", false, "DispReal", true,"explosed", true,"ZeroCentered", nvp.ZeroCentered,"title", nvp.title,"GlobalYLim", nvp.GlobalYLim,"linkaxes", nvp.linkaxes);
 
     if nargout
         r=rr;

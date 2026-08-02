@@ -1,14 +1,14 @@
-function [r,t]=sim(o1,T,t,nvp)
+function [r,t]=sim(pA1,T,t,nvp)
     % SIM Evaluate the time-domain representation of a `PhasorArray`.
     %
-    %   SIM(o1, T, t, nvp) computes the time-domain representation of a `PhasorArray`,
+    %   SIM(pA1, T, t, nvp) computes the time-domain representation of a `PhasorArray`,
     %   assuming it is `T`-periodic.
     %
     %   SIM is a **convenience function** for evaluating `A(t)`, leveraging `PhasorArray2time`.
     %   It includes an option to enforce real-valued computation when `A(t)` is known to be real.
     %
     %   Inputs:
-    %     o1  - (PhasorArray) The `PhasorArray` object representing a periodic matrix.
+    %     pA1  - (PhasorArray) The `PhasorArray` object representing a periodic matrix.
     %     T   - (double, optional) The period of `A(t)`.
     %              - Default: `2*pi`.
     %     t   - (vector or scalar, optional) Time instants for evaluation.
@@ -20,11 +20,11 @@ function [r,t]=sim(o1,T,t,nvp)
     %              - 'isRealValued' (logical): Enforce real-valued computation (default: `false`).
     %
     %   Outputs:
-    %     r - (m × n × length(t) array) Evaluated time-domain representation of `o1`.
-    %     t - (vector) Time instants at which `o1` was evaluated.
+    %     r - (m × n × length(t) array) Evaluated time-domain representation of `pA1`.
+    %     t - (vector) Time instants at which `pA1` was evaluated.
     %
     %   Behavior:
-    %     - If `o1` is **real-valued**, `isRealValued` is automatically set to `true`.
+    %     - If `pA1` is **real-valued**, `isRealValued` is automatically set to `true`.
     %     - Calls `PhasorArray2time` with a structured argument list for evaluation.
     %
     %   Example Usage:
@@ -37,14 +37,14 @@ function [r,t]=sim(o1,T,t,nvp)
     %
     %   See also: PhasorArray2time, plot.
     arguments
-        o1
+        pA1
         T=2*pi
         t=[]
         nvp.isRealValued = false;
     end
 
 
-    if isreal(o1)
+    if isreal(pA1)
         nvp.isRealValued = true;
     end
 
@@ -58,5 +58,5 @@ function [r,t]=sim(o1,T,t,nvp)
     argo.title=[];
     argo.forceReal = nvp.isRealValued;
     C=namedargs2cell(argo);
-    [r,t]=PhasorArray2time(o1,T,t,C{:});
+    [r,t]=PhasorArray2time(pA1,T,t,C{:});
 end

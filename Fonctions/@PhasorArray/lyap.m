@@ -1,4 +1,4 @@
-function [res, info] = lyap(o1, o2, o3, nvp)
+function [res, info] = lyap(pA1, pA2, pA3, nvp)
 %LYAP  Periodic Lyapunov / Sylvester solver for PhasorArray.
 %
 %   Lyapunov mode:  [P, info] = lyap(A, Q, ...)
@@ -56,9 +56,9 @@ function [res, info] = lyap(o1, o2, o3, nvp)
 %   See also: SylvHarmonic, RicHarmonicKlein
 
 arguments
-    o1                                                        % A (both modes)
-    o2                                                        % Q (Lyapunov) or B (Sylvester)
-    o3                               = []                     % [] → Lyapunov; provided → Sylvester
+    pA1                                                        % A (both modes)
+    pA2                                                        % Q (Lyapunov) or B (Sylvester)
+    pA3                               = []                     % [] → Lyapunov; provided → Sylvester
     nvp.T                   (1,1) double  = 2*pi
     nvp.h                                 = []            % [] triggers autoUpdateh
     nvp.thresholdResidual   (1,1) double  = 1e-6
@@ -89,10 +89,10 @@ if ~isempty(nvp.E) || ~isempty(nvp.Ea) || ~isempty(nvp.Eb)
            'verbose',nvp.verbose, 'storeResidualPhasor',nvp.storeResidualPhasor, ...
            'systemType',nvp.systemType, 'updateMethod',nvp.updateMethod, ...
            'derivativeForm',nvp.derivativeForm, 'direction',nvp.direction};
-    if isempty(o3)
-        [res, info] = lyapG(o1, o2, nvp.E, [], [], fwd{:});   % Lyapunov descriptor
+    if isempty(pA3)
+        [res, info] = lyapG(pA1, pA2, nvp.E, [], [], fwd{:});   % Lyapunov descriptor
     else
-        [res, info] = lyapG(o1, o2, o3, nvp.Ea, nvp.Eb, fwd{:}); % Sylvester descriptor
+        [res, info] = lyapG(pA1, pA2, pA3, nvp.Ea, nvp.Eb, fwd{:}); % Sylvester descriptor
     end
     return
 end
@@ -104,46 +104,46 @@ autoUpdateh       = nvp.autoUpdateh;
 
 %% --- Mode dispatch, validation, and h initialisation ---
 
-isLyapunov = isempty(o3);
+isLyapunov = isempty(pA3);
 
 if isLyapunov
     % Lyapunov mode: dP/dt + A'P + PA + Q = 0
-    if ~isa(o1,'PhasorArray'), o1 = PhasorArray(o1); end
-    if ~isa(o2,'PhasorArray'), o2 = PhasorArray(o2); end
-    if size(o1,1) ~= size(o1,2)
-        error('PhasorArray:lyap:nonSquareA', 'A must be square (got %dx%d).', size(o1,1), size(o1,2))
+    if ~isa(pA1,'PhasorArray'), pA1 = PhasorArray(pA1); end
+    if ~isa(pA2,'PhasorArray'), pA2 = PhasorArray(pA2); end
+    if size(pA1,1) ~= size(pA1,2)
+        error('PhasorArray:lyap:nonSquareA', 'A must be square (got %dx%d).', size(pA1,1), size(pA1,2))
     end
-    if size(o1,1)~=size(o2,1) || size(o1,2)~=size(o2,2)
-        error('PhasorArray:lyap:dimensionMismatch', 'A (%dx%d) and Q (%dx%d) must be the same size.', size(o1,1), size(o1,2), size(o2,1), size(o2,2))
+    if size(pA1,1)~=size(pA2,1) || size(pA1,2)~=size(pA2,2)
+        error('PhasorArray:lyap:dimensionMismatch', 'A (%dx%d) and Q (%dx%d) must be the same size.', size(pA1,1), size(pA1,2), size(pA2,1), size(pA2,2))
     end
     h = nvp.h;
     if isempty(h)
-        h = max(o1.h, o2.h);
+        h = max(pA1.h, pA2.h);
         autoUpdateh = true;
     end
-    % Remap to Sylvester: dP/dt + (A').P + P.(A) + Q = 0  →  A'→o1, A→o2, Q→o3
-    o3 = o2; o2 = o1; o1 = o1.';
+    % Remap to Sylvester: dP/dt + (A').P + P.(A) + Q = 0  →  A'→pA1, A→pA2, Q→pA3
+    pA3 = pA2; pA2 = pA1; pA1 = pA1.';
 
 else
     % Sylvester mode: dM/dt + AM + MB + C = 0
-    if ~isa(o1,'PhasorArray'), o1 = PhasorArray(o1); end
-    if ~isa(o2,'PhasorArray'), o2 = PhasorArray(o2); end
-    if ~isa(o3,'PhasorArray'), o3 = PhasorArray(o3); end
-    if size(o1,1) ~= size(o1,2)
-        error('PhasorArray:lyap:nonSquareA', 'Sylvester: A must be square (got %dx%d).', size(o1,1), size(o1,2))
+    if ~isa(pA1,'PhasorArray'), pA1 = PhasorArray(pA1); end
+    if ~isa(pA2,'PhasorArray'), pA2 = PhasorArray(pA2); end
+    if ~isa(pA3,'PhasorArray'), pA3 = PhasorArray(pA3); end
+    if size(pA1,1) ~= size(pA1,2)
+        error('PhasorArray:lyap:nonSquareA', 'Sylvester: A must be square (got %dx%d).', size(pA1,1), size(pA1,2))
     end
-    if size(o2,1) ~= size(o2,2)
-        error('PhasorArray:lyap:nonSquareB', 'Sylvester: B must be square (got %dx%d).', size(o2,1), size(o2,2))
+    if size(pA2,1) ~= size(pA2,2)
+        error('PhasorArray:lyap:nonSquareB', 'Sylvester: B must be square (got %dx%d).', size(pA2,1), size(pA2,2))
     end
-    if size(o1,1) ~= size(o3,1)
-        error('PhasorArray:lyap:dimensionMismatch', 'Sylvester: rows(A)=%d must equal rows(C)=%d.', size(o1,1), size(o3,1))
+    if size(pA1,1) ~= size(pA3,1)
+        error('PhasorArray:lyap:dimensionMismatch', 'Sylvester: rows(A)=%d must equal rows(C)=%d.', size(pA1,1), size(pA3,1))
     end
-    if size(o2,2) ~= size(o3,2)
-        error('PhasorArray:lyap:dimensionMismatch', 'Sylvester: cols(B)=%d must equal cols(C)=%d.', size(o2,2), size(o3,2))
+    if size(pA2,2) ~= size(pA3,2)
+        error('PhasorArray:lyap:dimensionMismatch', 'Sylvester: cols(B)=%d must equal cols(C)=%d.', size(pA2,2), size(pA3,2))
     end
     h = nvp.h;
     if isempty(h)
-        h = max([o1.h, o2.h, o3.h]);
+        h = max([pA1.h, pA2.h, pA3.h]);
         autoUpdateh = true;
     end
 end
@@ -151,7 +151,7 @@ end
 %% --- Single-order solve callback ---
 
 % Closes over the operands so adaptiveHSolve only has to vary h.
-solveAtH = @(hh) solveOnce(o1, o2, o3, hh, omega, T, nvp);
+solveAtH = @(hh) solveOnce(pA1, pA2, pA3, hh, omega, T, nvp);
 
 %% --- Fixed-h: early return ---
 
@@ -164,8 +164,8 @@ end
 
 %% --- Adaptive-h refinement ---
 
-n_sys    = size(o1, 1) * size(o2, 1);   % n1*n2: size of the vectorised solution
-h_op     = max([o1.h, o2.h, o3.h]);     % spectral width of the operators (fixed)
+n_sys    = size(pA1, 1) * size(pA2, 1);   % n1*n2: size of the vectorised solution
+h_op     = max([pA1.h, pA2.h, pA3.h]);     % spectral width of the operators (fixed)
 isSquare = strcmp(nvp.systemType, 'square');
 
 cfg = struct( ...
@@ -177,7 +177,7 @@ cfg = struct( ...
     'verbose',           nvp.verbose, ...
     'hOp',               h_op, ...
     'hOutFcn',           @(hh) hh*isSquare + (hh + h_op)*~isSquare, ...
-    'preamble',          buildPreamble(o3, n_sys, h_op, isLyapunov, isSquare), ...
+    'preamble',          buildPreamble(pA3, n_sys, h_op, isLyapunov, isSquare), ...
     'label',             'h');
 
 [best, trace] = adaptiveHSolve(solveAtH, h, cfg);
@@ -191,16 +191,16 @@ info = packInfo(trace.status, trace.statusMsg, best.resrelnorm, best.resnorm, be
 end % lyap
 
 %% =========================================================================
-function [res, resnorm, resrelnorm, resPhasor] = solveOnce(o1, o2, o3, h, omega, T, nvp)
+function [res, resnorm, resrelnorm, resPhasor] = solveOnce(pA1, pA2, pA3, h, omega, T, nvp)
 %SOLVEONCE  Solve the Sylvester/Lyapunov equation at a single harmonic order.
-res = PhasorArray(SylvHarmonic(o1, o2, o3, h, omega, nvp.systemType, nvp.direction));
-[resnorm, resrelnorm, resPhasor] = computeResidual(res, o1, o2, o3, T, nvp.direction);
+res = PhasorArray(SylvHarmonic(pA1, pA2, pA3, h, omega, nvp.systemType, nvp.direction));
+[resnorm, resrelnorm, resPhasor] = computeResidual(res, pA1, pA2, pA3, T, nvp.direction);
 end
 
 %% =========================================================================
-function s = buildPreamble(o3, n_sys, h_op, isLyapunov, isSquare)
+function s = buildPreamble(pA3, n_sys, h_op, isLyapunov, isSquare)
 %BUILDPREAMBLE  Header text printed above the verbose refinement table.
-n1 = size(o3, 1);  n2 = size(o3, 2);
+n1 = size(pA3, 1);  n2 = size(pA3, 2);
 s = sprintf('\nPhasorArray.lyap — adaptive h refinement\n');
 if isLyapunov
     s = [s sprintf('  Equation:  dP/dt + A''·P + P·A + Q = 0   [Lyapunov, %dx%d]\n', n1, n2)];
@@ -222,7 +222,7 @@ s = [s sprintf('    X  :  solution truncated to h harmonics\n\n')];
 end
 
 %% =========================================================================
-function [resnorm, resrelnorm, resPhasor] = computeResidual(res, o1, o2, o3, T, direction)
+function [resnorm, resrelnorm, resPhasor] = computeResidual(res, pA1, pA2, pA3, T, direction)
 %COMPUTERESIDUAL  Evaluate Sylvester residual and its norms.
 % 'backward': dX/dt + AX + XB + C = 0 ; 'forward': -dX/dt + AX + XB + C = 0.
 if strcmp(direction, 'forward')
@@ -230,9 +230,9 @@ if strcmp(direction, 'forward')
 else
     signD = +1;
 end
-resPhasor  = signD*res.d(T) + o1*res + res*o2 + o3;
+resPhasor  = signD*res.d(T) + pA1*res + res*pA2 + pA3;
 resnorm    = norm(resPhasor.value, 'fro');
-Cnorm      = norm(o3.value, 'fro');
+Cnorm      = norm(pA3.value, 'fro');
 resrelnorm = resnorm / (Cnorm + eps);
 end
 

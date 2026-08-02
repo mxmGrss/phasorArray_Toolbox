@@ -731,6 +731,11 @@ the reasoning is kept inline rather than in a separate decision record.
 
 No behaviour change; listed for reviewers.
 
+- The phasor operands are named `pA1`..`pA5` rather than `o1`..`o5`, in the 19
+  files that used the old names: 1423 occurrences, none outside `Fonctions/`.
+  `pA` alone was already taken, so the numbering is kept even where a method
+  takes a single operand.
+
 - Adaptive harmonic-order refinement extracted from `lyap`, `lyapG` and
   `mlHmcDivide` into `adaptiveHSolve` (~500 duplicated lines).
 - Toeplitz assembly prologue shared via `prepToeplitzInput`

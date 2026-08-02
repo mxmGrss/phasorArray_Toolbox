@@ -1,11 +1,11 @@
-function ax = stem3Scalar(o1, nvp)
+function ax = stem3Scalar(pA1, nvp)
     % STEM3SCALAR Generate a 3D stem plot for a scalar `PhasorArray` object.
     %
-    %   STEM3SCALAR(o1, marker) generates a 3D stem plot to visualize the phasors of a scalar
+    %   STEM3SCALAR(pA1, marker) generates a 3D stem plot to visualize the phasors of a scalar
     %   `PhasorArray` object. The function uses `quiver3` to plot the phasors.
     %
     %   Inputs:
-    %     o1     - (PhasorArray) The scalar `PhasorArray` object to be plotted.
+    %     pA1     - (PhasorArray) The scalar `PhasorArray` object to be plotted.
     %     marker - (char) Marker style for the plot.
     %
     %   Example Usage:
@@ -15,7 +15,7 @@ function ax = stem3Scalar(o1, nvp)
     %
     %   See also: quiver3.
     arguments
-        o1
+        pA1
         nvp.marker (1,:) char = 'o'
         nvp.parent = gca
         nvp.scale {mustBeMember(nvp.scale,{'log','linear'})}='log'
@@ -24,7 +24,7 @@ function ax = stem3Scalar(o1, nvp)
 
 
     if strcmp(nvp.scale,'log')
-        oo1 = o1.value;
+        oo1 = pA1.value;
         oo1a = abs(oo1);
         oo1p = angle(oo1);
         oo1a = log10(oo1a);
@@ -32,16 +32,16 @@ function ax = stem3Scalar(o1, nvp)
         base = min(floor(oo1a(:)));
         oo1a = oo1a - base;
         newo1 = oo1a.*exp(1i*oo1p);
-        o1 = PhasorArray(newo1);
+        pA1 = PhasorArray(newo1);
     else
         base = 0;
     end
 
 
-    h = o1.h;
+    h = pA1.h;
     x = -h:h;
-    y = squeeze(real(o1.value))';
-    z = squeeze(imag(o1.value))';
+    y = squeeze(real(pA1.value))';
+    z = squeeze(imag(pA1.value))';
 
     u = zeros(size(x));
     v = -y;

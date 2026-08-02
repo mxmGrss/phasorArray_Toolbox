@@ -1,4 +1,4 @@
-function [r,t] = mplot(o1, nvp)
+function [r,t] = mplot(pA1, nvp)
     % MPLOT Plot multiple `PhasorArray` objects on the same axes.
     %
     %   MPLOT(A1, A2, ..., Name, Value) is the multi-array companion to PLOT.
@@ -30,7 +30,7 @@ function [r,t] = mplot(o1, nvp)
     %
     %   See also: plot, PhasorArray2time.
     arguments (Repeating)
-        o1
+        pA1
     end
     arguments
         nvp.T       = 2*pi
@@ -52,11 +52,11 @@ function [r,t] = mplot(o1, nvp)
     defaultStyles = {'-'};   % solid line for all objects by default
 
     % --- Inline linestyle syntax: mplot(A1,'--', A2,'-.', ...) ---
-    if mod(numel(o1), 2) == 0
-        hasInlineStyles = all(cellfun(@(x) isa(x,'PhasorArray'), o1(1:2:end))) && ...
-            all(cellfun(@(x) ischar(x) || (isstring(x) && isscalar(x)), o1(2:2:end)));
+    if mod(numel(pA1), 2) == 0
+        hasInlineStyles = all(cellfun(@(x) isa(x,'PhasorArray'), pA1(1:2:end))) && ...
+            all(cellfun(@(x) ischar(x) || (isstring(x) && isscalar(x)), pA1(2:2:end)));
     else
-        if ~all(cellfun(@(x) isa(x,'PhasorArray'), o1))
+        if ~all(cellfun(@(x) isa(x,'PhasorArray'), pA1))
             error('PhasorArray:mplot:badInput', ...
                 ['Invalid input: when an odd number of arguments is provided, ' ...
                 'all must be PhasorArray objects.\n' ...
@@ -71,8 +71,8 @@ function [r,t] = mplot(o1, nvp)
                 ['Linestyles were specified both inline and via the ''linestyle'' name-value argument. ' ...
                 'Inline linestyles take precedence; ''linestyle'' is ignored.']);
         end
-        nvp.linestyle = o1(2:2:end);
-        o1 = o1(1:2:end);
+        nvp.linestyle = pA1(2:2:end);
+        pA1 = pA1(1:2:end);
     end
 
     % Apply default linestyle list if none provided
@@ -80,12 +80,12 @@ function [r,t] = mplot(o1, nvp)
         nvp.linestyle = defaultStyles;
     end
 
-    n        = numel(o1);
+    n        = numel(pA1);
     nstyles  = numel(nvp.linestyle);
     varhold  = ishold || nvp.hold;
 
     for k = 1:n
-        oi  = o1{k};
+        oi  = pA1{k};
         ls  = nvp.linestyle{mod(k-1, nstyles) + 1};
         isFirst = (k == 1);
 

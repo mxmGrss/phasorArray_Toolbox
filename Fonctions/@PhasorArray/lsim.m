@@ -1,7 +1,7 @@
-function [y,t,dy]=lsim(o1,tfinal,x0,T,Uph,nvp)
+function [y,t,dy]=lsim(pA1,tfinal,x0,T,Uph,nvp)
     % LSIM Simulate the response of a time-periodic linear system.
     %
-    %   LSIM(o1, tfinal, x0, T, Uph, nvp) simulates the system:
+    %   LSIM(pA1, tfinal, x0, T, Uph, nvp) simulates the system:
     %       dx/dt = A(t)x + U(t)
     %   where `A(t)` and `U(t)` are `T`-periodic matrices, represented as phasor arrays.
     %
@@ -13,14 +13,14 @@ function [y,t,dy]=lsim(o1,tfinal,x0,T,Uph,nvp)
     %     [y, t, dy] = LSIM(A, tfinal, x0, T, U, Name, Value)
     %
     %   Inputs:
-    %     o1     - (PhasorArray) The periodic system matrix `A(t)`, stored as a **3D phasor array**.
+    %     pA1     - (PhasorArray) The periodic system matrix `A(t)`, stored as a **3D phasor array**.
     %     tfinal - (scalar or vector, optional) Final simulation time.
     %                - Default: `10*T`
     %                - If scalar: Simulates from `t=0` to `t=tfinal`.
     %                - If `[tmin tmax]`: Simulates from `tmin` to `tmax`.
     %                - If vector: Uses provided time grid.
     %     x0     - (vector, optional) Initial condition `x(0)`.
-    %                - Default: `ones(size(o1,1),1)`.
+    %                - Default: `ones(size(pA1,1),1)`.
     %     T      - (double, optional) The period of `A(t)`. Default: `2*pi`.
     %     Uph    - (PhasorArray or matrix, optional) The time-varying input matrix `U(t)`.
     %                - Default: `[]` (zero input).
@@ -35,12 +35,12 @@ function [y,t,dy]=lsim(o1,tfinal,x0,T,Uph,nvp)
     %     'isRealValued'     - (logical) Force real-valued computation. Default: `false`.
     %
     %   Outputs:
-    %     y  - (matrix) State trajectory of the system (`size(y,1) = size(o1,1)`).
+    %     y  - (matrix) State trajectory of the system (`size(y,1) = size(pA1,1)`).
     %     t  - (vector) Time instants at which `y(t)` is evaluated.
     %     dy - (matrix, optional) Derivative of the state trajectory (only if `nargout > 2`).
     %
     %   Behavior:
-    %     - If `isRealValued` is **not provided**, it is automatically detected from `o1` and `Uph`.
+    %     - If `isRealValued` is **not provided**, it is automatically detected from `pA1` and `Uph`.
     %     - **Default solver:** `ode15s` (adaptive).
     %     - If `tfinal = 0`, the function **automatically sets** `tfinal = 10*T`.
     %     - If `Uph` is empty, the system is simulated as **homogeneous** (`dx/dt = A(t)x`).
@@ -60,9 +60,9 @@ function [y,t,dy]=lsim(o1,tfinal,x0,T,Uph,nvp)
     %
     %   See also: HMQ_SIM, ode15s.
     arguments
-        o1
+        pA1
         tfinal=0
-        x0=ones(size(o1,1),1)
+        x0=ones(size(pA1,1),1)
         T=2*pi
         Uph=[]
         nvp.opts=[] %odeset option
@@ -73,9 +73,9 @@ function [y,t,dy]=lsim(o1,tfinal,x0,T,Uph,nvp)
         nvp.isRealValued logical = false
     end
     if isempty(x0)
-        x0=ones(size(o1,1),1);
+        x0=ones(size(pA1,1),1);
     end
-    if isreal(o1)
+    if isreal(pA1)
         nvp.isRealValued = true;
     end
 
@@ -85,9 +85,9 @@ function [y,t,dy]=lsim(o1,tfinal,x0,T,Uph,nvp)
     %asking derivative trigger more computation from hmq_sim,
     %procede with care
     if nargout>2
-        [y,t,dy] = hmq_sim(o1,tfinal,x0,T,Uph,C{:});
+        [y,t,dy] = hmq_sim(pA1,tfinal,x0,T,Uph,C{:});
     else %sinon
-        [y,t]    = hmq_sim(o1,tfinal,x0,T,Uph,C{:});
+        [y,t]    = hmq_sim(pA1,tfinal,x0,T,Uph,C{:});
     end
 
 end

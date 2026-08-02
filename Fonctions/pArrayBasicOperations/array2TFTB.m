@@ -1,4 +1,4 @@
-function r= array2TFTB(o1,m)
+function r= array2TFTB(pA1,m)
 %ARRAY2TFTB Compute the Fourier representation of A in a form compatible with T_tb(A, m).
 %
 %   This function computes the **Fourier representation** of A(t) up to order `m`, 
@@ -24,7 +24,7 @@ function r= array2TFTB(o1,m)
 %       Computes the Fourier representation of `A` up to order `m`, compatible with T_tb(A, m).
 %
 %   Input Arguments:
-%   - o1 (PhasorArray) : The input PhasorArray representing A(t).
+%   - pA1 (PhasorArray) : The input PhasorArray representing A(t).
 %   - m (integer, optional) : The highest harmonic order to retain. Default: `A.h`.
 %
 %   Output:
@@ -37,24 +37,24 @@ function r= array2TFTB(o1,m)
 %
 %   See also: F_bt, TB.
 arguments
-    o1
-    m=nHarm(o1);
+    pA1
+    m=nHarm(pA1);
 end
 
 
-o1 = pvalue(o1);
+pA1 = pvalue(pA1);
 
-nho=nHarm(o1);
+nho=nHarm(pA1);
 
 
 if nho<m
-    toto = PhasorArrayPad(o1,m-nho);
+    toto = PhasorArrayPad(pA1,m-nho);
 elseif nho>m
-    toto = o1(:,:,(nho+1)+(-m:m));
+    toto = pA1(:,:,(nho+1)+(-m:m));
 else
-    toto = o1;
+    toto = pA1;
 end
 
 titi=permute(toto,[3 1 2]);
-r=reshape(titi,[],size(o1,2),1);
+r=reshape(titi,[],size(pA1,2),1);
 end

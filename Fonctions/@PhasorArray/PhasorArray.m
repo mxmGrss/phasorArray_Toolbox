@@ -268,15 +268,15 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             end
 
         end
-        function info = info(o1, tol)
+        function info = info(pA1, tol)
             % INFO Retrieve and evaluate properties of a PhasorArray object
-            %   info = INFO(o1, tol) computes multiple characteristics of the
+            %   info = INFO(pA1, tol) computes multiple characteristics of the
             %   PhasorArray, including harmonic information, real and imaginary energy
             %   distribution, and shape properties. It returns a structured output
             %   containing these metrics.
             %
             %   INPUTS:
-            %       o1  - The PhasorArray object to analyze.
+            %       pA1  - The PhasorArray object to analyze.
             %       tol - (Optional) A tolerance used to determine if the object
             %             is considered real. Defaults to machine precision if not
             %             specified.
@@ -319,28 +319,28 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %       If the array contains small imaginary components but is flagged
             %       as real, proceed with caution if the imaginary energy is non-zero.
             arguments
-                o1
+                pA1
                 tol  = []
             end
             if nargin == 1
                 warning('PhasorArray:isReal:defaultTol', 'tol not specified, defaulting to eps. Real-valued evaluation may be inaccurate.')
             end
             %display information about the PhasorArray
-            fprintf("PhasorArray of size [%d, %d, %d] with %d harmonics\n", size(o1, 1), size(o1, 2), size(o1, 3), o1.h);
-            [r,~] = isreal(o1,tol);
+            fprintf("PhasorArray of size [%d, %d, %d] with %d harmonics\n", size(pA1, 1), size(pA1, 2), size(pA1, 3), pA1.h);
+            [r,~] = isreal(pA1,tol);
             info.isReal = r;
-            info.tolReal = tolReal(o1);
-            info.tolZero = tolZero(o1);
-            info.maxImagCoeff = max(abs(value(mimag(o1))),[],'all');
-            info.minImagCoeff = min(abs(value(mimag(o1))),[],'all');
-            info.maxRealCoeff = max(abs(value(mreal(o1))),[],'all');
-            info.minRealCoeff = min(abs(value(mreal(o1))),[],'all');
+            info.tolReal = tolReal(pA1);
+            info.tolZero = tolZero(pA1);
+            info.maxImagCoeff = max(abs(value(mimag(pA1))),[],'all');
+            info.minImagCoeff = min(abs(value(mimag(pA1))),[],'all');
+            info.maxRealCoeff = max(abs(value(mreal(pA1))),[],'all');
+            info.minRealCoeff = min(abs(value(mreal(pA1))),[],'all');
 
             info.iscomplex = ~r;
 
-            ro1 = mreal(o1);
+            ro1 = mreal(pA1);
             info.realEnergy_EW = sum(ro1.value.*conj(ro1.value),3);
-            info.imagEnergy_EW = sum(value(mimag(o1)).*conj(value(mimag(o1))),3);
+            info.imagEnergy_EW = sum(value(mimag(pA1)).*conj(value(mimag(pA1))),3);
             info.imagEnergy = sum(info.imagEnergy_EW,'all');
             info.realEnergy = sum(info.realEnergy_EW,'all');
             info.Energy_EW = info.realEnergy_EW + info.imagEnergy_EW;
@@ -352,27 +352,27 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
 
 
 
-            info.h = o1.h;
-            info.size = size(o1);
-            info.isSymmetric = issymmetric(o1);
-            info.isHermitian =ishermitian(o1);
-            info.isSquare = issquare(o1);
-            info.isScalar = isscalar(o1);
-            info.isVector = isvector(o1);
+            info.h = pA1.h;
+            info.size = size(pA1);
+            info.isSymmetric = issymmetric(pA1);
+            info.isHermitian =ishermitian(pA1);
+            info.isSquare = issquare(pA1);
+            info.isScalar = isscalar(pA1);
+            info.isVector = isvector(pA1);
 
             if info.imagEnergy>0 && info.isReal
-                fprintf("PhasorArray is real within machine precision, but has non zero imaginary energy, proceed with caution, tolReal is %e",tolReal(o1));
+                fprintf("PhasorArray is real within machine precision, but has non zero imaginary energy, proceed with caution, tolReal is %e",tolReal(pA1));
             end
 
         end
-        function [Eew,E] = realEnergy(o1,elementwise)
+        function [Eew,E] = realEnergy(pA1,elementwise)
             %REALENERGY Compute the total real energy of the PhasorArray.
-            %   [Eew,E] = REALENERGY(o1, elementwise) returns element-wise real energy Eew
+            %   [Eew,E] = REALENERGY(pA1, elementwise) returns element-wise real energy Eew
             %   and total real energy E.
             %   If elementwise is true, returns element-wise energy. Default is false.
             %
             %   Inputs:
-            %       o1 - The PhasorArray object.
+            %       pA1 - The PhasorArray object.
             %       elementwise - (Optional, for single output) Logical flag indicating whether to return element-wise energy.
             %                     If true, returns element-wise energy. Default is false.
             %                     If two outputs are requested, the total energy is returned as second output regardless of this flag.
@@ -388,17 +388,17 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %   See also: energy, imagEnergy, DCenergy
 
             if nargin < 2, elementwise = false; end
-            [Eew, E] = energyOf(o1.mreal, elementwise, nargout);
+            [Eew, E] = energyOf(pA1.mreal, elementwise, nargout);
         end
 
-        function [Eew,E] = imagEnergy(o1,elementwise)
+        function [Eew,E] = imagEnergy(pA1,elementwise)
             %IMAGENERGY Compute the total imaginary energy of the PhasorArray.
-            %   [Eew,E] = IMAGENERGY(o1, elementwise) returns element-wise imaginary energy Eew
+            %   [Eew,E] = IMAGENERGY(pA1, elementwise) returns element-wise imaginary energy Eew
             %   and total imaginary energy E.
             %   If elementwise is true, returns element-wise energy. Default is false.
             %
             %   Inputs:
-            %       o1 - The PhasorArray object.
+            %       pA1 - The PhasorArray object.
             %       elementwise - (Optional, for single output) Logical flag indicating whether to return element-wise energy.
             %                     If true, returns element-wise energy. Default is false.
             %                     If two outputs are requested, the total energy is returned as second output regardless of this flag.
@@ -414,23 +414,23 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %   See also: energy, realEnergy, DCenergy
 
             if nargin < 2, elementwise = false; end
-            [Eew, E] = energyOf(o1.mimag, elementwise, nargout);
+            [Eew, E] = energyOf(pA1.mimag, elementwise, nargout);
         end
 
-        function [Eew,E] = energy(o1,elementwise)
+        function [Eew,E] = energy(pA1,elementwise)
             %ENERGY Compute the total energy of the PhasorArray.
-            %   [Eew,E] = ENERGY(o1, elementwise) returns element-wise energy Eew
+            %   [Eew,E] = ENERGY(pA1, elementwise) returns element-wise energy Eew
             %   and total energy E.
             %   If elementwise is true, returns element-wise energy. Default is false.
             %
             %   The energy is computed as: the \ell_2 norm squared of the PhasorArray over all harmonics.
             %   Through Parseval's theorem, this corresponds to the total energy in the time domain : E = \int |A(t)|^2 dt over one period.
             %
-            %   formula E(i,j) = sum |o1(i,j,k)|^2
+            %   formula E(i,j) = sum |pA1(i,j,k)|^2
             %           E = sum E(i,j)
             %
             %   Inputs:
-            %       o1 - The PhasorArray object.
+            %       pA1 - The PhasorArray object.
             %       elementwise - (Optional, for single output) Logical flag indicating whether to return element-wise energy.
             %                     If true, returns element-wise energy. Default is false.
             %                     If two outputs are requested, the total energy is returned as second output regardless of this flag.
@@ -446,15 +446,15 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %   See also: realEnergy, imagEnergy, DCenergy
 
             if nargin < 2, elementwise = false; end
-            [Eew, E] = energyOf(o1, elementwise, nargout);
+            [Eew, E] = energyOf(pA1, elementwise, nargout);
         end
-        function [Eew,E] = ACenergy(o1,elementwise)
+        function [Eew,E] = ACenergy(pA1,elementwise)
             %ACENERGY Compute the energy of the AC (non-DC) components of a PhasorArray.
-            %   [Eew, E] = ACENERGY(o1, elementwise) returns the element-wise energy Eew and total energy E
-            %   of the AC components (non-DC harmonics) of the PhasorArray o1.
+            %   [Eew, E] = ACENERGY(pA1, elementwise) returns the element-wise energy Eew and total energy E
+            %   of the AC components (non-DC harmonics) of the PhasorArray pA1.
             %
             %   Inputs:
-            %       o1 - The PhasorArray object.
+            %       pA1 - The PhasorArray object.
             %       elementwise - (Optional, for single output) Logical flag indicating whether to return element-wise energy.
             %                     If true, returns element-wise energy. Default is false.
             %                     If two outputs are requested, the total energy is returned as second output regardless of this flag.
@@ -469,15 +469,15 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %
             %   See also: energy, realEnergy, imagEnergy, DCenergy
             if nargin < 2, elementwise = false; end
-            [Eew, E] = energyOf(o1.extract(1:o1.h), elementwise, nargout);
+            [Eew, E] = energyOf(pA1.extract(1:pA1.h), elementwise, nargout);
         end
-        function [Eew,E] = DCenergy(o1,elementwise)
+        function [Eew,E] = DCenergy(pA1,elementwise)
             %DCENERGY Compute the energy of the DC (0-th harmonic) component of a PhasorArray.
-            %   [Eew, E] = DCENERGY(o1, elementwise) returns the element-wise energy Eew and total energy E
-            %   of the DC component (0-th harmonic) of the PhasorArray o1.
+            %   [Eew, E] = DCENERGY(pA1, elementwise) returns the element-wise energy Eew and total energy E
+            %   of the DC component (0-th harmonic) of the PhasorArray pA1.
             %
             %   Inputs:
-            %       o1 - The PhasorArray object.
+            %       pA1 - The PhasorArray object.
             %       elementwise - (Optional, for single output) Logical flag indicating whether to return element-wise energy.
             %                     If true, returns element-wise energy. Default is false.
             %                     If two outputs are requested, the total energy is returned as second output regardless of this flag.
@@ -492,16 +492,16 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %
             %   See also: energy, realEnergy, imagEnergy, ACenergy
             if nargin < 2, elementwise = false; end
-            [Eew, E] = energyOf(o1.extract(0), elementwise, nargout);
+            [Eew, E] = energyOf(pA1.extract(0), elementwise, nargout);
         end
 
-        function [Eew, E] = pageEnergy(o1, nvp)
+        function [Eew, E] = pageEnergy(pA1, nvp)
             % PAGEENERGY Compute and optionally plot the per-harmonic energy of a PhasorArray.
             %
-            %   [Eew, E] = pageEnergy(o1, Name, Value)
+            %   [Eew, E] = pageEnergy(pA1, Name, Value)
             %
             %   Inputs:
-            %     o1           - PhasorArray object
+            %     pA1           - PhasorArray object
             %
             %   Name-Value Arguments:
             %     'normalized'  - (logical) Normalise outputs by total energy. Default: false.
@@ -524,7 +524,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %   Example:
             %     [Eew, E] = pageEnergy(A, 'normalized', true, 'excludeDC', true, 'plot', 'stem-log');
             arguments
-                o1
+                pA1
                 nvp.normalized  logical = false
                 nvp.excludeDC   logical = false
                 nvp.cumulative  {mustBeMember(nvp.cumulative,  {'none','cumulative','reverse'})} = 'none'
@@ -532,8 +532,8 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             end
 
             % --- 1. Compute per-harmonic energy (one-sided: h=0..H) ---
-            for hi = o1.h : -1 : 0
-                [Eew(:,:,hi+1), E(hi+1)] = energy(o1.extract(hi));
+            for hi = pA1.h : -1 : 0
+                [Eew(:,:,hi+1), E(hi+1)] = energy(pA1.extract(hi));
             end
 
             % --- 2. Exclude DC (h=0) ---
@@ -604,133 +604,133 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
 
 
 
-        function r = plus(o1,o2)
+        function r = plus(pA1,pA2)
             % PLUS Overloads the plus (+) operator for the PhasorArray class.
             %    PLUS(A,B) returns a new PhasorArray representing the element-wise
             %    sum of A(t) and B(t). The second argument can be a scalar or a
             %    scalar PhasorArray, which is broadcast to match the dimensions of A.
-            if isscalar(o2)
-                o2=ones(size(o1,1),size(o1,2))*o2;
+            if isscalar(pA2)
+                pA2=ones(size(pA1,1),size(pA1,2))*pA2;
             end
-            r = PhasorArray(PhasorArrayAdd(o1,o2));
+            r = PhasorArray(PhasorArrayAdd(pA1,pA2));
             if ~isspecial(r)
                 r = r.neglect(0,"exclude0Phasor",false,"reduceMethod","absolute");
             end
         end
-        function r = pageplus(o1,o2)
+        function r = pageplus(pA1,pA2)
             %PAGEPLUS(A,B) : A+B = A(t)+B(t)
             %restricted to phasor of same third dimension
             %shouldn't be used directly, use PLUS instead
             %
             %See also PLUS
-            r=o1.value+o2.value;
+            r=pA1.value+pA2.value;
         end
-        function r = minus(o1,o2)
+        function r = minus(pA1,pA2)
             %MINUS overloading for PhasorArray
             %MINUS(A,B) : A-B = A(t)-B(t)
             %MINUS can accept scalar or scalar PhasorArray as second argument
-            o2 = -o2;
-            r = o1 + o2;
+            pA2 = -pA2;
+            r = pA1 + pA2;
         end
-        function r = uminus(o1)
+        function r = uminus(pA1)
             %UMINUS overloading for PhasorArray
             %UMINUS(A) : -A = -A(t)
-            r = PhasorArray(-pvalue(o1));
+            r = PhasorArray(-pvalue(pA1));
         end
-        function r = uplus(o1)
+        function r = uplus(pA1)
             %operator overloading for consistency, does nothing
-            r = o1;
+            r = pA1;
         end
-        function r = pagetimes(o1,o2)
+        function r = pagetimes(pA1,pA2)
             % Performs element-wise multiplication of phasors from two PhasorArrays
-            d=PhasorUnif(o1,o2);
+            d=PhasorUnif(pA1,pA2);
             r = PhasorArray(pvalue(d{1}).*pvalue(d{2}));
         end
-        function r = times(o1,o2)
+        function r = times(pA1,pA2)
             %TIMES Element-wise multiplication of two PhasorArray objects.
             %   R = TIMES(O1,O2) returns a PhasorArray containing the element-wise
             %   multiplication of O1 and O2. Both inputs must be PhasorArray objects
             %   (or unify to the same dimension).
-            d=PhasorUnif(o1,o2);
-            o1=d{1};
-            o2=d{2};
-            for ii = 1:size(o1,1)
-                for jj = 1:size(o1,2)
+            d=PhasorUnif(pA1,pA2);
+            pA1=d{1};
+            pA2=d{2};
+            for ii = 1:size(pA1,1)
+                for jj = 1:size(pA1,2)
                     if ii==1 && jj==1
-                        rr=PhasorArrayTimes(o1(ii,jj,:),o2(ii,jj,:),"reduce", false);
-                        r=zeros(size(o1,1),size(o1,2),size(rr,3));
+                        rr=PhasorArrayTimes(pA1(ii,jj,:),pA2(ii,jj,:),"reduce", false);
+                        r=zeros(size(pA1,1),size(pA1,2),size(rr,3));
                         r(ii,jj,:)=rr;
                     else
-                        r(ii,jj,:)=PhasorArrayTimes(o1(ii,jj,:),o2(ii,jj,:),"reduce", false);
+                        r(ii,jj,:)=PhasorArrayTimes(pA1(ii,jj,:),pA2(ii,jj,:),"reduce", false);
                     end
                 end
             end
             r = PhasorArray(r);
             try
-                if ~isreal(r) && isreal(o1) && isreal(o2) %warning very costly for big phasorArray
+                if ~isreal(r) && isreal(pA1) && isreal(pA2) %warning very costly for big phasorArray
                     r = mreal(r);
                 end
             catch
             end
         end
-        function r = mtimes(o1,o2)
+        function r = mtimes(pA1,pA2)
             %MTIMES Overloads the matrix multiplication operator for PhasorArray.
             %   R = MTIMES(O1,O2) performs the time-domain product of the two
             %   PhasorArray objects O1 and O2 (convolution of the 3D arrays along the third dimension), returning a PhasorArray result.
             try
-                r = PhasorArray(PhasorArrayTimes(o1,o2));
+                r = PhasorArray(PhasorArrayTimes(pA1,pA2));
                 try
-                    if ~isspecial(r) && ~isreal(r) && isreal(PhasorArray(o1)) && isreal(PhasorArray(o2))
+                    if ~isspecial(r) && ~isreal(r) && isreal(PhasorArray(pA1)) && isreal(PhasorArray(pA2))
                         r = mreal(r);
                     end
                 catch
                 end
             catch e
-                if isa(o2,"PhasorSS")
-                    o1 = PhasorSS([],[],[],o1);
-                    r = o1 * o2;
+                if isa(pA2,"PhasorSS")
+                    pA1 = PhasorSS([],[],[],pA1);
+                    r = pA1 * pA2;
                 else
                     rethrow(e)
                 end
             end
 
         end
-        function r = rdivide(o1,o2,varargin)
+        function r = rdivide(pA1,pA2,varargin)
             % RDIVIDE Overloads the right array division operator for the PhasorArray class.
             %   RDIVIDE(A,B) returns a PhasorArray that represents A./B term by term.
-            for ii = 1:size(o2,1)
-                for jj = 1:size(o2,2)
-                    d2(ii,jj,:)=PhasorInv(o2(ii,jj,:),varargin{:});
+            for ii = 1:size(pA2,1)
+                for jj = 1:size(pA2,2)
+                    d2(ii,jj,:)=PhasorInv(pA2(ii,jj,:),varargin{:});
                 end
             end
             d2=PhasorArray(d2);
-            d=PhasorUnif(o1,d2);
+            d=PhasorUnif(pA1,d2);
             r = PhasorArray(d{1}.*d{2});
         end
 
-        function r = ldivide(o1,o2,varargin)
+        function r = ldivide(pA1,pA2,varargin)
             % LDIVIDE Overloads the left array division operator for the PhasorArray class.
             %   LDIVIDE(A,B) returns a PhasorArray that represents A.\B term by term.
-            for ii = 1:size(o1,1)
-                for jj = 1:size(o1,2)
-                    d1(ii,jj,:)=PhasorInv(o1(ii,jj,:),varargin{:});
+            for ii = 1:size(pA1,1)
+                for jj = 1:size(pA1,2)
+                    d1(ii,jj,:)=PhasorInv(pA1(ii,jj,:),varargin{:});
                 end
             end
             d1=PhasorArray(d1);
-            d=PhasorUnif(d1,o2);
+            d=PhasorUnif(d1,pA2);
             r = PhasorArray(d{1}.*d{2});
         end
-        function r = pagerdivide(o1,o2)
+        function r = pagerdivide(pA1,pA2)
             % Performs element-wise right division of phasors from 2 PhasorArrays
-            d=PhasorUnif(o1,o2);
+            d=PhasorUnif(pA1,pA2);
             r = PhasorArray(d{1}./d{2});
         end
-        function r = pageldivide(o1,o2)
+        function r = pageldivide(pA1,pA2)
             % Performs element-wise left division of phasors from 2 PhasorArrays
-            d=PhasorUnif(o1,o2);
+            d=PhasorUnif(pA1,pA2);
             r = PhasorArray(d{1}.\d{2});
         end
-        function r = mrdivide(o1,o2,nvp)
+        function r = mrdivide(pA1,pA2,nvp)
             %MRDIVIDE Overloads the right matrix division operator (/) for PhasorArray.
             %   X = B / A solves X(t) * A(t) = B(t) directly in the harmonic domain
             %   using mrHmcDivide with adaptive harmonic selection.
@@ -746,8 +746,8 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %
             %   See also: mrHmcDivide, mlHmcDivide, mldivide
             arguments
-                o1
-                o2
+                pA1
+                pA2
                 nvp.h                = []
                 nvp.thresholdResidual = 5e-4
                 nvp.autoUpdateh      = true
@@ -758,9 +758,9 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 nvp.updateMethod    {mustBeMember(nvp.updateMethod,{'adaptive','incremental'})} = 'adaptive'
             end
             C = namedargs2cell(nvp);
-            r = mrHmcDivide(PhasorArray(o1), PhasorArray(o2), C{:});
+            r = mrHmcDivide(PhasorArray(pA1), PhasorArray(pA2), C{:});
         end
-        function r = mldivide(o1,o2,nvp)
+        function r = mldivide(pA1,pA2,nvp)
             %MLDIVIDE Overloads the left matrix division operator (\) for PhasorArray.
             %   X = A \ B solves A(t) * X(t) = B(t) directly in the harmonic domain
             %   using mlHmcDivide with adaptive harmonic selection.
@@ -776,8 +776,8 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             %
             %   See also: mlHmcDivide, mrHmcDivide, mrdivide
             arguments
-                o1
-                o2
+                pA1
+                pA2
                 nvp.h                = []
                 nvp.thresholdResidual = 5e-4
                 nvp.autoUpdateh      = true
@@ -788,7 +788,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 nvp.updateMethod    {mustBeMember(nvp.updateMethod,{'adaptive','incremental'})} = 'adaptive'
             end
             C = namedargs2cell(nvp);
-            r = mlHmcDivide(PhasorArray(o1), PhasorArray(o2), C{:});
+            r = mlHmcDivide(PhasorArray(pA1), PhasorArray(pA2), C{:});
         end
 
 
@@ -848,20 +848,20 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         F = sparse(obj.F_bt(h));
     end
 
-    function r = pagepower(o1,m)
+    function r = pagepower(pA1,m)
         % pagepower Element-wise exponentiation of phasors.
         %
-        %   r = pagepower(o1, m) computes `o1 .^ m` phasor-wise, applying exponentiation
+        %   r = pagepower(pA1, m) computes `pA1 .^ m` phasor-wise, applying exponentiation
         %   to each phasor coefficient individually.
         %
         %   Inputs:
-        %   - o1: A PhasorArray.
+        %   - pA1: A PhasorArray.
         %   - m : A scalar or a PhasorArray of matching size.
         %
         %   Behavior:
-        %   - If `m` is a scalar, applies `.^m` to each individual phasor of `o1`.
+        %   - If `m` is a scalar, applies `.^m` to each individual phasor of `pA1`.
         %   - If `m` is a PhasorArray, exponentiation is applied to matching phasor coefficients.
-        %   - Each frequency component of `o1` is exponentiated separately.
+        %   - Each frequency component of `pA1` is exponentiated separately.
         %
         %   Notes:
         %   - This is **not** equivalent to exponentiating the time-domain matrix \( A(t) \).
@@ -869,22 +869,22 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %
         %   See also: power, mpower
         if isa(m,'PhasorArray')
-            d=PhasorUnif(o1,m);
+            d=PhasorUnif(pA1,m);
             m=d{2};
             r = PhasorArray((pvalue(d{1})).^(pvalue(m)));
         else
-            r = PhasorArray(pvalue(o1).^m);
+            r = PhasorArray(pvalue(pA1).^m);
         end
     end
-    function r = power(o1,m)
+    function r = power(pA1,m)
         % POWER Element-wise power of a periodic matrix A(t).
         %
-        %   r = power(o1, m) computes the element-wise power of each matrix entry of a periodic matrix \( A(t) \),
+        %   r = power(pA1, m) computes the element-wise power of each matrix entry of a periodic matrix \( A(t) \),
         %   represented as a PhasorArray. This is equivalent to computing \( A(t)^{m} \) for each individual element of the matrix
         %   at each time instance in the time domain.
         %
         %   Inputs:
-        %   - o1: A PhasorArray representing the periodic matrix \( A(t) \).
+        %   - pA1: A PhasorArray representing the periodic matrix \( A(t) \).
         %   - m: The exponent (scalar value) to apply element-wise.
         %
         %   Output:
@@ -895,23 +895,23 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %   - This corresponds to raising each individual element \( A_{ij}(t) \) of the matrix to the power \( m \).
         %
         %   See also: PhasorPow, mpower, expm
-        r=o1;
+        r=pA1;
         % element wise power
-        for ii=1:size(o1,1)
-            for jj=1:size(o1,2)
-                r{ii,jj}=o1{ii,jj}^m;
+        for ii=1:size(pA1,1)
+            for jj=1:size(pA1,2)
+                r{ii,jj}=pA1{ii,jj}^m;
             end
         end
     end
-    function r = mpower(o1,m)
+    function r = mpower(pA1,m)
         % MPOWER Matrix power of a periodic matrix A(t), computed for integer exponents.
         %
-        %   r = mpower(o1, m) computes the matrix power \( A(t)^m \) for a periodic matrix \( A(t) \),
+        %   r = mpower(pA1, m) computes the matrix power \( A(t)^m \) for a periodic matrix \( A(t) \),
         %   represented as a PhasorArray. This operation is only valid for **integer exponents** and is done in the time domain.
         %   It computes the repeated matrix multiplication of \( A(t) \) with itself \( m \) times.
         %
         %   Inputs:
-        %   - o1: A PhasorArray representing the periodic matrix \( A(t) \).
+        %   - pA1: A PhasorArray representing the periodic matrix \( A(t) \).
         %   - m: A positive or negative integer exponent representing the power.
         %
         %   Output:
@@ -927,23 +927,23 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %
         %   See also: PhasorPow, power, expm
         if mod(m,1)==0 && m>1
-            prec=pvalue(o1);
+            prec=pvalue(pA1);
             for ii=2:m
-                prec=PhasorArrayTimes(prec,o1);
+                prec=PhasorArrayTimes(prec,pA1);
             end
         elseif mod(m,1)==0 && m<0
-            d1=PhasorInv(o1);
+            d1=PhasorInv(pA1);
             prec=d1;
             for ii=-2:-1:m
                 prec=PhasorArrayTimes(prec,d1);
             end
         else
-            prec=PhasorPow(o1,m);
+            prec=PhasorPow(pA1,m);
         end
         r=PhasorArray(prec);
     end
 
-    function r = oplus(o1,o2)
+    function r = oplus(pA1,pA2)
         %OPLUS Kronecker sum of two PhasorArray objects.
         %   R = OPLUS(O1,O2) returns a PhasorArray representing the Kronecker
         %   sum of O1 and O2.
@@ -954,55 +954,55 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %   and otimes is the usual kronecker product.
         %
         %   see also KRON, TROPLUS, CTROPLUS
-        r=PhasorArray(PhasorArrayOplus(o1,o2));
+        r=PhasorArray(PhasorArrayOplus(pA1,pA2));
     end
-    function r = troplus(o1,o2)
+    function r = troplus(pA1,pA2)
         %TROPLUS Kronecker sum of the transpose of two PhasorArray objects.
         %   R = TROPLUS(O1,O2) returns a PhasorArray representing the Kronecker
         %   sum of the transpose of O1 and O2.
         %
         %   see also KRON, OPLUS, CTROPLUS
-        r=PhasorArray(PhasorArrayOplus(pagetranspose(pvalue(o1)),o2));
+        r=PhasorArray(PhasorArrayOplus(pagetranspose(pvalue(pA1)),pA2));
     end
-    function r = ctroplus(o1,o2)
+    function r = ctroplus(pA1,pA2)
         %CTROPLUS Kronecker sum of the conjugate transpose of two PhasorArray objects.
         %   R = CTROPLUS(O1,O2) returns a PhasorArray representing the Kronecker
         %   sum of the conjugate transpose of O1 and O2.
         %
         %   see also KRON, OPLUS, TROPLUS
-        r=PhasorArray(PhasorArrayOplus(pagectranspose(pvalue(o1)),o2));
+        r=PhasorArray(PhasorArrayOplus(pagectranspose(pvalue(pA1)),pA2));
     end
-    function r = kron(o1,o2)
+    function r = kron(pA1,pA2)
         %KRON Kronecker product of two PhasorArray objects.
         %   R = KRON(O1,O2) returns a PhasorArray representing the Kronecker
         %   product of O1 and O2.
         %
         %   see also OPLUS, TROPLUS, CTROPLUS
-        r=PhasorArray(PhasorArrayKron(o1,o2));
+        r=PhasorArray(PhasorArrayKron(pA1,pA2));
     end
-    function r = retro(o1)
+    function r = retro(pA1)
         %RETRO Reverse the time axis of the PhasorArray.
         %   B = RETRO(A) returns a PhasorArray B such that B(t) = A(-t).
         %   This function flips the PhasorArray along the third dimension,
         %   effectively reversing the time axis.
-        r=PhasorArray(flip((pvalue(o1)),3));
+        r=PhasorArray(flip((pvalue(pA1)),3));
     end
-    function r = trretro(o1)
+    function r = trretro(pA1)
         %TRRETRO Reverse the time axis and transpose the PhasorArray.
         %   B = TRRETRO(A) returns a PhasorArray B such that B(t) = A(-t).'
         %   This function flips the PhasorArray along the third dimension,
         %   effectively reversing the time axis and transposing each page.
-        r=PhasorArray(flip(pagetranspose(pvalue(o1)),3));
+        r=PhasorArray(flip(pagetranspose(pvalue(pA1)),3));
     end
-    function r = ctrretro(o1)
+    function r = ctrretro(pA1)
         %CTRRETRO Reverse the time axis and conjugate transpose the PhasorArray.
         %   B = CTRRETRO(A) returns a PhasorArray B such that B(t) = A(-t)'.
         %   Conjugating the pages already reverses the harmonic index, so no flip:
         %   with the flip this returned A(t)', duplicating MCTRANSPOSE.
-        r=PhasorArray(pagectranspose(pvalue(o1)));
+        r=PhasorArray(pagectranspose(pvalue(pA1)));
     end
 
-    function out = extract(o1,index,symmetric)
+    function out = extract(pA1,index,symmetric)
         %EXTRACT Extract specified phasors from a PhasorArray.
         %   OUT = EXTRACT(O1, INDEX) returns a PhasorArray containing only the
         %   phasors specified by INDEX. All other phasors are set to zero.
@@ -1030,44 +1030,44 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %
         %   See also trunc, reduce, neglect
         arguments
-            o1
+            pA1
             index
             symmetric=true
         end
         if islogical(index)
-            if numel(index)~=size(o1,3)
-                error('PhasorArray:neglect:indexSizeMismatch', 'Logical index size (%d) must match size(obj,3)=%d.', numel(index), size(o1,3))
+            if numel(index)~=size(pA1,3)
+                error('PhasorArray:neglect:indexSizeMismatch', 'Logical index size (%d) must match size(obj,3)=%d.', numel(index), size(pA1,3))
             end
             index=find(index);
             %find complement of index
-            indexc=setdiff(1:size(o1,3),index);
+            indexc=setdiff(1:size(pA1,3),index);
 
-            out = o1;
+            out = pA1;
             out(:,:,indexc)=0;
         else
             if all(index>=0) && symmetric
                 index=[index -index];
-                maxIndex = max(max(index),o1.h);
+                maxIndex = max(max(index),pA1.h);
                 indexc=setdiff(-maxIndex:maxIndex,index);
-                out = o1;
+                out = pA1;
                 out{:,:,indexc}=0;
             else
-                out = o1;
-                maxIndex = max(max(abs(index)),o1.h);
+                out = pA1;
+                maxIndex = max(max(abs(index)),pA1.h);
                 indexc=setdiff(-maxIndex:maxIndex,index);
                 out{:,:,indexc}=0;
             end
         end
     end
 
-    function r = trunc(o1,m)
+    function r = trunc(pA1,m)
         %TRUNC Truncate the PhasorArray to a specified number of phasors.
         %   R = TRUNC(O1, M) returns a new PhasorArray that is truncated to
         %   contain only M phasors. If M is not specified, the function will
         %   use a default value.
         %
         %   INPUTS:
-        %       o1 - The original PhasorArray object to be truncated.
+        %       pA1 - The original PhasorArray object to be truncated.
         %       m  - (Optional) The number of phasors to retain in the truncated
         %            PhasorArray. If not provided, a default value is used.
         %
@@ -1082,12 +1082,12 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %   See also REDUCE, NEGLECT
 
         arguments
-            o1
+            pA1
             m=[]
         end
-        r=PhasorArray(ReduceArray(o1,m));
+        r=PhasorArray(ReduceArray(pA1,m));
     end
-    function r = reduce(o1,htrunc,nvp)
+    function r = reduce(pA1,htrunc,nvp)
         %REDUCE Truncate or filter the PhasorArray based on harmonic order or magnitude thresholds.
         %
         %   This function reduces a PhasorArray by either:
@@ -1097,19 +1097,19 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %   - Applying a hard or soft thresholding strategy (`hardThresholdPhasors`).
         %
         %   Syntax:
-        %   r = REDUCE(o1)
-        %       Reduces `o1` using the default relative thresholding method,
+        %   r = REDUCE(pA1)
+        %       Reduces `pA1` using the default relative thresholding method,
         %       preserving all harmonics unless their magnitudes are below 1e-15.
         %
-        %   r = REDUCE(o1, htrunc)
-        %       Truncates `o1` to harmonics of order ≤ `htrunc`.
+        %   r = REDUCE(pA1, htrunc)
+        %       Truncates `pA1` to harmonics of order ≤ `htrunc`.
         %
-        %   r = REDUCE(o1, htrunc, 'reduceMethod', method, 'reduceThreshold', threshold,
+        %   r = REDUCE(pA1, htrunc, 'reduceMethod', method, 'reduceThreshold', threshold,
         %                'exclude0Phasor', exclude, 'hardThresholdPhasors', hardThreshold)
         %       Applies a combination of truncation and magnitude filtering based on additional parameters.
         %
         %   Input Arguments:
-        %   - o1 (PhasorArray) : The PhasorArray object to be reduced.
+        %   - pA1 (PhasorArray) : The PhasorArray object to be reduced.
         %   - htrunc (integer, optional) : The maximum harmonic order to retain. Default is empty ([]),
         %       meaning harmonics are only removed based on filtering criteria.
         %
@@ -1129,7 +1129,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %                This affects thresholding in 'relative' mode.
         %
         %   - 'hardThresholdPhasors' (logical, optional) :
-        %       - false (default) : `o1` is truncated to order `m`, meaning **only harmonics beyond order m**
+        %       - false (default) : `pA1` is truncated to order `m`, meaning **only harmonics beyond order m**
         %         are removed when all phasors of order > `m` fall below the threshold.
         %         Lower-order phasors (< `m`) are **never** removed, even if below threshold.
         %       - true : Any phasor below the threshold is explicitly **set to zero**. Then, trailing zero phasors
@@ -1140,20 +1140,20 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %
         %   Example:
         %   % Truncate PhasorArray to the 5th harmonic
-        %   r = reduce(o1, 5);
+        %   r = reduce(pA1, 5);
         %
         %   % Apply absolute thresholding without truncating harmonics
-        %   r = reduce(o1, [], 'reduceMethod', 'absolute', 'reduceThreshold', 1e-10, 'exclude0Phasor', false);
+        %   r = reduce(pA1, [], 'reduceMethod', 'absolute', 'reduceThreshold', 1e-10, 'exclude0Phasor', false);
         %
         %   % Apply soft thresholding with truncation logic
-        %   r = reduce(o1, [], 'hardThresholdPhasors', false, 'reduceMethod', 'relative', 'reduceThreshold', 1e-12);
+        %   r = reduce(pA1, [], 'hardThresholdPhasors', false, 'reduceMethod', 'relative', 'reduceThreshold', 1e-12);
         %
         %   % Apply hard thresholding where all small phasors are explicitly set to zero
-        %   r = reduce(o1, [], 'hardThresholdPhasors', true, 'reduceMethod', 'relative', 'reduceThreshold', 1e-12);
+        %   r = reduce(pA1, [], 'hardThresholdPhasors', true, 'reduceMethod', 'relative', 'reduceThreshold', 1e-12);
         %
         %   See also: ReduceArray
         arguments
-            o1
+            pA1
             htrunc=[]
             nvp.reduceMethod char {mustBeMember(nvp.reduceMethod,{'absolute','relative'})} = 'relative'
             nvp.reduceThreshold {mustBeNumeric,mustBeReal} = 1e-15
@@ -1164,31 +1164,31 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         % variable does not have. Left alone the call surfaces a YALMIP
         % strict-inequality error or a MATLAB dimension error, neither of
         % which names the actual problem.
-        if ~isnumeric(pvalue(o1))
+        if ~isnumeric(pvalue(pA1))
             error('PhasorArray:reduce:symbolicPayload', ...
                 ['reduce compares phasor magnitudes and needs a numeric array; this one holds %s. ' ...
                  'Build the variable at the order you want, or solve first and reduce the ' ...
-                 'numeric result (sdpval for YALMIP, double for symbolic).'], class(pvalue(o1)));
+                 'numeric result (sdpval for YALMIP, double for symbolic).'], class(pvalue(pA1)));
         end
-        r=PhasorArray(ReduceArray(o1,htrunc,"reduceMethod", nvp.reduceMethod,"reduceThreshold", nvp.reduceThreshold,"exclude0Phasor", nvp.exclude0Phasor,"hardThresholdPhasors", nvp.hardThresholdPhasors));
+        r=PhasorArray(ReduceArray(pA1,htrunc,"reduceMethod", nvp.reduceMethod,"reduceThreshold", nvp.reduceThreshold,"exclude0Phasor", nvp.exclude0Phasor,"hardThresholdPhasors", nvp.hardThresholdPhasors));
     end
-    function r = neglect(o1, reduceThreshold, nvp)
+    function r = neglect(pA1, reduceThreshold, nvp)
         %NEGLECT Set to zero all phasors below a given threshold in a PhasorArray.
         %
-        %   This function filters out low-magnitude phasors in a PhasorArray `o1`,
+        %   This function filters out low-magnitude phasors in a PhasorArray `pA1`,
         %   setting them to zero based on a specified threshold and reduction method.
         %   for matricial phasor array, it acts component-wise, meaning each entry (i,j) is "neglected" independently of the others.
         %
         %   Syntax:
-        %   r = NEGLECT(o1, reduceThreshold)
-        %       Sets to zero all phasors in `o1` with magnitude below `reduceThreshold`,
+        %   r = NEGLECT(pA1, reduceThreshold)
+        %       Sets to zero all phasors in `pA1` with magnitude below `reduceThreshold`,
         %       using the default 'relative' thresholding method.
         %
-        %   r = NEGLECT(o1, reduceThreshold, 'reduceMethod', method, 'exclude0Phasor', exclude, 'h', h)
+        %   r = NEGLECT(pA1, reduceThreshold, 'reduceMethod', method, 'exclude0Phasor', exclude, 'h', h)
         %       Applies phasor filtering with additional options.
         %
         %   Input Arguments:
-        %   - o1 (PhasorArray) : The PhasorArray object whose small phasors should be neglected.
+        %   - pA1 (PhasorArray) : The PhasorArray object whose small phasors should be neglected.
         %   - reduceThreshold (double) : The magnitude threshold below which phasors are set to zero.
         %
         %   Name-Value Pair Arguments:
@@ -1210,27 +1210,27 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %
         %   Example:
         %   % Set to zero all phasors with magnitude below 1e-15 using default relative method
-        %   r = neglect(o1, 1e-15);
+        %   r = neglect(pA1, 1e-15);
         %
         %   % Apply absolute thresholding (removes all phasors with magnitude < 1e-15)
-        %   r = neglect(o1, 1e-15, 'reduceMethod', 'absolute');
+        %   r = neglect(pA1, 1e-15, 'reduceMethod', 'absolute');
         %
         %   % Use relative thresholding, ignoring the 0th phasor when computing the max reference
-        %   r = neglect(o1, 1e-15, 'reduceMethod', 'relative', 'exclude0Phasor', true);
+        %   r = neglect(pA1, 1e-15, 'reduceMethod', 'relative', 'exclude0Phasor', true);
         %
         %   % Apply thresholding and then truncate to at most 5 harmonics
-        %   r = neglect(o1, 1e-12, 'h', 5);
+        %   r = neglect(pA1, 1e-12, 'h', 5);
         %
         %   See also: REDUCE, TRUNC, ReduceArray
         arguments
-            o1
+            pA1
             reduceThreshold {mustBeNumeric,mustBeReal} = 1e-15
             nvp.reduceMethod {mustBeMember(nvp.reduceMethod,{'absolute','relative'})}  = 'relative'
             nvp.exclude0Phasor (1,1) logical = false
             nvp.h=[]
         end
-        val=o1.value;
-        h=o1.h;
+        val=pA1.value;
+        h=pA1.h;
         switch  nvp.reduceMethod
             case 'absolute'
                 val_rel=val;
@@ -1248,15 +1248,15 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
     end
 
 
-    function r = flip(o1,dim)
+    function r = flip(pA1,dim)
         %FLIP the PhasorArray along the dim dimension
         %   - dim : dimension to flip
-        %   - r = flip(o1,dim) flip the PhasorArray along the dim dimension
+        %   - r = flip(pA1,dim) flip the PhasorArray along the dim dimension
         %
         %   See also FLIPLR, FLIPUD
         %
         %   Inputs:
-        %       o1  - PhasorArray object to be flipped
+        %       pA1  - PhasorArray object to be flipped
         %       dim - Dimension along which to flip the PhasorArray
         %
         %   Outputs:
@@ -1272,11 +1272,11 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         if dim==3
             warning('PhasorArray:flip:reversesTime', 'Flipping along dim 3 produces M(-t), i.e., a time-reversal.')
         end
-        r=PhasorArray(flip(o1.value,dim));
+        r=PhasorArray(flip(pA1.value,dim));
     end
-    function r = fliplr(o1)
+    function r = fliplr(pA1)
         %FLIPLR Flip the PhasorArray left to right
-        %   r = FLIPLR(o1) flips the PhasorArray o1 in the left-right direction.
+        %   r = FLIPLR(pA1) flips the PhasorArray pA1 in the left-right direction.
         %   The function returns a new PhasorArray r with the elements flipped.
         %
         %   Example:
@@ -1285,11 +1285,11 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %
         %   See also FLIP, FLIPUD
 
-        r=PhasorArray(fliplr(o1.value));
+        r=PhasorArray(fliplr(pA1.value));
     end
-    function r = flipud(o1)
+    function r = flipud(pA1)
         %FLIPUD Flip the PhasorArray up to down
-        %   r = FLIPUD(o1) flips the PhasorArray o1 in the up-down direction.
+        %   r = FLIPUD(pA1) flips the PhasorArray pA1 in the up-down direction.
         %   The function returns a new PhasorArray r with the elements flipped.
         %
         %   Example:
@@ -1298,30 +1298,30 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %
         %   See also FLIP, FLIPLR
 
-        r=PhasorArray(flipud(o1.value));
+        r=PhasorArray(flipud(pA1.value));
     end
 
-    function r = rot90(o1,varargin)
+    function r = rot90(pA1,varargin)
         %ROT90 Rotate the PhasorArray by 90 degrees
-        %   r = ROT90(o1) rotates the PhasorArray object o1 by 90 degrees
+        %   r = ROT90(pA1) rotates the PhasorArray object pA1 by 90 degrees
         %   counterclockwise and returns the result in r.
         %
-        %   r = ROT90(o1, k) rotates the PhasorArray object o1 by 90 degrees
+        %   r = ROT90(pA1, k) rotates the PhasorArray object pA1 by 90 degrees
         %   counterclockwise k times.
         %
         %   Input:
-        %       o1 - PhasorArray object to be rotated
+        %       pA1 - PhasorArray object to be rotated
         %       k  - (Optional) Number of times to rotate by 90 degrees
         %
         %   Output:
         %       r  - PhasorArray object after rotation
         %
         %   see also FLIP, FLIPLR, FLIPUD
-        r=PhasorArray(rot90(o1.value,varargin{:}));
+        r=PhasorArray(rot90(pA1.value,varargin{:}));
     end
 
 
-    function r = horzcat(o1,varargin)
+    function r = horzcat(pA1,varargin)
         %HORZCAT Concatenate PhasorArray objects horizontally
         %
         %   R = HORZCAT(O1, VARARGIN) concatenates the PhasorArray object O1
@@ -1341,24 +1341,24 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %   concatenation.
         %
         %   Example:
-        %       r = horzcat(o1, o2, o3);
+        %       r = horzcat(pA1, pA2, pA3);
         %
         %   See also: VERTCAT, PHASORUNIF, PVALUE
         if nargin==1
-            r=o1;
+            r=pA1;
             return
         end
         for ii=1:numel(varargin)
-            o2=varargin{ii};
-            if size(o1,3) ~= size(o2,3)
-                d=PhasorUnif(o1,o2);
+            pA2=varargin{ii};
+            if size(pA1,3) ~= size(pA2,3)
+                d=PhasorUnif(pA1,pA2);
                 r = PhasorArray([pvalue(d{1}) pvalue(d{2})]);
             else
-                u1=pvalue(o1);
-                u2=pvalue(o2);
+                u1=pvalue(pA1);
+                u2=pvalue(pA2);
                 r = PhasorArray([u1 , u2]);
             end
-            o1=r;
+            pA1=r;
         end
     end
     function r = vertcat(varargin)
@@ -1380,7 +1380,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %   concatenation.
         %
         %   Example:
-        %       r = vertcat(o1, o2, o3);
+        %       r = vertcat(pA1, pA2, pA3);
         %
         %   See also: HORZCAT, PHASORUNIF, PVALUE
 
@@ -1393,22 +1393,22 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             r=cat(1,varargin{:});
             return
         else
-            o1=varargin{1};
-            o2=varargin{2};
+            pA1=varargin{1};
+            pA2=varargin{2};
         end
-        if size(o1,3)~=size(o2,3)
-            d=PhasorUnif(o1,o2);
+        if size(pA1,3)~=size(pA2,3)
+            d=PhasorUnif(pA1,pA2);
             r = PhasorArray([pvalue(d{1}) ; pvalue(d{2})]);
         else
-            u1=pvalue(o1);
-            u2=pvalue(o2);
+            u1=pvalue(pA1);
+            u2=pvalue(pA2);
             r = PhasorArray([u1 ; u2]);
         end
 
     end
-    function r = blkdiag(o1)
+    function r = blkdiag(pA1)
         %BLKDIAG of phasorarray
-        %  - r = blkdiag(o1,o2,...) : block diagonal of phasorArray
+        %  - r = blkdiag(pA1,pA2,...) : block diagonal of phasorArray
         %
         %   See also HORZCAT, VERTCAT
         %
@@ -1418,7 +1418,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %   to one of the input phasor arrays.
         %
         %   Input:
-        %       o1 - Repeating argument list of phasor arrays
+        %       pA1 - Repeating argument list of phasor arrays
         %
         %   Output:
         %       r - Resulting PhasorArray object containing the block
@@ -1432,9 +1432,9 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %   This example creates a block diagonal matrix from two phasor
         %   arrays pa1 and pa2.
         arguments (Repeating)
-            o1
+            pA1
         end
-        b1=PhasorUnif(o1{:});
+        b1=PhasorUnif(pA1{:});
         h=size(b1{1},3);
         out=cell(h,1);
         for hi=1:h
@@ -1448,14 +1448,14 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         out=cat(3,out{:});
         r=PhasorArray(out);
     end
-    function r = repmat(o1,M,N)
+    function r = repmat(pA1,M,N)
         %REPMAT Replicate and tile a PhasorArray.
-        %   r = REPMAT(o1,M,N) replicates and tiles the PhasorArray o1 M times along the first dimension and N times along the second dimension.
-        %   r = REPMAT(o1,M) replicates and tiles the PhasorArray o1 M times along the first and second dimensions.
-        %   r = REPMAT(o1,M,N,L) replicates and tiles the PhasorArray o1 M times along the first dimension, N times along the second dimension, and L times along the third dimension.
+        %   r = REPMAT(pA1,M,N) replicates and tiles the PhasorArray pA1 M times along the first dimension and N times along the second dimension.
+        %   r = REPMAT(pA1,M) replicates and tiles the PhasorArray pA1 M times along the first and second dimensions.
+        %   r = REPMAT(pA1,M,N,L) replicates and tiles the PhasorArray pA1 M times along the first dimension, N times along the second dimension, and L times along the third dimension.
         %
         %   Inputs:
-        %       o1 - The PhasorArray object to be replicated.
+        %       pA1 - The PhasorArray object to be replicated.
         %       M  - Number of times to replicate along the first dimension.
         %       N  - (Optional) Number of times to replicate along the second dimension.
         %
@@ -1469,7 +1469,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %   See also REPMAT, RESHAPE
 
         arguments
-            o1
+            pA1
             M
         end
         arguments (Repeating)
@@ -1477,7 +1477,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         end
         switch nargin
             case 1
-                r = o1;
+                r = pA1;
             case 2
                 switch numel(M)
                     case 1
@@ -1494,46 +1494,46 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                     otherwise
                         warning('PhasorArray:repmat:extraDimIgnored', 'repmat: extra dimension(s) beyond dim 1-2 are not meaningful for PhasorArray. Proceeding with caution.')
                 end
-                r = PhasorArray(repmat(o1.value,M));
+                r = PhasorArray(repmat(pA1.value,M));
                 return
             case 3
                 assert(numel(M)==1)
                 N=N{1};
                 assert(numel(N)==1)
                 L=1;
-                r = PhasorArray(repmat(o1.value,M,N,L));
+                r = PhasorArray(repmat(pA1.value,M,N,L));
                 return
             otherwise
                 warning('PhasorArray:repmat:extraDimIgnored', 'repmat: extra dimension(s) beyond dim 1-2 are not meaningful for PhasorArray. Proceeding with caution.')
-                r = PhasorArray(repmat(o1.value,M,N{:}));
+                r = PhasorArray(repmat(pA1.value,M,N{:}));
                 return
         end
 
     end
-    function r = reshape(o1,varargin)
+    function r = reshape(pA1,varargin)
         % reshape Reshape a PhasorArray while preserving the phasor dimension.
         %
-        %   r = reshape(o1, M, N)     - Reshapes `o1` into an MxN PhasorArray,
+        %   r = reshape(pA1, M, N)     - Reshapes `pA1` into an MxN PhasorArray,
         %                               preserving the third (phasor) dimension.
-        %   r = reshape(o1, M, N, L)  - Reshapes `o1` into an MxNxL PhasorArray.
+        %   r = reshape(pA1, M, N, L)  - Reshapes `pA1` into an MxNxL PhasorArray.
         %
         %   Notes:
-        %   - If only `M, N` are provided, `L` is automatically set to `size(o1,3)`.
+        %   - If only `M, N` are provided, `L` is automatically set to `size(pA1,3)`.
         %   - The third dimension (phasor order) should remain unchanged in most cases.
         %
         %   See also: repmat, reshape
         if numel(varargin)==2
-            for dimi = 3:ndims(o1)
-                varargin{dimi} = size(o1,dimi);
+            for dimi = 3:ndims(pA1)
+                varargin{dimi} = size(pA1,dimi);
             end
         end
-        r=PhasorArray(reshape(pvalue(o1),varargin{:}));
+        r=PhasorArray(reshape(pvalue(pA1),varargin{:}));
     end
-    function r = permute(o1,varargin)
+    function r = permute(pA1,varargin)
         % permute Reorder dimensions of a PhasorArray.
         %
-        %   r = permute(o1, order)   - Rearranges the dimensions of `o1` according to `order`.
-        %   r = permute(o1)          - Swaps the first and second dimensions (acts as transpose).
+        %   r = permute(pA1, order)   - Rearranges the dimensions of `pA1` according to `order`.
+        %   r = permute(pA1)          - Swaps the first and second dimensions (acts as transpose).
         %
         %   Notes:
         %   - By default, swaps dimensions `[1 2]`, equivalent to a transpose.
@@ -1547,18 +1547,18 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         if numel(varargin{1})==2
             varargin{1}=[varargin{1} 3];
         end
-        r=PhasorArray(permute(pvalue(o1),varargin{:}));
+        r=PhasorArray(permute(pvalue(pA1),varargin{:}));
     end
-    function r = sub(o1,n1,n2)
+    function r = sub(pA1,n1,n2)
         % sub Extract specific elements from a PhasorArray based on indices.
         %
-        %   r = sub(o1, n1, n2) extracts the phasor array component
+        %   r = sub(pA1, n1, n2) extracts the phasor array component
         %   `Phasor3D(n1, n2, :)`, equivalent to `A{n1, n2}`.
         %
         %   Inputs:
-        %       o1  - The PhasorArray object to extract from.
+        %       pA1  - The PhasorArray object to extract from.
         %       n1  - Row indices or logical mask (can be `:` for all rows).
-        %       n2  - (Optional) Column indices (default: 1 if o1 is a column vector).
+        %       n2  - (Optional) Column indices (default: 1 if pA1 is a column vector).
         %
         %   Output:
         %       r   - Extracted PhasorArray elements with `reduce=false` to
@@ -1566,13 +1566,13 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %
         %   Behavior:
         %   - If `n1` is a logical array, it is converted to indices.
-        %   - If `o1` is a column vector (`size(o1,2)==1`), `n2` defaults to 1.
+        %   - If `pA1` is a column vector (`size(pA1,2)==1`), `n2` defaults to 1.
         %   - If `n1` and `n2` are omitted, the function reshapes `r` to match
         %     `size(n1,1) × size(n1,2)`.
         %
         %   See also: PhasorArray, reduce, logical indexing
         arguments
-            o1
+            pA1
             n1
             n2=[]
         end
@@ -1584,111 +1584,111 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
 
             if ~strcmp(n1,':')% matrix input
                 if islogical(n1)
-                    if numelt(o1)==numel(n1)
+                    if numelt(pA1)==numel(n1)
                         n1=find(logical(n1));
                     else
-                        error('PhasorArray:subsasgn:indexSizeMismatch', 'Logical index size %dx%d must match first two dims of PhasorArray %dx%d.', size(n1,1), size(n1,2), size(o1,1), size(o1,2))
+                        error('PhasorArray:subsasgn:indexSizeMismatch', 'Logical index size %dx%d must match first two dims of PhasorArray %dx%d.', size(n1,1), size(n1,2), size(pA1,1), size(pA1,2))
                     end
                 end
             end
 
-            if size(o1,2)==1 % its already a column PhasorArray, normal to have only one index
+            if size(pA1,2)==1 % its already a column PhasorArray, normal to have only one index
                 n2=1;
             else
-                o1=vect(o1); % we make it a column, it will be easier to manipulate
+                pA1=vect(pA1); % we make it a column, it will be easier to manipulate
                 n2=1;
             end
         end
-        indices = repmat({':'}, 1, ndims(o1));
+        indices = repmat({':'}, 1, ndims(pA1));
         indices{1} = n1;
         indices{2} = n2;
-        r=PhasorArray(o1(indices{:}),"reduce", false);
+        r=PhasorArray(pA1(indices{:}),"reduce", false);
         if nargin == 1
             r = reshape(r,size(n1,1),size(n1,2));
         end
     end
 
-    function r = vect(o1)
+    function r = vect(pA1)
         %VECT transform phasorArray matrix to column vector (col operator)
         %   This function takes a PhasorArray object and transforms it into
         %   a column vector by stacking the columns of the input matrix.
         %
         %   Syntax:
-        %       r = vect(o1)
+        %       r = vect(pA1)
         %
         %   Input:
-        %       o1 - PhasorArray object to be transformed.
+        %       pA1 - PhasorArray object to be transformed.
         %
         %   Output:
         %       r  - Column vector (PhasorArray) obtained by stacking the
         %            columns of the input matrix.
         %
         %   Example:
-        %       % Assuming o1 is a PhasorArray object
-        %       r = vect(o1);
+        %       % Assuming pA1 is a PhasorArray object
+        %       r = vect(pA1);
         %
         %   See also: reshape, pvalue
-        pval = pvalue(o1);
+        pval = pvalue(pA1);
         dims = size(pval);
         dimsCell = num2cell(dims);
         r1 = reshape(pval, [], 1, dimsCell{3:end});
         r = PhasorArray(r1, "reduce", false);
     end
-    function r = pad(o1,delta_h)
+    function r = pad(pA1,delta_h)
         %PAD the PhasorArray with delta_h phasor
-        %   - r = pad(o1,delta_h) : pad the PhasorArray o1 with delta_h 0 phasor
-        %   - r = pad(o1,[delta_h1 delta_h2 delta_h3]) : pad the PhasorArray o1 with delta_h1 0 phasor along the first dimension, delta_h2 0 phasor along the second dimension and delta_h3 0 phasor along the third dimension
+        %   - r = pad(pA1,delta_h) : pad the PhasorArray pA1 with delta_h 0 phasor
+        %   - r = pad(pA1,[delta_h1 delta_h2 delta_h3]) : pad the PhasorArray pA1 with delta_h1 0 phasor along the first dimension, delta_h2 0 phasor along the second dimension and delta_h3 0 phasor along the third dimension
         %
         %pad (add zeros) to phasor array
         %pad(A, h) add h phasor to the phasor array
         %pad(A, [h1 h2 h3]) pad A in each direction
-        r=PhasorArrayPad(o1,delta_h);
+        r=PhasorArrayPad(pA1,delta_h);
     end
-    function r = padh(o1,delta_h)
+    function r = padh(pA1,delta_h)
         %PAD the PhasorArray with delta_h phasor
-        %   - r = pad(o1,delta_h) : pad the PhasorArray o1 with delta_h 0 phasor
-        o1v = o1.value;
+        %   - r = pad(pA1,delta_h) : pad the PhasorArray pA1 with delta_h 0 phasor
+        o1v = pA1.value;
         o1v = cat(3,zeros(size(o1v,1),size(o1v,2),delta_h),o1v,zeros(size(o1v,1),size(o1v,2),delta_h));
         r=PhasorArray(o1v);
     end
 
-    function r = ctranspose(o1)
+    function r = ctranspose(pA1)
         %CTRANSPOSE overloading for PhasorArray
         %CTRANSPOSE(A) : A' = A(t)'
-        r = mctranspose(o1);
+        r = mctranspose(pA1);
     end
-    function r = transpose(o1)
+    function r = transpose(pA1)
         %TRANSPOSE overloading for PhasorArray
         %TRANSPOSE(A) : A.' = A(t).'
-        r = mtranspose(o1);
+        r = mtranspose(pA1);
     end
-    function r = pagectranspose(o1)
+    function r = pagectranspose(pA1)
         %PAGECTRANSPOSE overloading for PhasorArray
         %PAGECTRANSPOSE(A) apply ctranspose to each page of A resulting in A(-t)'
-        r = PhasorArray(pagectranspose(pvalue(o1)));
+        r = PhasorArray(pagectranspose(pvalue(pA1)));
     end
-    function r = pagetranspose(o1)
+    function r = pagetranspose(pA1)
         %PAGETRANSPOSE overloading for PhasorArray
         %PAGETRANSPOSE(A) apply transpose to each page of A resulting in A(t).'
-        r = PhasorArray(pagetranspose(pvalue(o1)));
+        r = PhasorArray(pagetranspose(pvalue(pA1)));
     end
-    function r = mtranspose(o1)
+    function r = mtranspose(pA1)
         % mtranspose(A(t))
-        r=pagetranspose(o1);
+        r=pagetranspose(pA1);
     end
-    function r = mctranspose(o1)
+    function r = mctranspose(pA1)
         % mctranspose(A(t))
-        r=PhasorArray(flip(pagectranspose(o1.value),3));
+        r=PhasorArray(flip(pagectranspose(pA1.value),3));
     end
 
-    function r = pmax(o1,o2,nvp)
+    function r = pmax(pA1,pA2,nvp)
         % pmax Compute elementwise or phasorwise max between two PhasorArray objects.
         %
-        %   r = pmax(o1, o2, 'method', method) computes the maximum between two
-        %   PhasorArray objects `o1` and `o2` according to the specified method.
+        %   r = pmax(pA1, pA2, 'method', method) computes the maximum between two
+        %   PhasorArray objects `pA1` and `pA2` according to the specified method.
         %
         %   Inputs:
-        %       o1, o2  - PhasorArray objects to compare.
+        %       pA1, pA2  - PhasorArray objects to compare.
         %       method   - (Optional) Specifies the max computation method:
         %                  * 'elementwise' (default): Max computed based on norm.
         %                  * 'phasorwise': Max computed independently for each phasor.
@@ -1704,54 +1704,54 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %
         %   See also: PhasorUnif, pvalue, norm
         arguments
-            o1
-            o2
+            pA1
+            pA2
             nvp.method char {mustBeMember(nvp.method,{'elementwise','phasorwise'})} = 'elementwise'
         end
         if strcmp(nvp.method,'elementwise')
-            d=PhasorUnif(o1,o2);
-            o1 = d{1};
-            o2 = d{2};
+            d=PhasorUnif(pA1,pA2);
+            pA1 = d{1};
+            pA2 = d{2};
 
             % norm of each phasor (along the third dim)
-            n1=sum(o1.value .* conj(o1.value),3);
-            n2=sum(o2.value .* conj(o2.value),3);
+            n1=sum(pA1.value .* conj(pA1.value),3);
+            n2=sum(pA2.value .* conj(pA2.value),3);
             %max of the norm
             n=max(n1,n2);
 
 
             %elementwise max
-            r=PhasorArray(pvalue(o1).*(n1==n) + pvalue(o2).*(n1~=n));
+            r=PhasorArray(pvalue(pA1).*(n1==n) + pvalue(pA2).*(n1~=n));
         else
-            d=PhasorUnif(o1,o2);
+            d=PhasorUnif(pA1,pA2);
             r = PhasorArray(max(pvalue(d{1}),pvalue(d{2})));
         end
     end
     
-    function out = dc(o1)
+    function out = dc(pA1)
         %DC Constant part: harmonic 0 alone, i.e. the mean of A(t) over one period.
         %
         %   See also: ac, phas.
-        out = PhasorArray(o1{:,:,0});
+        out = PhasorArray(pA1{:,:,0});
     end
 
 
-    function out = ac(o1)
+    function out = ac(pA1)
         %AC Oscillating part: every harmonic except 0, so A - dc(A).
         %
         %   See also: dc, phas.
-        negp = o1{:,:,-o1.h:-1};
-        posp = o1{:,:,1:o1.h};
-        out = PhasorArray(cat(3,negp,zeros(size(o1,1),size(o1,2)),posp));
+        negp = pA1{:,:,-pA1.h:-1};
+        posp = pA1{:,:,1:pA1.h};
+        out = PhasorArray(cat(3,negp,zeros(size(pA1,1),size(pA1,2)),posp));
     end
 
-    function varargout=phas(o1,h)
+    function varargout=phas(pA1,h)
         % phas Extract the phasor of order `h` from a PhasorArray.
         %
-        %   phas(o1, h) returns the phasor of order `h` from the PhasorArray `o1`.
+        %   phas(pA1, h) returns the phasor of order `h` from the PhasorArray `pA1`.
         %
         %   Inputs:
-        %       o1 - The PhasorArray object.
+        %       pA1 - The PhasorArray object.
         %       h  - The order of the phasor to extract.
         %            - If `h` is a scalar, returns a single phasor slice.
         %            - If `h` is a vector, returns multiple slices at the specified orders.
@@ -1760,30 +1760,30 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %       - A 3D array corresponding to the phasor(s) of order `h`.
         %
         %   Behavior:
-        %   - If `abs(h) <= o1.h`, extracts the corresponding phasor.
-        %   - If `h` is **out of range**, pads `o1` to match the highest requested order.
+        %   - If `abs(h) <= pA1.h`, extracts the corresponding phasor.
+        %   - If `h` is **out of range**, pads `pA1` to match the highest requested order.
         %   - If `h` is **beyond padding limits**, returns a zero matrix.
         %
         %   See also: pad, reduce, PhasorArray
         if strcmp(h,':')
-            varargout{1} = o1.value;
+            varargout{1} = pA1.value;
             return
         end
         if isscalar(h)
-            if abs(h)<=o1.h
-                indices = repmat({':'}, 1, ndims(o1));
-                indices{3} = (size(o1,3)+1)/2+h;
-                varargout{1} = o1(indices{:});
+            if abs(h)<=pA1.h
+                indices = repmat({':'}, 1, ndims(pA1));
+                indices{3} = (size(pA1,3)+1)/2+h;
+                varargout{1} = pA1(indices{:});
             else
-                sz = size(o1);
+                sz = size(pA1);
                 sz(3) = 1;
                 varargout{1} = zeros(sz);
             end
         else
-            if max(abs(h))>=o1.h
-                o1=o1.pad( max(abs(h))-o1.h);
+            if max(abs(h))>=pA1.h
+                pA1=pA1.pad( max(abs(h))-pA1.h);
             end
-            varargout{1}=o1(:,:,(end+1)/2+h);
+            varargout{1}=pA1(:,:,(end+1)/2+h);
         end
 
     end
@@ -1814,33 +1814,33 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
     % --- Comparisons act on A(t), not on the coefficient array: entry (i,j)
     %   judges A_ij(t) against B_ij(t) over a period. Comparing coefficients
     %   would fail silently, MATLAB's < testing real parts only on complex.
-    function [r, frac, crenel, Cph] = lt(o1,o2)
+    function [r, frac, crenel, Cph] = lt(pA1,pA2)
         %LT  A < B, meaning A_ij(t) < B_ij(t) for every t. Returns [n x m].
         %   [R, FRAC, CRENEL, CPH] = LT(A,B) grades the answer: FRAC is the
         %   fraction of the period over which it holds, CRENEL the indicator
         %   over theta, CPH the same as a PhasorArray. A < B takes R alone.
         %   See also gt, le, ge, eq, compareInTime.
-        [r, frac, crenel, Cph] = compareInTime(o1, o2, @lt);
+        [r, frac, crenel, Cph] = compareInTime(pA1, pA2, @lt);
     end
-    function [r, frac, crenel, Cph] = gt(o1,o2)
+    function [r, frac, crenel, Cph] = gt(pA1,pA2)
         %GT  A > B, meaning A_ij(t) > B_ij(t) for every t. Returns [n x m].
         %   Extra outputs as in LT.
         %   See also lt, le, ge, eq, compareInTime.
-        [r, frac, crenel, Cph] = compareInTime(o1, o2, @gt);
+        [r, frac, crenel, Cph] = compareInTime(pA1, pA2, @gt);
     end
-    function [r, frac, crenel, Cph] = le(o1,o2)
+    function [r, frac, crenel, Cph] = le(pA1,pA2)
         %LE  A <= B, meaning A_ij(t) <= B_ij(t) for every t. Returns [n x m].
         %   Extra outputs as in LT.
         %   See also lt, gt, ge, eq, compareInTime.
-        [r, frac, crenel, Cph] = compareInTime(o1, o2, @le);
+        [r, frac, crenel, Cph] = compareInTime(pA1, pA2, @le);
     end
-    function [r, frac, crenel, Cph] = ge(o1,o2)
+    function [r, frac, crenel, Cph] = ge(pA1,pA2)
         %GE  A >= B, meaning A_ij(t) >= B_ij(t) for every t. Returns [n x m].
         %   Extra outputs as in LT.
         %   See also lt, gt, le, eq, compareInTime.
-        [r, frac, crenel, Cph] = compareInTime(o1, o2, @ge);
+        [r, frac, crenel, Cph] = compareInTime(pA1, pA2, @ge);
     end
-    function r = abs(o1, nvp)
+    function r = abs(pA1, nvp)
         %ABS  |A(t)| taken pointwise in time, as a PhasorArray.
         %   ABS(A) samples A over one period, takes the modulus and transforms
         %   back, returning everything the sampling supports. ABS(A, h=H)
@@ -1856,15 +1856,15 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %
         %   See also lt, evalp, trunc.
         arguments
-            o1
+            pA1
             nvp.h {mustBeScalarOrEmpty, mustBeInteger, mustBePositive} = []
         end
-        Nt = 2^nextpow2(max(256, 16*(o1.h+1)));
+        Nt = 2^nextpow2(max(256, 16*(pA1.h+1)));
         th = (0:Nt-1)/Nt * 2*pi;
-        r  = PhasorArray(TimeArray2Phasors(abs(evalp(o1, th)), 1, th));
+        r  = PhasorArray(TimeArray2Phasors(abs(evalp(pA1, th)), 1, th));
         if ~isempty(nvp.h), r = r.trunc(nvp.h); end
     end
-    function r = regularize(o1, epsilon, nvp)
+    function r = regularize(pA1, epsilon, nvp)
         %REGULARIZE  Mollify A(t) so its Fourier series converges uniformly.
         %   REGULARIZE(A, EPS) returns A_eps = phi_eps * A, the convolution
         %   with the C^inf bump phi(t) = exp(-1/(1-t^2)) on |t|<1, scaled to
@@ -1902,15 +1902,15 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %
         %   See also abs, trunc, neglect.
         arguments
-            o1
+            pA1
             epsilon (1,1) double {mustBeNonnegative}
             nvp.T   (1,1) double {mustBePositive} = 2*pi
         end
-        if epsilon == 0, r = o1; return, end
-        k = reshape(-o1.h:o1.h, 1, 1, []);
-        r = PhasorArray(pvalue(o1) .* mollifierFT(epsilon * k * (2*pi/nvp.T)));
+        if epsilon == 0, r = pA1; return, end
+        k = reshape(-pA1.h:pA1.h, 1, 1, []);
+        r = PhasorArray(pvalue(pA1) .* mollifierFT(epsilon * k * (2*pi/nvp.T)));
     end
-    function r = eq(o1,o2)
+    function r = eq(pA1,pA2)
         %EQ  A == B, meaning A_ij(t) = B_ij(t) for every t. Returns [n x m].
         %
         %   No sampling is involved: the map between a periodic signal and its
@@ -1919,65 +1919,65 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %   to a common order. For a tolerance, use iszero(A-B, tol).
         %
         %   See also ne, iszero, lt.
-        r = all(pvalue(o1 - o2) == 0, 3);
+        r = all(pvalue(pA1 - pA2) == 0, 3);
     end
-    function r = ne(o1,o2)
+    function r = ne(pA1,pA2)
         %NE  A ~= B, the negation of EQ. Returns [n x m].
         %   See also eq.
-        r = ~eq(o1,o2);
+        r = ~eq(pA1,pA2);
     end
-    function r = double(o1)
+    function r = double(pA1)
         %DOUBLE Convert PhasorArray to double precision.
-        %   r = DOUBLE(o1) converts the PhasorArray object o1 to a double precision array.
-        r= double(pvalue(o1));
+        %   r = DOUBLE(pA1) converts the PhasorArray object pA1 to a double precision array.
+        r= double(pvalue(pA1));
     end
 
 
-    function o2 = repeat(o1,m)
+    function pA2 = repeat(pA1,m)
         %REPEAT Repeat the PhasorArray object over its period by a factor m
         %
-        %   o2 = repeat(o1, m) repeats the PhasorArray object o1 over its
+        %   pA2 = repeat(pA1, m) repeats the PhasorArray object pA1 over its
         %   period by a factor m. If m is negative, the signal is reversed
         %   in time, effectively dividing the period by m.
         %
         %   Inputs:
-        %       o1 - The PhasorArray object to be repeated.
+        %       pA1 - The PhasorArray object to be repeated.
         %       m  - An integer factor by which to repeat the period.
         %            Default value is 2. If m is negative, the signal is
         %            reversed in time.
         %
         %   Outputs:
-        %       o2 - The resulting PhasorArray object after repeating the
+        %       pA2 - The resulting PhasorArray object after repeating the
         %            period by a factor m.
         %
         %   Example:
-        %       o1 = PhasorArray(...); % Create a PhasorArray object
-        %       o2 = repeat(o1, 3);    % Repeat the period of o1 by a factor of 3
+        %       pA1 = PhasorArray(...); % Create a PhasorArray object
+        %       pA2 = repeat(pA1, 3);    % Repeat the period of pA1 by a factor of 3
         %
         %   See also: PhasorArray.zeros, retro
         arguments
-            o1
+            pA1
             m {mustBeInteger(m)} = 2
         end
-        h=o1.h;
+        h=pA1.h;
         h_new=h*abs(m);
-        o2 = PhasorArray.zeros(size(o1,1),size(o1,2),2*h_new+1);
-        o2(:,:,1:abs(m):end)=o1.value;
+        pA2 = PhasorArray.zeros(size(pA1,1),size(pA1,2),2*h_new+1);
+        pA2(:,:,1:abs(m):end)=pA1.value;
         if m<0
-            o2=retro(o2);
+            pA2=retro(pA2);
         end
 
     end
 
 
-    function r = antiD(o1,T)
+    function r = antiD(pA1,T)
         %ANTI-D Compute the anti-derivative (primitive) of non-zero phasors of a PhasorArray.
-        %   r = ANTI-D(o1, T) computes the anti-derivative of the PhasorArray o1
+        %   r = ANTI-D(pA1, T) computes the anti-derivative of the PhasorArray pA1
         %   with respect to the period T. The function ignores the 0-th phasor to
         %   produce a periodic output.
         %
         %   INPUTS:
-        %       o1 - The PhasorArray object to be anti-differentiated.
+        %       pA1 - The PhasorArray object to be anti-differentiated.
         %       T  - (Optional) The period of the PhasorArray. Defaults to 2*pi.
         %
         %   OUTPUT:
@@ -1991,29 +1991,29 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %       The function divides each non-zero phasor by (1i * k * 2 * pi / T),
         %       where k is the phasor index. The 0-th phasor is set to zero.
         arguments
-            o1
+            pA1
             T=2*pi
         end
-        o1=o1.value;
-        [~,~,n3]=size(o1);
+        pA1=pA1.value;
+        [~,~,n3]=size(pA1);
         for ii=1:n3
             k=-(n3-1)/2+ii-1;
             if k~=0
-                o1(:,:,ii)=o1(:,:,ii)/(1i*k*2*pi/T);
+                pA1(:,:,ii)=pA1(:,:,ii)/(1i*k*2*pi/T);
             else
-                o1(:,:,ii)=0;
+                pA1(:,:,ii)=0;
             end
         end
-        r=PhasorArray(o1);
+        r=PhasorArray(pA1);
     end
 
-    function r = d(o1,T)
+    function r = d(pA1,T)
         % d - Derive phasor array with respect to a given period
         %
-        % Syntax: r = d(o1, T)
+        % Syntax: r = d(pA1, T)
         %
         % Inputs:
-        %    o1 - The input phasor array object
+        %    pA1 - The input phasor array object
         %    T  - The period with respect to which the phasor array is derived (default is 2*pi)
         %
         % Outputs:
@@ -2023,101 +2023,101 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %    phasorArray = PhasorArray(someValues);
         %    result = phasorArray.d(phasorArray, 2*pi);
         arguments
-            o1
+            pA1
             T=2*pi
         end
-        %[~,~,n3]=size(o1);
+        %[~,~,n3]=size(pA1);
         try
-            K=permute((-o1.h):(o1.h),[1 3 2])*1i*2*pi/T;
-            oo=bsxfun(@times,o1.value,K);
+            K=permute((-pA1.h):(pA1.h),[1 3 2])*1i*2*pi/T;
+            oo=bsxfun(@times,pA1.value,K);
             r=PhasorArray(oo);
         catch e
             % warning(e.message)
             % warning('Attempting to diff a non basic type, switching to manual diff')
             % We need to manually perform the operation intended for each "slice" of P.
-            for idx = 1:size(o1, 3)
-                o1(:,:,idx) = o1(:,:,idx) * K(idx);
+            for idx = 1:size(pA1, 3)
+                pA1(:,:,idx) = pA1(:,:,idx) * K(idx);
             end
-            r = o1;
+            r = pA1;
             % warning('done with success')
         end
     end
-    function r = PhaseShift(o1,angle)
+    function r = PhaseShift(pA1,angle)
         % PhaseShift Apply a phase shift to a PhasorArray.
         %
-        %   r = PhaseShift(o1, angle) shifts the phase of the PhasorArray `o1`
+        %   r = PhaseShift(pA1, angle) shifts the phase of the PhasorArray `pA1`
         %   by `angle` radians.
         %
         %   Inputs:
-        %       o1    - The PhasorArray object.
+        %       pA1    - The PhasorArray object.
         %       angle - The phase shift value(s). It can be:
-        %               - A scalar (applies to all elements of `o1`).
-        %               - A row vector (broadcasts across `o1` columns if `o1` is a column).
-        %               - A column vector (broadcasts across `o1` rows if `o1` is a row).
-        %               - A matrix (applies element-wise if `o1` is scalar).
+        %               - A scalar (applies to all elements of `pA1`).
+        %               - A row vector (broadcasts across `pA1` columns if `pA1` is a column).
+        %               - A column vector (broadcasts across `pA1` rows if `pA1` is a row).
+        %               - A matrix (applies element-wise if `pA1` is scalar).
         %
         %   Output:
         %       r - The phase-shifted PhasorArray.
         %
         %   Behavior:
-        %   - If `o1` is a scalar, `angle` can be a **matrix**, applying element-wise shifts.
-        %   - If `o1` is a **row vector**, `angle` must be a column vector (broadcasted).
-        %   - If `o1` is a **column vector**, `angle` must be a row vector (broadcasted).
-        %   - If `o1` is a **matrix**, `angle` must be scalar.
+        %   - If `pA1` is a scalar, `angle` can be a **matrix**, applying element-wise shifts.
+        %   - If `pA1` is a **row vector**, `angle` must be a column vector (broadcasted).
+        %   - If `pA1` is a **column vector**, `angle` must be a row vector (broadcasted).
+        %   - If `pA1` is a **matrix**, `angle` must be scalar.
         %
         %   Errors:
-        %   - If `o1` and `angle` are both row or column vectors, the function raises an error.
-        %   - If `o1` is a matrix, `angle` must be a scalar.
+        %   - If `pA1` and `angle` are both row or column vectors, the function raises an error.
+        %   - If `pA1` is a matrix, `angle` must be a scalar.
         %
         %   See also: dephase, PhasorArray
         if numel(angle)>1
-            if isrow(o1) && iscolumn(angle)
+            if isrow(pA1) && iscolumn(angle)
                 n1=numel(angle);
-                %n2=o1.size(2);
-                r=repmat(o1,n1,1);
+                %n2=pA1.size(2);
+                r=repmat(pA1,n1,1);
                 for angli=1:numel(angle)
                     angle(angli);
-                    r{angli,:}=o1.PhaseShift(angle(angli));
+                    r{angli,:}=pA1.PhaseShift(angle(angli));
                 end
                 return
-            elseif iscolumn(o1) && isrow(angle)
-                %n1=o1.size(1);
+            elseif iscolumn(pA1) && isrow(angle)
+                %n1=pA1.size(1);
                 n2=numel(angle);
-                r=repmat(o1,1,n2);
+                r=repmat(pA1,1,n2);
                 for angli=1:numel(angle)
-                    r{:,angli}=o1.PhaseShift(angle(angli));
+                    r{:,angli}=pA1.PhaseShift(angle(angli));
                 end
                 return
-            elseif isscalar(o1) && ismatrix(angle)
+            elseif isscalar(pA1) && ismatrix(angle)
                 [n1,n2]=size(angle,[1,2]);
 
-                r=repmat(o1,n1,n2);
+                r=repmat(pA1,n1,n2);
                 for angli=1:size(angle,1)
                     for anglj=1:size(angle,2)
-                        r{angli,anglj}=o1.PhaseShift(angle(angli,anglj));
+                        r{angli,anglj}=pA1.PhaseShift(angle(angli,anglj));
                     end
                 end
                 return
-            elseif iscolumn(o1) && iscolumn(angle)
-                error('PhasorArray:phaseShift:invalidAngleShape', 'If o1 is a column vector, angle must be a row vector (and vice versa).')
-            elseif isrow(o1) && isrow(angle)
-                error('PhasorArray:phaseShift:invalidAngleShape', 'If o1 is a row vector, angle must be a column vector (and vice versa).')
+            elseif iscolumn(pA1) && iscolumn(angle)
+                error('PhasorArray:phaseShift:invalidAngleShape', 'If pA1 is a column vector, angle must be a row vector (and vice versa).')
+            elseif isrow(pA1) && isrow(angle)
+                error('PhasorArray:phaseShift:invalidAngleShape', 'If pA1 is a row vector, angle must be a column vector (and vice versa).')
             else
                 error('PhasorArray:phaseShift:invalidAngleShape', 'angle must be a scalar for a matrix-valued PhasorArray.')
             end
         else
-            r=dephase(o1,angle);
+            r=dephase(pA1,angle);
         end
     end
-    function [oInv, oInvt, norm_err, norm_ref] = inv(o1, nvp)
+    function [oInv, oInvt, norm_err, norm_ref] = inv(pA1, nvp)
         %INV Compute the phasor representation of the pointwise inverse of A(t).
         %
         %   This function computes the **pointwise inverse** of the time-domain realization
         %   of the periodic matrix A(t) and then reconstructs its phasor representation.
         %
         %   Syntax:
-        %   r = INV(o1)
-        %       Computes the phasors of the pointwise inverse of `o1` using default parameters.
+        %   r = INV(pA1)
+        %       Computes the phasors of the pointwise inverse of `pA1` using default parameters.
         %
         %   Name-Value Arguments (forwarded to PhasorInv):
         %       'nT'              - Number of periods for time-domain evaluation (default: 1).
@@ -2129,7 +2129,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %
         %   See also: PhasorInv, mldivide, mrdivide
         arguments
-            o1  PhasorArray
+            pA1  PhasorArray
             nvp.nT              = 1
             nvp.T               = 2*pi
             nvp.m               = []
@@ -2146,16 +2146,16 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         % Propagate nargout explicitly: PhasorInv conditionally computes
         % norm_err / norm_ref only when nargout > 2 (expensive computation).
         if nargout <= 1
-            oInv = PhasorArray(PhasorInv(o1, C{:}));
+            oInv = PhasorArray(PhasorInv(pA1, C{:}));
         elseif nargout == 2
-            [Ainvph, oInvt] = PhasorInv(o1, C{:});
+            [Ainvph, oInvt] = PhasorInv(pA1, C{:});
             oInv = PhasorArray(Ainvph);
         else
-            [Ainvph, oInvt, norm_err, norm_ref] = PhasorInv(o1, C{:});
+            [Ainvph, oInvt, norm_err, norm_ref] = PhasorInv(pA1, C{:});
             oInv = PhasorArray(Ainvph);
         end
     end
-    function [PhDet,det_t] = det(o1,nvp)
+    function [PhDet,det_t] = det(pA1,nvp)
         %DET Compute the pointwise determinant of A(t) and reconstruct its phasors.
         %
         %   This function computes the determinant of the **time-domain realization** A(t),
@@ -2166,15 +2166,15 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %   - The final result represents the phasor decomposition of det(A(t)).
         %
         %   Syntax:
-        %   [PhDet, det_t] = DET(o1)
+        %   [PhDet, det_t] = DET(pA1)
         %       Computes the phasors of det(A(t)) using default settings.
         %
-        %   [PhDet, det_t] = DET(o1, 'nT', nT, 'T', T, 'm', m,
+        %   [PhDet, det_t] = DET(pA1, 'nT', nT, 'T', T, 'm', m,
         %                             'plot', plotFlag, 'autoTrunc', autoTrunc)
         %       Computes det(A(t)) with additional control over truncation and plotting.
         %
         %   Input Arguments:
-        %   - o1 (PhasorArray) : The PhasorArray object whose determinant is computed.
+        %   - pA1 (PhasorArray) : The PhasorArray object whose determinant is computed.
         %
         %   Name-Value Pair Arguments:
         %   - 'nT' (integer, optional) : Number of periods used in the time-domain evaluation. Default: 1.
@@ -2215,7 +2215,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %
         %   See also: INV, REDUCE, FFT, IFFT.
         arguments
-            o1
+            pA1
             nvp.nT=1
             nvp.T=2*pi
             nvp.m=[]
@@ -2227,17 +2227,17 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
 
 
         C=namedargs2cell(nvp);
-        [PhDet,det_t] =  PhasorDet(o1,C{:});
+        [PhDet,det_t] =  PhasorDet(pA1,C{:});
         PhDet=PhasorArray(PhDet);
 
     end
 
-    function r = diag(o1,K)
+    function r = diag(pA1,K)
         %DIAG Extract or construct a diagonal PhasorArray.
         %
         %   This function operates similarly to MATLAB's `diag`:
-        %   - If `o1` is a **vector**, it constructs a **diagonal PhasorArray**.
-        %   - If `o1` is a **square matrix**, it extracts its diagonal as a **vector**.
+        %   - If `pA1` is a **vector**, it constructs a **diagonal PhasorArray**.
+        %   - If `pA1` is a **square matrix**, it extracts its diagonal as a **vector**.
         %
         %   Syntax:
         %   r = DIAG(A)
@@ -2250,13 +2250,13 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %       Extracts the diagonal as a PhasorArray vector when `A` is square.
         %
         %   Input Arguments:
-        %   - o1 (PhasorArray) : Input PhasorArray, either a vector or a square matrix.
+        %   - pA1 (PhasorArray) : Input PhasorArray, either a vector or a square matrix.
         %   - K (integer, optional) : Offset for the diagonal placement. Default: 0.
         %
         %   Output:
         %   - r (PhasorArray) :
-        %       - If `o1` is a vector, `r` is a **diagonal PhasorArray**.
-        %       - If `o1` is square, `r` is the **extracted diagonal**.
+        %       - If `pA1` is a vector, `r` is a **diagonal PhasorArray**.
+        %       - If `pA1` is square, `r` is the **extracted diagonal**.
         %
         %   Example:
         %   % Create a diagonal PhasorArray from a vector
@@ -2272,44 +2272,44 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %
         %   See also: TRACE.
         arguments
-            o1
+            pA1
             K=0
         end
-        if isscalar(o1) && K==0
-            r = o1;
+        if isscalar(pA1) && K==0
+            r = pA1;
             return
         end
 
-        if isvector(o1)
-            if ~iscolumn(o1)
-                o1=o1.';
+        if isvector(pA1)
+            if ~iscolumn(pA1)
+                pA1=pA1.';
             end
-            if isa(o1.value,"sdpvar")
-                r = PhasorArray(diag(o1));
+            if isa(pA1.value,"sdpvar")
+                r = PhasorArray(diag(pA1));
                 return
             end
 
-            if isspecial(o1)
-                for ii = 1:size(o1,3)
-                    r{ii}  = PhasorArray(diag(o1(:,:,ii)));
+            if isspecial(pA1)
+                for ii = 1:size(pA1,3)
+                    r{ii}  = PhasorArray(diag(pA1(:,:,ii)));
                 end
                 r=cat(3,r{:});
                 return
             end
 
-            r = PhasorArray.zeros(numelt(o1)+abs(K));
+            r = PhasorArray.zeros(numelt(pA1)+abs(K));
 
 
-            I = logical(diag(ones(numelt(o1),1),K));
-            r{I}=r{I}+o1;
+            I = logical(diag(ones(numelt(pA1),1),K));
+            r{I}=r{I}+pA1;
             return
         end
-        assert(issquare(o1),"diag function : PhasorArray must represent a square matrix");
-        n=size(o1,1);
+        assert(issquare(pA1),"diag function : PhasorArray must represent a square matrix");
+        n=size(pA1,1);
         I=(1:n)*(n+1)-n;
-        r=o1{I};
+        r=pA1{I};
     end
-    function r = trace(o1,type)
+    function r = trace(pA1,type)
         %TRACE Compute the phasor representation of the trace of A(t).
         %
         %   This function computes the **trace** of a PhasorArray A, which is the sum
@@ -2328,7 +2328,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %       Returns only the DC component of the trace.
         %
         %   Input Arguments:
-        %   - o1 (PhasorArray) : A **square PhasorArray**.
+        %   - pA1 (PhasorArray) : A **square PhasorArray**.
         %   - type (char, optional) :
         %       - 'phasor' (default) : Returns the **full phasor representation** of trace(A).
         %       - '0' : Returns only the **DC component** (0th phasor) of trace(A).
@@ -2348,17 +2348,17 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %
         %   See also: DIAG.
         arguments
-            o1
+            pA1
             type char {mustBeMember(type,{'phasor','0'})} = 'phasor'
         end
-        r=sum(diag(o1));
+        r=sum(diag(pA1));
         if strcmp(type,'0')
             %return the DC value of the trace
             r=r{:,:,0};
         end
     end
 
-    function r = numelt(o1)
+    function r = numelt(pA1)
         %NUMELT Compute the number of elements in the first two dimensions of A.
         %
         %   This function returns `size(A,1) * size(A,2)`, which represents
@@ -2369,7 +2369,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %       Computes the total number of elements in A(t).
         %
         %   Input:
-        %   - o1 (PhasorArray) : A PhasorArray object.
+        %   - pA1 (PhasorArray) : A PhasorArray object.
         %
         %   Output:
         %   - r (integer) : Number of elements in `A(t)`.
@@ -2378,9 +2378,9 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %   % Compute the number of elements in a 4x5 PhasorArray
         %   A = PhasorArray(rand(4,5,10));
         %   e = numelt(A);  % Returns 4*5 = 20.
-        r=size(o1,1)*size(o1,2);
+        r=size(pA1,1)*size(pA1,2);
     end
-    function r = h(o1)
+    function r = h(pA1)
         %H Compute the maximal phasor order stored in A.
         %
         %   This function extracts the **highest phasor order** present in a PhasorArray.
@@ -2390,7 +2390,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %       Computes the highest stored harmonic order.
         %
         %   Input:
-        %   - o1 (PhasorArray) : A PhasorArray object.
+        %   - pA1 (PhasorArray) : A PhasorArray object.
         %
         %   Output:
         %   - r (integer) : The highest stored harmonic order in A.
@@ -2401,9 +2401,9 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %   max_h = h(A);  % Returns (11-1)/2 = 5.
         %
         %   See also: DIM.
-        r=(size(o1,3)-1)/2;
+        r=(size(pA1,3)-1)/2;
     end
-    function r = dim(o1)
+    function r = dim(pA1)
         %DIM Compute the number of elements in A(t).
         %
         %   This function returns `size(A,1) * size(A,2)`, which represents
@@ -2414,7 +2414,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %       Computes the total number of elements in A(t).
         %
         %   Input:
-        %   - o1 (PhasorArray) : A PhasorArray object.
+        %   - pA1 (PhasorArray) : A PhasorArray object.
         %
         %   Output:
         %   - r (integer) : Number of elements in `A(t)`.
@@ -2425,10 +2425,10 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %   e = dim(A);  % Returns 4*5 = 20.
         %
         %   See also: NUMELT.
-        r=size(o1,1)*size(o1,2);
+        r=size(pA1,1)*size(pA1,2);
     end
 
-    function r = T_bt(o1, m, h2)
+    function r = T_bt(pA1, m, h2)
         %T_BT Block-Toeplitz operator of a PhasorArray, harmonics ascending.
         %
         %   T_bt is the canonical name of this operator, matching the notation
@@ -2441,14 +2441,14 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %
         %   See also: BT, T_tb, N_bt, S_bt.
         arguments
-            o1
+            pA1
             m = []
             h2 = []
         end
-        r = BT(o1, m, h2);
+        r = BT(pA1, m, h2);
     end
 
-    function r = T_tb(o1, m, h2)
+    function r = T_tb(pA1, m, h2)
         %T_TB Toeplitz-blocks operator of a PhasorArray, harmonics ascending.
         %
         %   T_tb is the canonical name of this operator, matching the notation
@@ -2464,14 +2464,14 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %
         %   See also: TB, T_bt, N_tb, S_tb.
         arguments
-            o1
+            pA1
             m = []
             h2 = []
         end
-        r = TB(o1, m, h2);
+        r = TB(pA1, m, h2);
     end
 
-    function r = BT(o1, m, h2)
+    function r = BT(pA1, m, h2)
         %BT Construct a Block Toeplitz matrix from a PhasorArray.
         %
         %   This function builds a **Block Toeplitz matrix** of size (2*h1+1)N x (2*h2+1)N
@@ -2483,22 +2483,22 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %   r = BT(A, [h1, h2])   - Rectangular block matrix using a vector input.
         %
         %   Input Arguments:
-        %   - o1 (PhasorArray) : The input PhasorArray.
+        %   - pA1 (PhasorArray) : The input PhasorArray.
         %   - m (integer, optional) : Harmonic order h (or vector [h1, h2]).
         %   - h2 (integer, optional) : Second harmonic order for rectangular truncation.
         %
         %   See also: TB, spBT, array2BToeplitz.
         arguments
-            o1
+            pA1
             m = []
             h2 = []
         end
         if nargin > 2
             m = [m, h2];
         end
-        r = array2BToeplitz(o1, m);
+        r = array2BToeplitz(pA1, m);
     end
-    function r = TB(o1, m, h2)
+    function r = TB(pA1, m, h2)
         %TB Construct a Toeplitz Block matrix from a PhasorArray.
         %
         %   This function constructs a **Toeplitz Block (TB) matrix** of size (2*h1+1)N x (2*h2+1)N
@@ -2510,22 +2510,22 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %   r = TB(A, [h1, h2])   - Rectangular block matrix using a vector input.
         %
         %   Input Arguments:
-        %   - o1 (PhasorArray) : The input PhasorArray.
+        %   - pA1 (PhasorArray) : The input PhasorArray.
         %   - m (integer, optional) : Harmonic order h (or vector [h1, h2]).
         %   - h2 (integer, optional) : Second harmonic order for rectangular truncation.
         %
         %   See also: BT, spTB, array2TBlocks.
         arguments
-            o1
+            pA1
             m = []
             h2 = []
         end
         if nargin > 2
             m = [m, h2];
         end
-        r = array2TBlocks(o1, m);
+        r = array2TBlocks(pA1, m);
     end
-    function r = spTB(o1, m, h2)
+    function r = spTB(pA1, m, h2)
         %SPTB Construct a sparse Toeplitz Block representation of A.
         %
         %   Syntax:
@@ -2533,16 +2533,16 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %
         %   See also: TB, BT, sparray2TBlocks.
         arguments
-            o1
+            pA1
             m = []
             h2 = []
         end
         if nargin > 2
             m = [m, h2];
         end
-        r = sparray2TBlocks(o1, m);
+        r = sparray2TBlocks(pA1, m);
     end
-    function r = spBT(o1, m, h2)
+    function r = spBT(pA1, m, h2)
         %SPBT Sparse Block-Toeplitz operator of a PhasorArray.
         %
         %   Same result as BT, returned as a sparse matrix. The operator is
@@ -2551,16 +2551,16 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %
         %   See also: BT, T_bt, spTB.
         arguments
-            o1
+            pA1
             m = []
             h2 = []
         end
         if nargin > 2
             m = [m, h2];
         end
-        r = sparse(o1.BT(m));
+        r = sparse(pA1.BT(m));
     end
-    function r = FvTB(o1,h)
+    function r = FvTB(pA1,h)
         %FVTB Compute the Fourier representation of the vectorized form of A(t).
         %
         %   This function first **vectorizes** the time-dependent matrix A(t) by stacking
@@ -2594,7 +2594,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %       Computes the Fourier representation of `vect(A)` up to order `h`.
         %
         %   Input Arguments:
-        %   - o1 (PhasorArray) : The input PhasorArray representing A(t).
+        %   - pA1 (PhasorArray) : The input PhasorArray representing A(t).
         %   - h (integer) : The highest harmonic order to retain in the Fourier series.
         %
         %   Output:
@@ -2609,23 +2609,23 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %   FvTB_A_alt = F_tb(A{:}, 5); % Equivalent computation
         %
         %   See also: F_tb, vect, trunc, pad.
-        if size(o1,3)>2*h+1
-            o1=trunc(o1,h);
+        if size(pA1,3)>2*h+1
+            pA1=trunc(pA1,h);
         else
-            o1=pad(o1,h-o1.h);
+            pA1=pad(pA1,h-pA1.h);
         end
-        d1=reshape(o1,[],1,size(o1,3));
+        d1=reshape(pA1,[],1,size(pA1,3));
 
         r=pvalue(permute(d1,[3 1 2]));
         r=r(:);
     end
 
-    function [HpJ,JHm,Hp,Hm] = TBHankel(o1,m)
+    function [HpJ,JHm,Hp,Hm] = TBHankel(pA1,m)
         %TBHANKEL Compute Toeplitz Block Hankel matrices of order m.
         %
         %   This function computes the **Toeplitz Block Hankel matrices** (H) and the
         %   associated **J-Hankel matrices** (H_J) of the given matrix `A(t)` represented
-        %   by the PhasorArray `o1`.
+        %   by the PhasorArray `pA1`.
         %
         %   **Definition:**
         %   - A **Hankel matrix** is symmetric with entries reflected across its antidiagonals.
@@ -2653,7 +2653,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %       Computes the Toeplitz Block Hankel and J-Hankel matrices of order `m`.
         %
         %   Input Arguments:
-        %   - o1 (PhasorArray) : The input PhasorArray representing A(t).
+        %   - pA1 (PhasorArray) : The input PhasorArray representing A(t).
         %   - m (integer) : The truncation order for the harmonics.
         %
         %   Output:
@@ -2668,13 +2668,13 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %   [HpJ, JHm, Hp, Hm] = TBHankel(A, 5);
         %
         %   See also: spTBHANKEL, BTHANKEL.
-        [HpJ,JHm,Hp,Hm] = Array2TBHankel(o1,2*m);
+        [HpJ,JHm,Hp,Hm] = Array2TBHankel(pA1,2*m);
     end
-    function [HpJ,JHm,Hp,Hm] = spTBHankel(o1,m)
+    function [HpJ,JHm,Hp,Hm] = spTBHankel(pA1,m)
         %SPTBHANKEL Compute sparse Toeplitz Block Hankel matrices of order m.
         %
         %   This function computes the **sparse Toeplitz Block Hankel matrices** (H) and
-        %   their associated **J-Hankel matrices** (H_J) for the given PhasorArray `o1`.
+        %   their associated **J-Hankel matrices** (H_J) for the given PhasorArray `pA1`.
         %
         %   **Sparse Computation:**
         %   - The matrices are stored and computed in **sparse format** for efficiency,
@@ -2691,13 +2691,13 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %       Computes the sparse Toeplitz Block Hankel and J-Hankel matrices of order `m`.
         %
         %   See also: TBHANKEL, BTHANKEL.
-        [HpJ,JHm,Hp,Hm] = spArray2TBHankel(o1,2*m);
+        [HpJ,JHm,Hp,Hm] = spArray2TBHankel(pA1,2*m);
     end
-    function [HpJ,JHm,Hp,Hm] = BTHankel(o1,m)
+    function [HpJ,JHm,Hp,Hm] = BTHankel(pA1,m)
         %BTHANKEL Compute Block Toeplitz Hankel matrices of order m.
         %
         %   This function computes the **Block Toeplitz Hankel matrices** (H) and the
-        %   associated **J-Hankel matrices** (H_J) for the given PhasorArray `o1`.
+        %   associated **J-Hankel matrices** (H_J) for the given PhasorArray `pA1`.
         %
         %   **Difference with TBHankel:**
         %   - While `TBHankel` corresponds to **Toeplitz Block (TB)** structures, `BTHankel`
@@ -2714,13 +2714,13 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %       Computes the Block Toeplitz Hankel and J-Hankel matrices of order `m`.
         %
         %   See also: SPBTHANKEL, TBHANKEL.
-        [HpJ,JHm,Hp,Hm] = Array2BTHankel(o1,2*m);
+        [HpJ,JHm,Hp,Hm] = Array2BTHankel(pA1,2*m);
     end
-    function [HpJ,JHm,Hp,Hm] = spBTHankel(o1,m)
+    function [HpJ,JHm,Hp,Hm] = spBTHankel(pA1,m)
         %SPBTHANKEL Compute sparse Block Toeplitz Hankel matrices of order m.
         %
         %   This function computes the **sparse Block Toeplitz Hankel matrices** (H) and
-        %   the associated **J-Hankel matrices** (H_J) for the given PhasorArray `o1`.
+        %   the associated **J-Hankel matrices** (H_J) for the given PhasorArray `pA1`.
         %
         %   **Sparse Computation:** (same as `spTBHANKEL`)
         %   - The matrices are stored and computed in **sparse format** for efficiency.
@@ -2730,18 +2730,18 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %       Computes the sparse Block Toeplitz Hankel and J-Hankel matrices of order `m`.
         %
         %   See also: BTHANKEL, TBHANKEL.
-        [HpJ,JHm,Hp,Hm] = spArray2BTHankel(o1,2*m);
+        [HpJ,JHm,Hp,Hm] = spArray2BTHankel(pA1,2*m);
     end
 
-    function AB_TB = TBmtimes(o1,o2,h)
+    function AB_TB = TBmtimes(pA1,pA2,h)
         % TBMTIMES Compute the Toeplitz Block (TB) matrix of the product A(t)B(t).
         %
-        %   TBMTIMES(o1, o2, h) computes the Toeplitz Block matrix of order `h`
+        %   TBMTIMES(pA1, pA2, h) computes the Toeplitz Block matrix of order `h`
         %   that represents the product of two periodic matrix functions A(t) and B(t).
         %
         %   Inputs:
-        %     o1  - (PhasorArray) The first input PhasorArray representing A(t).
-        %     o2  - (PhasorArray) The second input PhasorArray representing B(t).
+        %     pA1  - (PhasorArray) The first input PhasorArray representing A(t).
+        %     pA2  - (PhasorArray) The second input PhasorArray representing B(t).
         %     h   - (integer) The truncation order for the harmonics.
         %
         %   Outputs:
@@ -2763,21 +2763,21 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %     AB_TB = TBmtimes(A, B, 5);
         %
         %   See also: spTBmtimes, TB, TBHankel.
-        [~,JHm,Hp,~] = TBHankel(o1,h);
-        [HpJ2,~,~,Hm2] = TBHankel(o2,h);
-        o1TB=o1.T_tb(h);
-        o2TB=o2.T_tb(h);
+        [~,JHm,Hp,~] = TBHankel(pA1,h);
+        [HpJ2,~,~,Hm2] = TBHankel(pA2,h);
+        o1TB=pA1.T_tb(h);
+        o2TB=pA2.T_tb(h);
         AB_TB=o1TB*o2TB+Hp*Hm2+JHm*HpJ2;
     end
-    function AB_TB = spTBmtimes(o1,o2,h)
+    function AB_TB = spTBmtimes(pA1,pA2,h)
         % SPTBMTIMES Compute the sparse Toeplitz Block (TB) matrix of the product A(t)B(t).
         %
-        %   SPTBMTIMES(o1, o2, h) computes the sparse Toeplitz Block matrix of order `h`
+        %   SPTBMTIMES(pA1, pA2, h) computes the sparse Toeplitz Block matrix of order `h`
         %   that represents the product of two periodic matrix functions A(t) and B(t).
         %
         %   Inputs:
-        %     o1  - (PhasorArray) The first input PhasorArray representing A(t).
-        %     o2  - (PhasorArray) The second input PhasorArray representing B(t).
+        %     pA1  - (PhasorArray) The first input PhasorArray representing A(t).
+        %     pA2  - (PhasorArray) The second input PhasorArray representing B(t).
         %     h   - (integer) The truncation order for the harmonics.
         %
         %   Outputs:
@@ -2799,14 +2799,14 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %     AB_TB = spTBmtimes(A, B, 5);
         %
         %   See also: TBmtimes, spTB, spTBHankel.
-        [~,JHm,Hp,~] = spTBHankel(o1,h);
-        [HpJ2,~,~,Hm2] = spTBHankel(o2,h);
-        o1TB=o1.spTB(h);
-        o2TB=o2.spTB(h);
+        [~,JHm,Hp,~] = spTBHankel(pA1,h);
+        [HpJ2,~,~,Hm2] = spTBHankel(pA2,h);
+        o1TB=pA1.spTB(h);
+        o2TB=pA2.spTB(h);
         AB_TB=o1TB*o2TB+Hp*Hm2+JHm*HpJ2;
     end
 
-    function r= F_tb(o1,m)
+    function r= F_tb(pA1,m)
         %F_tb Compute the Fourier representation of A in a form compatible with T_tb(A, m).
         %
         %   This function computes the **Fourier representation** of A(t) up to order `m`,
@@ -2832,7 +2832,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %       Computes the Fourier representation of `A` up to order `m`, compatible with T_tb(A, m).
         %
         %   Input Arguments:
-        %   - o1 (PhasorArray) : The input PhasorArray representing A(t).
+        %   - pA1 (PhasorArray) : The input PhasorArray representing A(t).
         %   - m (integer, optional) : The highest harmonic order to retain. Default: `A.h`.
         %
         %   Output:
@@ -2845,21 +2845,21 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %
         %   See also: F_bt, TB.
         arguments
-            o1
-            m=(size(o1,3)-1)/2;
+            pA1
+            m=(size(pA1,3)-1)/2;
         end
-        nho=(size(o1,3)-1)/2;
+        nho=(size(pA1,3)-1)/2;
         if nho<m
-            toto=value(o1.pad(m-nho));
+            toto=value(pA1.pad(m-nho));
         elseif nho>m
-            toto=pvalue(trunc(o1,m));
+            toto=pvalue(trunc(pA1,m));
         else
-            toto=pvalue(o1);
+            toto=pvalue(pA1);
         end
         titi=permute(toto,[3 1 2]);
-        r=reshape(titi,[],size(o1,2),1);
+        r=reshape(titi,[],size(pA1,2),1);
     end
-    function r= F_bt(o1,m)
+    function r= F_bt(pA1,m)
         %F_bt Compute the Fourier representation of A in a form compatible with T_bt(A, m).
         %
         %   This function computes the **Fourier representation** of A(t) up to order `m`,
@@ -2885,7 +2885,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %       Computes the Fourier representation of `A` up to order `m`, compatible with T_bt(A, m).
         %
         %   Input Arguments:
-        %   - o1 (PhasorArray) : The input PhasorArray representing A(t).
+        %   - pA1 (PhasorArray) : The input PhasorArray representing A(t).
         %   - m (integer, optional) : The highest harmonic order to retain. Default: `A.h`.
         %
         %   Output:
@@ -2898,76 +2898,76 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %
         %   See also: F_tb, BT.
         arguments
-            o1
-            m=(size(o1,3)-1)/2;
+            pA1
+            m=(size(pA1,3)-1)/2;
         end
-        nho=(size(o1,3)-1)/2;
+        nho=(size(pA1,3)-1)/2;
         if nho<m
-            toto=pvalue(o1.pad(m-nho));
+            toto=pvalue(pA1.pad(m-nho));
         elseif nho>m
-            toto=pvalue(trunc(o1,m));
+            toto=pvalue(trunc(pA1,m));
         else
-            toto=pvalue(o1);
+            toto=pvalue(pA1);
         end
         titi=permute(toto,[1 3 2]);
-        r=reshape(titi,[],size(o1,2),1);
+        r=reshape(titi,[],size(pA1,2),1);
     end
 
-    function r = spFTB(o1, m)
+    function r = spFTB(pA1, m)
         %SPFTB Sparse Fourier-Toeplitz-Block representation.
         %
-        %   r = spFTB(o1, m) returns a sparse Fourier representation
-        %   compatible with spTB(o1, m).
+        %   r = spFTB(pA1, m) returns a sparse Fourier representation
+        %   compatible with spTB(pA1, m).
         %
         %   See also: F_tb, spTB.
         arguments
-            o1
-            m = (size(o1,3)-1)/2;
+            pA1
+            m = (size(pA1,3)-1)/2;
         end
-        r = o1.F_tb(m);
-        if ~isspecial(o1)
+        r = pA1.F_tb(m);
+        if ~isspecial(pA1)
             r = sparse(r);
         end
     end
 
-    function r = spFBT(o1, m)
+    function r = spFBT(pA1, m)
         %SPFBT Sparse Fourier-Block-Toeplitz representation.
         %
-        %   r = spFBT(o1, m) returns a sparse Fourier representation
-        %   compatible with spBT(o1, m).
+        %   r = spFBT(pA1, m) returns a sparse Fourier representation
+        %   compatible with spBT(pA1, m).
         %
         %   See also: F_bt, spBT.
         arguments
-            o1
-            m = (size(o1,3)-1)/2;
+            pA1
+            m = (size(pA1,3)-1)/2;
         end
-        r = o1.F_bt(m);
-        if ~isspecial(o1)
+        r = pA1.F_bt(m);
+        if ~isspecial(pA1)
             r = sparse(r);
         end
     end
 
-    function r= HmqNEig(o1,h,T,bandlimit)
-        % HMQNEIG Compute the eigenvalues of T_tb(o1, h) - N_tb(o1, h, T).
+    function r= HmqNEig(pA1,h,T,bandlimit)
+        % HMQNEIG Compute the eigenvalues of T_tb(pA1, h) - N_tb(pA1, h, T).
         %
-        %   HMQNEIG(o1, h, T, bandlimit) computes the eigenvalues of the difference between
-        %   the Toeplitz Block matrix `T_tb(o1, h)` and the non-periodic Toeplitz approximation
-        %   `N_tb(o1, h, T)`, capturing spectral properties of `o1`.
+        %   HMQNEIG(pA1, h, T, bandlimit) computes the eigenvalues of the difference between
+        %   the Toeplitz Block matrix `T_tb(pA1, h)` and the non-periodic Toeplitz approximation
+        %   `N_tb(pA1, h, T)`, capturing spectral properties of `pA1`.
         %
         %   Inputs:
-        %     o1        - (PhasorArray) The input PhasorArray representing a periodic matrix function.
+        %     pA1        - (PhasorArray) The input PhasorArray representing a periodic matrix function.
         %     h         - (integer, optional) The truncation order for the harmonics.
-        %                   - Default: `2*o1.h` (twice the highest harmonic stored in `o1`).
+        %                   - Default: `2*pA1.h` (twice the highest harmonic stored in `pA1`).
         %     T         - (double) The period of the PhasorArray.
         %     bandlimit - (char) Specifies band-limiting of eigenvalues:
         %                   - 'none' (default): No band-limiting.
         %                   - 'fundamental': Retains eigenvalues where |imag(r)| < π / |T|.
         %
         %   Outputs:
-        %     r - (vector) The eigenvalues of the matrix `T_tb(o1, h) - N_tb(o1, h, T)`.
+        %     r - (vector) The eigenvalues of the matrix `T_tb(pA1, h) - N_tb(pA1, h, T)`.
         %
         %   Behavior:
-        %     - Computes eigenvalues of the difference matrix `Hmq = T_tb(o1, h) - N_tb(o1, h, T)`.
+        %     - Computes eigenvalues of the difference matrix `Hmq = T_tb(pA1, h) - N_tb(pA1, h, T)`.
         %     - Band-limiting removes eigenvalues outside the specified range.
         %
         %   Example Usage:
@@ -2980,15 +2980,15 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %
         %   See also: TB, N_tb, eig.
         arguments
-            o1
+            pA1
             h=20
             T=2*pi
             bandlimit {mustBeMember(bandlimit,{'none','fundamental'})}='none'
         end
         if isempty(h)
-            h=2*o1.h;
+            h=2*pA1.h;
         end
-        r1=o1.T_tb(h)-N_tb(o1.value,h,T);
+        r1=pA1.T_tb(h)-N_tb(pA1.value,h,T);
         r=eig(r1);
         switch bandlimit
             case 'fundamental'
@@ -3001,27 +3001,27 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
     end
 
 
-    function r= HmqEig(o1,h)
+    function r= HmqEig(pA1,h)
         % HMQEIG Compute the eigenvalues of the Toeplitz Block (TB) matrix of A(t).
         %
-        %   HMQEIG(o1, h) computes the eigenvalues of the Toeplitz Block (TB) matrix
+        %   HMQEIG(pA1, h) computes the eigenvalues of the Toeplitz Block (TB) matrix
         %   representation of the periodic matrix function `A(t)`, capturing its spectral properties.
         %
         %   Inputs:
-        %     o1  - (PhasorArray) The input PhasorArray representing a periodic matrix function.
+        %     pA1  - (PhasorArray) The input PhasorArray representing a periodic matrix function.
         %     h   - (integer, optional) The truncation order for the harmonics.
-        %            - Default: `o1.h` (the highest harmonic stored in `o1`).
+        %            - Default: `pA1.h` (the highest harmonic stored in `pA1`).
         %
         %   Outputs:
-        %     r   - (vector) The eigenvalues of the Toeplitz Block matrix `T_tb(o1, h)`.
+        %     r   - (vector) The eigenvalues of the Toeplitz Block matrix `T_tb(pA1, h)`.
         %
         %   Behavior:
-        %     - The matrix is truncated to order `h` to form `T_tb(o1, h)`.
-        %     - If `h` is not specified, the function uses the highest harmonic available in `o1`.
+        %     - The matrix is truncated to order `h` to form `T_tb(pA1, h)`.
+        %     - If `h` is not specified, the function uses the highest harmonic available in `pA1`.
         %
         %   Output Dimensions:
         %     - If `A(t)` is an `N×N` matrix and the truncation order is `h`, then:
-        %         - `T_tb(o1, h)` is a `(2h+1)N × (2h+1)N` matrix.
+        %         - `T_tb(pA1, h)` is a `(2h+1)N × (2h+1)N` matrix.
         %         - `r` is a vector of eigenvalues of length `(2h+1)N`.
         %
         %   Example Usage:
@@ -3034,17 +3034,17 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %
         %   See also: TB, eig.
         arguments
-            o1
-            h=o1.h
+            pA1
+            h=pA1.h
         end
-        r1=o1.T_tb(h);
+        r1=pA1.T_tb(h);
         r=eig(r1);
     end
 
-    function r=evalp(o1,angle,nvp)
+    function r=evalp(pA1,angle,nvp)
         % EVALP Evaluate a periodic matrix at a given phase angle.
         %
-        %   EVALP(o1, angle, nvp) computes the value of a periodic matrix `A` at a
+        %   EVALP(pA1, angle, nvp) computes the value of a periodic matrix `A` at a
         %   specified phase angle `θ` instead of time. This function is useful for
         %   evaluating periodic signals in the frequency domain.
         %
@@ -3053,7 +3053,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %     r = EVALP(A, angle, Name, Value)
         %
         %   Inputs:
-        %     o1    - (PhasorArray) The periodic matrix represented as a **phasor array**.
+        %     pA1    - (PhasorArray) The periodic matrix represented as a **phasor array**.
         %     angle - (double, vector) The phase angle(s) at which to evaluate `A(θ)`.
         %
         %   Name-Value Pair Arguments:
@@ -3067,7 +3067,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %   Behavior:
         %     - This function evaluates `A(θ)`, where `θ` represents the **phase angle** of the periodic function.
         %     - The function internally calls `PhasorArray2time` with `T = 2π`, assuming **one full cycle** of the periodic function.
-        %     - If `o1` is detected as real-valued, `forceReal` is automatically set to `true`.
+        %     - If `pA1` is detected as real-valued, `forceReal` is automatically set to `true`.
         %
         %   Example Usage:
         %     % Evaluate a phasor array at a phase angle of π/4
@@ -3078,7 +3078,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %
         %   See also: PHASORARRAY2TIME, EVALTIME.
         arguments
-            o1
+            pA1
             angle
             nvp.forceReal logical    = false
             nvp.checkReal logical    = false
@@ -3086,25 +3086,25 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             nvp.squeeze              = false
         end
 
-        if isreal(o1)
+        if isreal(pA1)
             nvp.forceReal = true;
         end
 
         nvp = namedargs2cell(nvp);
         %evaluate periodic matrix A for an angle argument instead of
         %time
-        r=PhasorArray2time(o1,2*pi,angle,nvp{:});
+        r=PhasorArray2time(pA1,2*pi,angle,nvp{:});
     end
 
 
-    function r = mreal(o1)
+    function r = mreal(pA1)
         %MREAL Compute the real part of a PhasorArray in the time domain.
-        %   r = MREAL(o1) returns the real part of the PhasorArray o1 in the time domain.
+        %   r = MREAL(pA1) returns the real part of the PhasorArray pA1 in the time domain.
         %   The real part R(t) is such that A(t) = R(t) + i*I(t), where I(t) is the imaginary part.
         %   Both R(t) and I(t) are real-valued.
         %
         %   INPUT:
-        %       o1 - The PhasorArray object.
+        %       pA1 - The PhasorArray object.
         %
         %   OUTPUT:
         %       r  - The real part of the PhasorArray in the time domain.
@@ -3114,7 +3114,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %       R = mreal(A);
         %
         %   See also: mimag, mconj
-        dval = pvalue(o1);
+        dval = pvalue(pA1);
         % real/imag pulled out before combining, and * instead of /: YALMIP
         % supports neither on a derived ndsdpvar. Bit-identical by linearity.
         dr = real(dval);   di = imag(dval);
@@ -3122,14 +3122,14 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         r = PhasorArray(r);
     end
 
-    function r = mimag(o1)
+    function r = mimag(pA1)
         %MIMAG Compute the imaginary part of a PhasorArray in the time domain.
-        %   r = MIMAG(o1) returns the imaginary part of the PhasorArray o1 in the time domain.
+        %   r = MIMAG(pA1) returns the imaginary part of the PhasorArray pA1 in the time domain.
         %   The imaginary part I(t) is such that A(t) = R(t) + i*I(t), where R(t) is the real part.
         %   Both R(t) and I(t) are real-valued.
         %
         %   INPUT:
-        %       o1 - The PhasorArray object.
+        %       pA1 - The PhasorArray object.
         %
         %   OUTPUT:
         %       r  - The imaginary part of the PhasorArray in the time domain.
@@ -3139,20 +3139,20 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %       I = mimag(A);
         %
         %   See also: mreal, mconj
-        dval = pvalue(o1);
+        dval = pvalue(pA1);
         % Same rewrites as mreal (1/1i == -1i exactly, so *(-1i) replaces /1i).
         dr = real(dval);   di = imag(dval);
         r  = (dr - flip(dr,3))*(1/2)*(-1i) + 1i * (di + flip(di,3))*(1/2)*(-1i);
         r = PhasorArray(r);
     end
 
-    function r = mconj(o1)
+    function r = mconj(pA1)
         %MCONJ Compute the complex conjugate of a PhasorArray in the time domain.
-        %   r = MCONJ(o1) returns the complex conjugate of the PhasorArray o1 in the time domain.
+        %   r = MCONJ(pA1) returns the complex conjugate of the PhasorArray pA1 in the time domain.
         %   The complex conjugate is computed as R(t) - i*I(t), where R(t) is the real part and I(t) is the imaginary part.
         %
         %   INPUT:
-        %       o1 - The PhasorArray object.
+        %       pA1 - The PhasorArray object.
         %
         %   OUTPUT:
         %       r  - The complex conjugate of the PhasorArray in the time domain.
@@ -3162,86 +3162,86 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %       C = mconj(A);
         %
         %   See also: mreal, mimag
-        r = mreal(o1)-1i*mimag(o1);
+        r = mreal(pA1)-1i*mimag(pA1);
     end
 
-    function o1=confirm_reality(o1)
+    function pA1=confirm_reality(pA1)
         %  depreciated
         %
         % see also MREAL.
 
-        pos_part=o1{:,:,1:o1.h};
-        neg_part=o1{:,:,-1:-1:(-o1.h)};
-        z_part=o1.phas(0);
+        pos_part=pA1{:,:,1:pA1.h};
+        neg_part=pA1{:,:,-1:-1:(-pA1.h)};
+        z_part=pA1.phas(0);
 
-        o1{:,:,1:o1.h}=(pos_part+conj(neg_part))/2;
-        o1{:,:,0}=real(z_part);
-        o1{:,:,-1:-1:(-o1.h)}=conj(pos_part+conj(neg_part))/2;
+        pA1{:,:,1:pA1.h}=(pos_part+conj(neg_part))/2;
+        pA1{:,:,0}=real(z_part);
+        pA1{:,:,-1:-1:(-pA1.h)}=conj(pos_part+conj(neg_part))/2;
     end
 
-    function r = pageconj(o1)
+    function r = pageconj(pA1)
         %phasor conjugate
-        r=(conj(pvalue(o1)));
+        r=(conj(pvalue(pA1)));
     end
-    function r = pagereal(o1)
+    function r = pagereal(pA1)
         %phasor real part
-        r=(real(pvalue(o1)));
+        r=(real(pvalue(pA1)));
     end
-    function r = pageimag(o1)
+    function r = pageimag(pA1)
         %phasor imag part
-        r=(imag(pvalue(o1)));
+        r=(imag(pvalue(pA1)));
     end
-    function r = pageabs(o1)
+    function r = pageabs(pA1)
         %phasor absolute value
-        r=(abs(pvalue(o1)));
+        r=(abs(pvalue(pA1)));
     end
 
 
-    function r = isvector(o1)
+    function r = isvector(pA1)
         % ISVECTOR True if A(t) is a vector (row or column).
-        r=isvector(o1.phas(0));
+        r=isvector(pA1.phas(0));
     end
-    function r = isscalar(o1)
+    function r = isscalar(pA1)
         % ISSCALAR True if A(t) is a scalar.
-        r=isscalar(o1.phas(0));
+        r=isscalar(pA1.phas(0));
     end
-    function r = isrow(o1)
+    function r = isrow(pA1)
         % ISROW True if A(t) is a row vector.
-        r=isrow(o1.phas(0));
+        r=isrow(pA1.phas(0));
     end
-    function r = iscolumn(o1)
+    function r = iscolumn(pA1)
         % ISCOLUMN True if A(t) is a column vector.
-        r=iscolumn(o1.phas(0));
+        r=iscolumn(pA1.phas(0));
     end
-    function r = ismatrix(o1)
+    function r = ismatrix(pA1)
         % ISMATRIX True if A(t) is a matrix.
-        r=ismatrix(o1.phas(0));
+        r=ismatrix(pA1.phas(0));
     end
-    function r = isnumeric(o1)
+    function r = isnumeric(pA1)
         % ISNUMERIC True if A(t) contains numeric values.
-        r=isnumeric(o1.value);
+        r=isnumeric(pA1.value);
     end
-    function r = islogical(o1)
+    function r = islogical(pA1)
         % ISLOGICAL True if A(t) contains logical values.
-        r=islogical(o1.value);
+        r=islogical(pA1.value);
     end
-    function r = isempty(o1)
+    function r = isempty(pA1)
         % ISEMPTY True if A(t) is empty.
-        r=isempty(o1.value);
+        r=isempty(pA1.value);
     end
-    function r = issquare(o1)
+    function r = issquare(pA1)
         % ISSQUARE True if A(t) is a square matrix.
-        r = (size(o1,1)==size(o1,2));
+        r = (size(pA1,1)==size(pA1,2));
     end
 
-    function [r,R] = issymmetric(o1,nvp)
+    function [r,R] = issymmetric(pA1,nvp)
         % ISSYMMETRIC Check if the PhasorArray object is symmetric.
         %
-        %   [r, R] = ISSYMMETRIC(o1, nvp) checks if the PhasorArray object o1
+        %   [r, R] = ISSYMMETRIC(pA1, nvp) checks if the PhasorArray object pA1
         %   is symmetric based on the specified arguments.
         %
         %   Input arguments:
-        %       o1 - The PhasorArray object to be checked.
+        %       pA1 - The PhasorArray object to be checked.
         %       nvp - Name-Value arguments:
         %           skewOption - A string specifying the type of symmetry to check.
         %                         It can be either 'nonskew' or 'skew'. Default is 'nonskew'.
@@ -3252,38 +3252,38 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %       R - A logical array indicating the symmetry of each slice of the PhasorArray object.
         %
         %   Example:
-        %       [r, R] = issymmetric(o1, 'skewOption', 'nonskew', 'tol', 1e-6);
+        %       [r, R] = issymmetric(pA1, 'skewOption', 'nonskew', 'tol', 1e-6);
         %
         %   See also: arrayfun, norm, nnz
         arguments
-            o1
+            pA1
             nvp.skewOption {mustBeMember(nvp.skewOption,{'nonskew','skew'})} = 'nonskew'
             nvp.tol = 0
         end
         if nvp.tol == 0
-            R = arrayfun(@(ii) issymmetric(o1(:,:,ii),nvp.skewOption),1:(2*o1.h+1));
+            R = arrayfun(@(ii) issymmetric(pA1(:,:,ii),nvp.skewOption),1:(2*pA1.h+1));
         else
             tol=abs(nvp.tol);
             switch nvp.skewOption
                 case 'nonskew'
-                    R = arrayfun(@(ii) norm(o1(:,:,ii)-o1(:,:,ii).',"inf")/norm(o1(:,:,ii),"inf")<tol,1:(2*o1.h+1));
+                    R = arrayfun(@(ii) norm(pA1(:,:,ii)-pA1(:,:,ii).',"inf")/norm(pA1(:,:,ii),"inf")<tol,1:(2*pA1.h+1));
                 otherwise
-                    R = arrayfun(@(ii) norm(o1(:,:,ii)+o1(:,:,ii).',"inf")/norm(o1(:,:,ii),"inf")<tol,1:(2*o1.h+1));
+                    R = arrayfun(@(ii) norm(pA1(:,:,ii)+pA1(:,:,ii).',"inf")/norm(pA1(:,:,ii),"inf")<tol,1:(2*pA1.h+1));
             end
         end
-        r = ((nnz(R))==(2*o1.h+1));
+        r = ((nnz(R))==(2*pA1.h+1));
     end
 
-    function [r,R] = ishermitian(o1,nvp)
+    function [r,R] = ishermitian(pA1,nvp)
         % ISHERMITIAN Check if the PhasorArray object is Hermitian.
         %
-        %   [r, R] = ISHERMITIAN(o1, nvp) checks if the PhasorArray object o1
+        %   [r, R] = ISHERMITIAN(pA1, nvp) checks if the PhasorArray object pA1
         %   is Hermitian. The function returns a logical scalar r indicating
         %   if all slices of the PhasorArray are Hermitian, and a logical array R
         %   indicating if each individual slice is Hermitian.
         %
         %   Input arguments:
-        %       o1 - PhasorArray object to be checked.
+        %       pA1 - PhasorArray object to be checked.
         %       nvp - Name-Value arguments:
         %           skewOption - (optional) Specifies whether to check for
         %                         'nonskew' (default) or 'skew' Hermitian.
@@ -3296,31 +3296,31 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %       R - Logical array indicating if each individual slice of the
         %           PhasorArray is Hermitian.
         arguments
-            o1
+            pA1
             nvp.skewOption {mustBeMember(nvp.skewOption,{'nonskew','skew'})} = 'nonskew'
             nvp.tol = 0
         end
         if nvp.tol == 0
-            R = arrayfun(@(ii) ishermitian(o1(:,:,ii),nvp.skewOption),1:(2*o1.h+1));
+            R = arrayfun(@(ii) ishermitian(pA1(:,:,ii),nvp.skewOption),1:(2*pA1.h+1));
         else
             tol=abs(nvp.tol);
             switch nvp.skewOption
                 case 'nonskew'
-                    R = arrayfun(@(ii) norm(o1(:,:,ii)-o1(:,:,ii)',"inf")/norm(o1(:,:,ii),"inf")<tol,1:(2*o1.h+1));
+                    R = arrayfun(@(ii) norm(pA1(:,:,ii)-pA1(:,:,ii)',"inf")/norm(pA1(:,:,ii),"inf")<tol,1:(2*pA1.h+1));
                 otherwise
-                    R = arrayfun(@(ii) norm(o1(:,:,ii)+o1(:,:,ii)',"inf")/norm(o1(:,:,ii),"inf")<tol,1:(2*o1.h+1));
+                    R = arrayfun(@(ii) norm(pA1(:,:,ii)+pA1(:,:,ii)',"inf")/norm(pA1(:,:,ii),"inf")<tol,1:(2*pA1.h+1));
             end
         end
-        r = ((nnz(R))==(2*o1.h+1));
+        r = ((nnz(R))==(2*pA1.h+1));
     end
 
-    function [r,R,tolmin] = isreal(o1,tol)
+    function [r,R,tolmin] = isreal(pA1,tol)
         % ISREAL Check if the imaginary part of the time realization of
         % PhasorArray is negligible compared to a given tolerance.
         %
         % Syntax:
-        %   [r, R] = isreal(o1)
-        %   [r, R] = isreal(o1, tol)
+        %   [r, R] = isreal(pA1)
+        %   [r, R] = isreal(pA1, tol)
         %
         % Description:
         %   This function checks if the imaginary part of the time realization
@@ -3330,7 +3330,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %   element of the PhasorArray.
         %
         % Inputs:
-        %   o1  - PhasorArray object to be checked.
+        %   pA1  - PhasorArray object to be checked.
         %   tol - (Optional) Tolerance value for comparison. If not provided,
         %         the function uses the default machine epsilon.
         %
@@ -3341,43 +3341,43 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %         for each element of the PhasorArray.
         %
         % Example:
-        %   [r, R] = isreal(o1)
-        %   [r, R] = isreal(o1, 1e-6)
+        %   [r, R] = isreal(pA1)
+        %   [r, R] = isreal(pA1, 1e-6)
         %
         % See also:
         %   mreal, ismembertol, abs
         arguments
-            o1
+            pA1
             tol=[]
         end
-        [r, R] = projectionMatch(o1, @mreal, +1, tol, 'isreal');
+        [r, R] = projectionMatch(pA1, @mreal, +1, tol, 'isreal');
         if nargout > 2
-            if r == 0 && isspecial(o1)
+            if r == 0 && isspecial(pA1)
                 tolmin = NaN;   % undetermined: bisecting on it would not converge
             else
-                tolmin = tolReal(o1);
+                tolmin = tolReal(pA1);
             end
         end
     end
-    function tol = tolZero(o1, tolstart, tolTol)
+    function tol = tolZero(pA1, tolstart, tolTol)
         % TOLZERO Determines the lowest tolerance for which the input is considered zero.
         %
-        % Syntax: tol = tolZero(o1, tolstart, tolTol)
+        % Syntax: tol = tolZero(pA1, tolstart, tolTol)
         %
         % Inputs:
-        %    o1 - The input PhasorArray object to be checked for zero values.
+        %    pA1 - The input PhasorArray object to be checked for zero values.
         %    tolstart - (Optional) The starting tolerance value for the binary search. Default is 100.
         %    tolTol - (Optional) The tolerance for the binary search convergence. Default is 1e-20.
         %
         % Outputs:
-        %    tol - The lowest tolerance for which the input is considered zero through function iszero(o1, tol).
+        %    tol - The lowest tolerance for which the input is considered zero through function iszero(pA1, tol).
         %
         % Example:
-        %    tol = tolZero(o1, 100, 1e-20);
+        %    tol = tolZero(pA1, 100, 1e-20);
         %
         % See also: iszero
         arguments
-            o1
+            pA1
             tolstart = 100
             tolTol = 1e-6
         end
@@ -3388,7 +3388,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         % Binary search for minimum tolerance
         while (high - low) > tolTol
             mid = (low + high) / 2;
-            if iszero(o1, mid)
+            if iszero(pA1, mid)
                 high = mid;
             else
                 low = mid;
@@ -3400,25 +3400,25 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
     end
 
 
-    function tol = tolReal(o1,tolstart,tolTol)
+    function tol = tolReal(pA1,tolstart,tolTol)
         % tolReal - Determines the lowest tolerance for which the input is real.
         %
-        % Syntax: tol = tolReal(o1, tolstart, tolTol)
+        % Syntax: tol = tolReal(pA1, tolstart, tolTol)
         %
         % Inputs:
-        %    o1 - The input object to be checked for reality.
+        %    pA1 - The input object to be checked for reality.
         %    tolstart - (Optional) The starting tolerance value for the binary search. Default is 100.
         %    tolTol - (Optional) The tolerance for the binary search convergence. Default is 1e-20.
         %
         % Outputs:
-        %    tol - The lowest tolerance for which the input is real through function isreal(o1, tol).
+        %    tol - The lowest tolerance for which the input is real through function isreal(pA1, tol).
         %
         % Example:
-        %    tol = tolReal(o1, 100, 1e-20);
+        %    tol = tolReal(pA1, 100, 1e-20);
         %
         % See also: isreal
         arguments
-            o1
+            pA1
             tolstart=100
             tolTol=1e-20;
         end
@@ -3429,7 +3429,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         % Binary search for minimum tolerance
         while (high - low) > tolTol
             mid = (low + high) / 2;
-            if isreal(o1, mid)
+            if isreal(pA1, mid)
                 high = mid;
             else
                 low = mid;
@@ -3440,14 +3440,14 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         tol = high;
     end
 
-    function [r,R] = isimag(o1,tol)
+    function [r,R] = isimag(pA1,tol)
         % ISIMAG Check if the real part of the time realization of a PhasorArray is negligible.
         %
-        %   [r, R] = ISIMAG(o1, tol) checks whether the real part of the time-domain
-        %   realization of the PhasorArray `o1` is negligible relative to a given tolerance.
+        %   [r, R] = ISIMAG(pA1, tol) checks whether the real part of the time-domain
+        %   realization of the PhasorArray `pA1` is negligible relative to a given tolerance.
         %
         %   Inputs:
-        %       o1  - (PhasorArray) The PhasorArray object to be checked.
+        %       pA1  - (PhasorArray) The PhasorArray object to be checked.
         %       tol - (double, optional) Tolerance threshold for comparison.
         %             - Default: `[]`, meaning it uses machine precision.
         %
@@ -3456,23 +3456,23 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %       R - (logical array) Element-wise result indicating if each entry is purely imaginary.
         %
         %   Example:
-        %       [r, R] = isimag(o1, 1e-6);
+        %       [r, R] = isimag(pA1, 1e-6);
         %
         %   See also: mimag, isreal, abs
         arguments
-            o1
+            pA1
             tol=[]
         end
-        [r, R] = projectionMatch(o1, @mimag, -1, tol, 'isimag');
+        [r, R] = projectionMatch(pA1, @mimag, -1, tol, 'isimag');
     end
-    function [r,R] = iscomplex(o1,tol)
+    function [r,R] = iscomplex(pA1,tol)
         % ISCOMPLEX Check if the PhasorArray contains significant imaginary components.
         %
-        %   [r, R] = ISCOMPLEX(o1, tol) determines whether the PhasorArray `o1`
+        %   [r, R] = ISCOMPLEX(pA1, tol) determines whether the PhasorArray `pA1`
         %   contains significant imaginary components relative to a given tolerance.
         %
         %   Inputs:
-        %       o1  - (PhasorArray) The PhasorArray object to be checked.
+        %       pA1  - (PhasorArray) The PhasorArray object to be checked.
         %       tol - (double, optional) Tolerance threshold for comparison.
         %             - Default: `eps` (machine precision).
         %
@@ -3481,25 +3481,25 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %       R - (logical array) Element-wise result indicating if each entry is complex.
         %
         %   Example:
-        %       [r, R] = iscomplex(o1, 1e-6);
+        %       [r, R] = iscomplex(pA1, 1e-6);
         %
         %   See also: isreal, isimag, abs
         arguments
-            o1
+            pA1
             tol=eps
         end
-        [r,R]=isreal(o1,tol);
+        [r,R]=isreal(pA1,tol);
         r=~r;
         R=~R;
     end
-    function [r,R] = iszero(o1,tol)
+    function [r,R] = iszero(pA1,tol)
         % ISZERO Check if the PhasorArray is numerically zero.
         %
-        %   [r, R] = ISZERO(o1, tol) determines whether the PhasorArray `o1`
+        %   [r, R] = ISZERO(pA1, tol) determines whether the PhasorArray `pA1`
         %   is numerically zero, based on an absolute tolerance.
         %
         %   Inputs:
-        %       o1  - (PhasorArray) The PhasorArray object to be checked.
+        %       pA1  - (PhasorArray) The PhasorArray object to be checked.
         %       tol - (double, optional) Tolerance threshold for comparison.
         %             - Default: `0`, meaning exact zero comparison.
         %
@@ -3508,16 +3508,16 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %       R - (logical array) Element-wise result indicating if each entry is within tolerance.
         %
         %   Example:
-        %       [r, R] = iszero(o1, 1e-6);
+        %       [r, R] = iszero(pA1, 1e-6);
         %
         %   See also: pagenorm, isreal, iscomplex
         arguments
-            o1
+            pA1
             tol = 0
         end
-        if ~isspecial(o1)
-            R = pageInfNorm(o1.value)<=tol;
-        elseif isa(o1.value, 'sdpvar') || isa(o1.value, 'ndsdpvar')
+        if ~isspecial(pA1)
+            R = pageInfNorm(pA1.value)<=tol;
+        elseif isa(pA1.value, 'sdpvar') || isa(pA1.value, 'ndsdpvar')
             % Undecidable on a decision variable: the value does not exist until
             % the problem is solved (YALMIP turns `x == 0` into a constraint).
             error('PhasorArray:iszero:decisionVariable', ...
@@ -3525,36 +3525,36 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                  'Apply it to the solved array, e.g. iszero(PhasorArray(value(x))).'])
         else
             % Symbolic: pagenorm needs floats, so compare slice-wise instead.
-            R = false(1, 1, 2*o1.h+1);
+            R = false(1, 1, 2*pA1.h+1);
             for k = 1:numel(R)
-                R(k) = symbolicSliceIsZero(o1(:, :, k), tol);
+                R(k) = symbolicSliceIsZero(pA1(:, :, k), tol);
             end
         end
-        r = ((nnz(R))==(2*o1.h+1));
+        r = ((nnz(R))==(2*pA1.h+1));
     end
 
-    function r = isspecial(o1)
+    function r = isspecial(pA1)
         %ISSPECIAL True when the coefficients are symbolic or decision variables.
         %
         %   True for sym, sdpvar and ndsdpvar backings. Numeric predicates such as
         %   iszero cannot be evaluated on those, so guard with this first.
-        r = (isa(o1.value,"sym") || isa(o1.value,"ndsdpvar") || isa(o1.value,"sdpvar"));
+        r = (isa(pA1.value,"sym") || isa(pA1.value,"ndsdpvar") || isa(pA1.value,"sdpvar"));
     end
 
-    function r = ImagRealForm(o1)
+    function r = ImagRealForm(pA1)
         % IMAGREALFORM Convert PhasorArray to Imaginary-Real form.
         %
-        %   r = IMAGREALFORM(o1) converts the PhasorArray `o1` into the
+        %   r = IMAGREALFORM(pA1) converts the PhasorArray `pA1` into the
         %   Imaginary-Real representation, ensuring:
         %       - **Negative harmonics (`-k`) store the imaginary part (left side).**
         %       - **Positive harmonics (`+k`) store the real part (right side).**
         %       - The order `k` and `-k` remain **symmetric** around the DC component.
         %
-        %   This format assumes that `o1` represents a **real-valued periodic matrix**,
+        %   This format assumes that `pA1` represents a **real-valued periodic matrix**,
         %   meaning `X_-k = conj(X_k)`.
         %
         %   Input:
-        %       o1 - (PhasorArray) The input PhasorArray object.
+        %       pA1 - (PhasorArray) The input PhasorArray object.
         %
         %   Output:
         %       r - (array) The Imaginary-Real form representation:
@@ -3563,28 +3563,28 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %           - Order `+k` maps to `(:,:,h+k+1)` (real part).
         %
         %   Example:
-        %       r = ImagRealForm(o1);
+        %       r = ImagRealForm(pA1);
         %
         %   See also: RealImagForm, SinCosForm
-        h=o1.h;
-        o1=o1.value;
-        indices = repmat({':'}, 1, ndims(o1)-3);
-        r=cat(3,-imag(o1(:,:,1:h,indices{:})),real(o1(:,:,(h+1):end,indices{:})));
+        h=pA1.h;
+        pA1=pA1.value;
+        indices = repmat({':'}, 1, ndims(pA1)-3);
+        r=cat(3,-imag(pA1(:,:,1:h,indices{:})),real(pA1(:,:,(h+1):end,indices{:})));
     end
-    function r = RealImagForm(o1)
+    function r = RealImagForm(pA1)
         % REALIMAGFORM Convert PhasorArray to Real-Imaginary form.
         %
-        %   r = REALIMAGFORM(o1) converts the PhasorArray `o1` into the
+        %   r = REALIMAGFORM(pA1) converts the PhasorArray `pA1` into the
         %   Real-Imaginary representation, ensuring:
         %       - **Negative harmonics (`-k`) store the real part (left side).**
         %       - **Positive harmonics (`+k`) store the imaginary part (right side).**
         %       - The order `k` and `-k` remain **symmetric** around the DC component.
         %
-        %   This format assumes that `o1` represents a **real-valued periodic matrix**,
+        %   This format assumes that `pA1` represents a **real-valued periodic matrix**,
         %   meaning `X_-k = conj(X_k)`.
         %
         %   Input:
-        %       o1 - (PhasorArray) The input PhasorArray object.
+        %       pA1 - (PhasorArray) The input PhasorArray object.
         %
         %   Output:
         %       r - (array) The Real-Imaginary form representation:
@@ -3593,24 +3593,24 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %           - Order `+k` maps to `(:,:,h+k+1)` (imaginary part).
         %
         %   Example:
-        %       r = RealImagForm(o1);
+        %       r = RealImagForm(pA1);
         %
         %   See also: ImagRealForm, SinCosForm
-        r = flip(ImagRealForm(o1),3);
+        r = flip(ImagRealForm(pA1),3);
     end
-    function r = SinCosForm(o1,isReal,realTol)
+    function r = SinCosForm(pA1,isReal,realTol)
         % SINCOSFORM Convert PhasorArray to Sine-Cosine form.
         %
-        %   r = SINCOSFORM(o1, isReal, realTol) converts the PhasorArray `o1`
+        %   r = SINCOSFORM(pA1, isReal, realTol) converts the PhasorArray `pA1`
         %   into the **Sine-Cosine representation**, ensuring:
         %       - **Negative harmonics (`-k`) store sine coefficients (left side).**
         %       - **Positive harmonics (`+k`) store cosine coefficients (right side).**
         %       - The order `k` and `-k` remain **symmetric** around the DC component.
         %
         %   Inputs:
-        %       o1      - (PhasorArray) The input PhasorArray object.
+        %       pA1      - (PhasorArray) The input PhasorArray object.
         %       isReal  - (logical, optional) If `true`, forces real-valued output.
-        %                 Default: `isreal(o1)`.
+        %                 Default: `isreal(pA1)`.
         %       realTol - (double, optional) Tolerance for enforcing real values.
         %                 Default: `1e-14`.
         %
@@ -3621,19 +3621,19 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %           - Order `+k` maps to `(:,:,h+k+1)` (cosine coefficient).
         %
         %   Example:
-        %       r = SinCosForm(o1, true, 1e-14);
+        %       r = SinCosForm(pA1, true, 1e-14);
         %
         %   See also: CosSinForm, ImagRealForm
         arguments
-            o1
-            isReal logical = isreal(o1)
+            pA1
+            isReal logical = isreal(pA1)
             realTol = 1e-14
         end
         %normal sin / cos form
-        h=o1.h;
-        o1=o1.value;
-        indices = repmat({':'}, 1, ndims(o1)-3);
-        r=cat(3,1i*(flip(o1(:,:,h+2:end,indices{:}),3)-o1(:,:,1:h,indices{:})),o1(:,:,h+1,indices{:}),(o1(:,:,h+2:end,indices{:})+flip(o1(:,:,1:h,indices{:}),3)));
+        h=pA1.h;
+        pA1=pA1.value;
+        indices = repmat({':'}, 1, ndims(pA1)-3);
+        r=cat(3,1i*(flip(pA1(:,:,h+2:end,indices{:}),3)-pA1(:,:,1:h,indices{:})),pA1(:,:,h+1,indices{:}),(pA1(:,:,h+2:end,indices{:})+flip(pA1(:,:,1:h,indices{:}),3)));
         if isReal
             er = real(r-real(r));
             if norm(double(er),'fro') > realTol
@@ -3642,19 +3642,19 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             r=real(r);
         end
     end
-    function r = AngleAmpForm(o1)
+    function r = AngleAmpForm(pA1)
         % ANGLEAMPFORM Convert PhasorArray to Angle-Amplitude form.
         %
-        %   r = ANGLEAMPFORM(o1) converts the PhasorArray `o1` into
+        %   r = ANGLEAMPFORM(pA1) converts the PhasorArray `pA1` into
         %   the **Angle-Amplitude representation**, ensuring:
         %       - **Negative harmonics (`-k`) store phase angles (left side).**
         %       - **Positive harmonics (`+k`) store amplitudes (right side).**
         %       - The order `k` and `-k` remain **symmetric** around the DC component.
         %
-        %   This format assumes `o1` represents a **real-valued** periodic matrix.
+        %   This format assumes `pA1` represents a **real-valued** periodic matrix.
         %
         %   Input:
-        %       o1 - (PhasorArray) The input PhasorArray object.
+        %       pA1 - (PhasorArray) The input PhasorArray object.
         %
         %   Output:
         %       r - (array) The Angle-Amplitude form representation:
@@ -3663,56 +3663,56 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %           - Order `+k` maps to `(:,:,h+k+1)` (amplitude).
         %
         %   Example:
-        %       r = AngleAmpForm(o1);
+        %       r = AngleAmpForm(pA1);
         %
         %   See also: SinCosForm, ImagRealForm
-        h=o1.h;
-        r=cat(3,angle(flip(o1.phas(1:h))),real(o1.phas(0)),abs(o1.phas(1:h)));
+        h=pA1.h;
+        r=cat(3,angle(flip(pA1.phas(1:h))),real(pA1.phas(0)),abs(pA1.phas(1:h)));
     end
-    function r = CosSinForm(o1)
+    function r = CosSinForm(pA1)
         % COSSINFORM Convert PhasorArray to Cosine-Sine form.
         %
-        %   r = COSSINFORM(o1) converts the PhasorArray `o1` into
+        %   r = COSSINFORM(pA1) converts the PhasorArray `pA1` into
         %   the **Cosine-Sine representation**, ensuring:
         %       - **Negative harmonics (`-k`) store cosine coefficients (left side).**
         %       - **Positive harmonics (`+k`) store sine coefficients (right side).**
         %
         %   Input:
-        %       o1 - (PhasorArray) The input PhasorArray object.
+        %       pA1 - (PhasorArray) The input PhasorArray object.
         %
         %   Output:
         %       r - (array) The Cosine-Sine form representation.
         %
         %   Example:
-        %       r = CosSinForm(o1);
+        %       r = CosSinForm(pA1);
         %
         %   See also: SinCosForm, ImagRealForm
-        r = flip(SinCosForm(o1),3);
+        r = flip(SinCosForm(pA1),3);
     end
 
-    function r = squeeval(o1)% SQUEEVAL Evaluate and squeeze PhasorArray.
+    function r = squeeval(pA1)% SQUEEVAL Evaluate and squeeze PhasorArray.
         %
-        %   r = SQUEEVAL(o1) evaluates the PhasorArray `o1` and applies `squeeze`
-        %   to remove singleton dimensions. This is useful for cases where `o1`
+        %   r = SQUEEVAL(pA1) evaluates the PhasorArray `pA1` and applies `squeeze`
+        %   to remove singleton dimensions. This is useful for cases where `pA1`
         %   represents a scalar-valued PhasorArray.
         %
         %   Input:
-        %       o1 - (PhasorArray) The input PhasorArray object.
+        %       pA1 - (PhasorArray) The input PhasorArray object.
         %
         %   Output:
-        %       r - (array) The squeezed numerical evaluation of `o1.value`.
+        %       r - (array) The squeezed numerical evaluation of `pA1.value`.
         %
         %   Example:
-        %       r = squeeval(o1);
+        %       r = squeeval(pA1);
         %
         %   See also: value, squeeze
-        r=squeeze(value(o1));
+        r=squeeze(value(pA1));
     end
 
-    function r = expandBase(o1,m)
+    function r = expandBase(pA1,m)
         % EXPANDBASE Insert zeroed phasors to change the frequency base.
         %
-        %   r = EXPANDBASE(o1, m) modifies the PhasorArray `o1` by inserting `m-1`
+        %   r = EXPANDBASE(pA1, m) modifies the PhasorArray `pA1` by inserting `m-1`
         %   zero-valued phasors between each existing phasor, effectively changing
         %   the frequency base from `w0` to `w1 = w0 / m`.
         %
@@ -3720,7 +3720,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %   resolution, suitable for frequency resampling or down-sampling applications.
         %
         %   Input:
-        %       o1 - (PhasorArray) The input PhasorArray.
+        %       pA1 - (PhasorArray) The input PhasorArray.
         %       m  - (integer) The expansion factor (must be ≥ 1).
         %
         %   Output:
@@ -3736,19 +3736,19 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %       A_new = expandBase(A, 3); % Adjusts A for frequency w0/3
         %
         %   See also: squishBase, pad
-        h = o1.h;
-        nx = size(o1,1);
-        ny = size(o1,2);
+        h = pA1.h;
+        nx = size(pA1,1);
+        ny = size(pA1,2);
 
         r = zeros(nx,ny,2*m*h+1);
-        r(:,:,1:m:end) = o1.value;
+        r(:,:,1:m:end) = pA1.value;
         r = PhasorArray(r);
     end
 
-    function [r, normDeleted,normbase] = squishBase(o1,m)
+    function [r, normDeleted,normbase] = squishBase(pA1,m)
         % SQUISHBASE Remove phasors to change the frequency base.
         %
-        %   r = SQUISHBASE(o1, m) modifies the PhasorArray `o1` by retaining only
+        %   r = SQUISHBASE(pA1, m) modifies the PhasorArray `pA1` by retaining only
         %   every `m`-th phasor, effectively changing the frequency base from `w0`
         %   to `w1 = w0 * m`.
         %
@@ -3756,7 +3756,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %   the fundamental frequency but potentially losing information in the process.
         %
         %   Input:
-        %       o1 - (PhasorArray) The input PhasorArray.
+        %       pA1 - (PhasorArray) The input PhasorArray.
         %       m  - (integer) The reduction factor (must be ≥ 1).
         %
         %   Output:
@@ -3764,7 +3764,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %
         %   Behavior:
         %       - Only harmonics at indices `k*m` are retained, while others are discarded.
-        %       - If `o1.h` is not a multiple of `m`, it is first padded with zeros.
+        %       - If `pA1.h` is not a multiple of `m`, it is first padded with zeros.
         %       - A warning is issued if nonzero harmonics are removed, as this can
         %         lead to information loss and an inaccurate representation.
         %
@@ -3772,21 +3772,21 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %       A_new = squishBase(A, 3); % Adjusts A for frequency w0 * 3
         %
         %   See also: expandBase, pad
-        h = o1.h;
-        nx = size(o1,1);
-        ny = size(o1,2);
-        %ensure o1.h is a multiple of m, otherwise pad o1 with zeros
+        h = pA1.h;
+        nx = size(pA1,1);
+        ny = size(pA1,2);
+        %ensure pA1.h is a multiple of m, otherwise pad pA1 with zeros
         if mod(h,m)~=0
-            o1 = pad(o1,m-mod(h,m));
-            h = o1.h;
+            pA1 = pad(pA1,m-mod(h,m));
+            h = pA1.h;
         end
-        normbase = norm(o1(:),'fro');
-        r = o1(:,:,1:m:end);
+        normbase = norm(pA1(:),'fro');
+        r = pA1(:,:,1:m:end);
 
         r = PhasorArray(r);
 
         %evaluate the norm of deleted phasors in original phasorArray
-        deleted = o1(:,:,setdiff(1:(2*h+1),1:m:(2*h+1)));
+        deleted = pA1(:,:,setdiff(1:(2*h+1),1:m:(2*h+1)));
         normDeleted = norm(deleted(:),'fro');
         if normDeleted/normbase > 1e-4
             warning('PhasorArray:squishBase:truncationLoss', 'Deleted phasors have a Frobenius norm of %e (%.5f pct of total norm). The result may not accurately represent the original signal.', normDeleted, normDeleted/normbase*100)
@@ -4051,15 +4051,15 @@ methods (Access=public)
         [varargout{1:nargout}] = size(obj.Phasor3D,varargin{:});
     end
 
-    function r = sdpval(o1)
+    function r = sdpval(pA1)
         %SDPVAL Extract the numerical value of a PhasorArray whose value is an SDPVAR.
         %
-        %    r = sdpval(o1) extract the numerical value of o1 a phasorArray with NDSDPVAR 3DArray.
-        %    Basically perform PhasorArray(value(value(o1)))
-        if  isspecial(o1)
-            o1=o1.value;
+        %    r = sdpval(pA1) extract the numerical value of pA1 a phasorArray with NDSDPVAR 3DArray.
+        %    Basically perform PhasorArray(value(value(pA1)))
+        if  isspecial(pA1)
+            pA1=pA1.value;
         end
-        r=PhasorArray(value(o1));
+        r=PhasorArray(value(pA1));
     end
 
     [K,P,res] = place(A,B,poles,nvp) ;
@@ -4618,7 +4618,7 @@ end
 end
 
 %% =========================================================================
-function [r, R] = projectionMatch(o1, projFcn, symSign, tol, label)
+function [r, R] = projectionMatch(pA1, projFcn, symSign, tol, label)
 %PROJECTIONMATCH  Shared body of isreal (symSign=+1) and isimag (symSign=-1).
 %
 %   FLOAT FAST PATH. The question is a symmetry of the harmonic coefficients:
@@ -4627,8 +4627,8 @@ function [r, R] = projectionMatch(o1, projFcn, symSign, tol, label)
 %   Fast path avoids building mreal/mimag. The tolerance is RELATIVE.
 %   sym/sdpvar keep the projection route: they cannot go through max/abs.
 
-if ~isspecial(o1)
-    v     = o1.value;
+if ~isspecial(pA1)
+    v     = pA1.value;
     scale = max(abs(v), [], 'all');
     if isempty(scale) || scale == 0
         R = true(size(v));  r = true;  return
@@ -4641,7 +4641,7 @@ end
 
 undetermined = false;
 try
-    o1_p = projFcn(o1);
+    o1_p = projFcn(pA1);
 catch
     undetermined = true;   % projection itself failed (was an unguarded throw)
 end
@@ -4650,8 +4650,8 @@ end
 if ~undetermined
     if isempty(tol), tol = eps; end
     try
-        r1 = abs(real(o1.value) - real(o1_p.value)) < tol;
-        r2 = abs(imag(o1.value) - imag(o1_p.value)) < tol;
+        r1 = abs(real(pA1.value) - real(o1_p.value)) < tol;
+        r2 = abs(imag(pA1.value) - imag(o1_p.value)) < tol;
     catch
         undetermined = true;
     end
@@ -4677,13 +4677,13 @@ end
 if undetermined
     warning(['PhasorArray:' label ':undetermined'], ...
         ['%s could not be evaluated for a %s-backed PhasorArray; returning false. ', ...
-         'This means "cannot determine", not "no".'], label, class(o1.value));
-    R = false(size(o1.value));
+         'This means "cannot determine", not "no".'], label, class(pA1.value));
+    R = false(size(pA1.value));
     r = 0;
     return
 end
 
-R = zeros(size(o1.value), 'logical');
+R = zeros(size(pA1.value), 'logical');
 R((r1 + r2) == 2) = true;
 r = all(R, 'all');
 end
@@ -4718,7 +4718,7 @@ m = reshape(cos(xi(:) * t) * phi(:) / Z, size(xi));
 end
 
 %% =========================================================================
-function [r, frac, crenel, Cph] = compareInTime(o1, o2, op)
+function [r, frac, crenel, Cph] = compareInTime(pA1, pA2, op)
 %COMPAREINTIME  Order two periodic matrices pointwise in time.
 %   r(i,j) holds at every sampled t; frac(i,j) is the fraction of the period
 %   over which it holds, so r == (frac == 1). crenel is the indicator,
@@ -4742,7 +4742,7 @@ function [r, frac, crenel, Cph] = compareInTime(o1, o2, op)
 %   the grid is oversampled well past that to make a near-boundary case
 %   unlikely rather than impossible. Use a strict margin if the distinction
 %   matters, or evaluate with evalp on your own grid.
-D = o1 - o2;
+D = pA1 - pA2;
 if ~isreal(D)
     error('PhasorArray:compare:complexOrder', ...
         ['Ordering requires A(t)-B(t) to be real; this difference is complex. ' ...

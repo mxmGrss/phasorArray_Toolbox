@@ -1349,12 +1349,12 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             end
         end
 
-        function [Hsel,H, ssTB] = HmqBode(o1, h, T, h_compute, nvp)
+        function [Hsel,H, ssTB] = HmqBode(pA1, h, T, h_compute, nvp)
             %HMQBODE Compute the Bode plot of the PhasorSS object in the harmonic domain
-            %   [mag, phase, freq, ssTB] = HMQBODE(o1, h, T, h_compute) computes the Bode plot of the PhasorSS object in the harmonic domain.
+            %   [mag, phase, freq, ssTB] = HMQBODE(pA1, h, T, h_compute) computes the Bode plot of the PhasorSS object in the harmonic domain.
             %
             %   Inputs:
-            %       o1 - Instance of the PhasorSS class
+            %       pA1 - Instance of the PhasorSS class
             %       h - Number of harmonics to consider (truncation) (integer)
             %       T - Period of the system (default is 1) to perform evaluation in the harmonic domain
             %       h_compute - Number of harmonics to compute the Toeplitz Matrix (default is h)
@@ -1373,12 +1373,12 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             %       ssTB - Toeplitz Matrix State-Space object
             %
             %   Example:
-            %       [mag, phase, freq, ssTB] = HmqBode(o1, 5, 1, 10, 'freqRange', logspace(-1, 2, 50));
+            %       [mag, phase, freq, ssTB] = HmqBode(pA1, 5, 1, 10, 'freqRange', logspace(-1, 2, 50));
             %
             %   See also: HMQDCGAIN, BODE
         
             arguments
-                o1
+                pA1
                 h
                 T = 2*pi
                 h_compute = h
@@ -1388,11 +1388,11 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             end
         
             %format input and output range
-            outputHmRange = formatInputRange(o1, nvp.outputHmRange, 'output');
-            inputHmRange = formatInputRange(o1, nvp.inputHmRange, 'input');
+            outputHmRange = formatInputRange(pA1, nvp.outputHmRange, 'output');
+            inputHmRange = formatInputRange(pA1, nvp.inputHmRange, 'input');
 
             % Compute the Toeplitz Matrix State-Space object
-            ssTB = o1.toeplitzSS(h_compute,T);
+            ssTB = pA1.toeplitzSS(h_compute,T);
 
             [outputHmRange,outIdx] = formatIndices(outputHmRange, size(ssTB.C, 1),h_compute);
             [inputHmRange,inIdx] = formatIndices(inputHmRange, size(ssTB.B, 2),h_compute);
@@ -1423,12 +1423,12 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             end
         end
         
-        function [dcGain,ssTB] = hmqDcGain(o1,h,T,h_compute,nvp)
+        function [dcGain,ssTB] = hmqDcGain(pA1,h,T,h_compute,nvp)
             %HMQDCGAIN Compute or plot the DC gain of the PhasorSS object in the harmonic domaine
-            %   [dcGain,ssTB] = HMQDCGAIN(o1,h,T) computes the DC gain of the PhasorSS object in the harmonic domaine.
-            %   HMQDCGAIN(o1,h,T) plot the DC gain of the PhasorSS object using barsurf.
+            %   [dcGain,ssTB] = HMQDCGAIN(pA1,h,T) computes the DC gain of the PhasorSS object in the harmonic domaine.
+            %   HMQDCGAIN(pA1,h,T) plot the DC gain of the PhasorSS object using barsurf.
             %   Inputs:
-            %       o1 - Instance of the PhasorSS class
+            %       pA1 - Instance of the PhasorSS class
             %       h - Number of harmonics to consider (truncation) (integer)
             %       T - Period of the system (default is 1) to perform evaluation in the harmonic domain
             %       h_compute - Number of harmonics to compute the Toeplitz Matrix (default is h)
@@ -1451,20 +1451,20 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             %       The same for inputHmRange (default {':',-h:h})            %
             %
             %   Example:
-            %       [dcGain,ssTB] = hmqDcGain(o1,h,T);
+            %       [dcGain,ssTB] = hmqDcGain(pA1,h,T);
             %       Compute the DC gain of the PhasorSS object in the harmonic domaine
             %
             %   See also: TOEPLITZSS
             arguments
-                o1
+                pA1
                 h (1,1) double
                 T double
                 h_compute = []
                 nvp.inputHmRange = {':',-h:h};
                 nvp.outputHmRange = {':',-h:h};
             end
-            outputHmRange = formatInputRange(o1, nvp.outputHmRange,'output');
-            inputHmRange  = formatInputRange(o1, nvp.inputHmRange,'input');
+            outputHmRange = formatInputRange(pA1, nvp.outputHmRange,'output');
+            inputHmRange  = formatInputRange(pA1, nvp.inputHmRange,'input');
             if isempty(h_compute)
                 h_compute = h;
             end 
@@ -1472,7 +1472,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             assert(isscalar(T), 'T must be a scalar')
 
             %compute Toeplitz Matrix of the system
-            ssTB1 = o1.toeplitzSS(h_compute,T);
+            ssTB1 = pA1.toeplitzSS(h_compute,T);
             %compute the DC gain of the system
             dcGain1 = dcgain(ssTB1);
             [reducedDCGain,outputLabels,inputLabels] = extractBlocksAndLabels(dcGain1,outputHmRange,inputHmRange,h_compute,ssTB1.OutputName,ssTB1.InputName);
@@ -1484,15 +1484,15 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 ssTB = ssTB1;
             end
         end
-        function formattedRange = formatInputRange(o1, inputRange,InOrOut)
+        function formattedRange = formatInputRange(pA1, inputRange,InOrOut)
             %FORMATINPUTRANGE Format the input range for inputHmRange
-            %   formattedRange = FORMATINPUTRANGE(o1, inputRange) formats the input range for inputHmRange.
-            %   If the input is a string, it matches it with an input name of o1 and replaces it with the index.
+            %   formattedRange = FORMATINPUTRANGE(pA1, inputRange) formats the input range for inputHmRange.
+            %   If the input is a string, it matches it with an input name of pA1 and replaces it with the index.
             %   If the input is already an integer, a vector, a double, or ':', it leaves it as it is.
             %   If the input is a cell containing strings, it matches every string with an index and replaces the cell with the list of indices.
             %
             %   Inputs:
-            %       o1 - Instance of the PhasorSS class
+            %       pA1 - Instance of the PhasorSS class
             %       inputRange - Input range to format
             %
             %   Outputs:
@@ -1500,9 +1500,9 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
 
             formattedRange = inputRange;
             if strcmp(InOrOut,'output')
-                inputNames = o1.OutputName;
+                inputNames = pA1.OutputName;
             else
-                inputNames = o1.InputName;
+                inputNames = pA1.InputName;
             end
 
             formattedRange = cell(1, length(inputRange));
@@ -1529,12 +1529,12 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
         end
 
 
-        function toeplitzSS = toeplitzSS(o1,h,T)
+        function toeplitzSS = toeplitzSS(pA1,h,T)
             %TOEPLITZSS Compute the Toeplitz Matrix State-Space object of the PhasorSS object
-            %   toeplitzSS = TOEPLITZSS(o1,h,T) computes the Toeplitz Matrix State-Space object of the PhasorSS object.
+            %   toeplitzSS = TOEPLITZSS(pA1,h,T) computes the Toeplitz Matrix State-Space object of the PhasorSS object.
             %
             %   Inputs:
-            %       o1 - Instance of the PhasorSS class
+            %       pA1 - Instance of the PhasorSS class
             %       h - Number of harmonics to consider (truncation) (integer)
             %       T - Period of the system (default is 1) to perform evaluation in the harmonic domain
             %
@@ -1544,20 +1544,20 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             %   Example:
             %       h = 5;
             %       T = 0.1;
-            %       toeplitzSS = toeplitzSS(o1,h,T);
+            %       toeplitzSS = toeplitzSS(pA1,h,T);
             %       Compute the Toeplitz Matrix State-Space object of the PhasorSS object
             %
             %   See also: HMQDCGAIN, LTVSS, LPVSS
             arguments
-            o1
-            h (1,1) double = max([o1.A.h,o1.B.h,o1.C.h,o1.D.h]);
+            pA1
+            h (1,1) double = max([pA1.A.h,pA1.B.h,pA1.C.h,pA1.D.h]);
             T  = []
             end
                 %compute Toeplitz Matrix of the system
-                A = o1.A;
-                B = o1.B;
-                C = o1.C;
-                D = o1.D;
+                A = pA1.A;
+                B = pA1.B;
+                C = pA1.C;
+                D = pA1.D;
 
                 ATB = A.T_tb(h);
                 CTB = C.T_tb(h);
@@ -1565,24 +1565,24 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 BTB = B.T_tb(h);
 
                 numH = 2*h + 1;
-                hmqStateName = cell(1, numel(o1.StateName) * numH);
-                hmqInputName = cell(1, numel(o1.InputName) * numH);
-                hmqOutputName = cell(1, numel(o1.OutputName) * numH);
+                hmqStateName = cell(1, numel(pA1.StateName) * numH);
+                hmqInputName = cell(1, numel(pA1.InputName) * numH);
+                hmqOutputName = cell(1, numel(pA1.OutputName) * numH);
 
 
                 h_vec = -h:h;
-                for ii = 1:numel(o1.StateName)
-                    temp = "〈" + o1.StateName{ii} + "〉_{" + string(h_vec) + "}";
+                for ii = 1:numel(pA1.StateName)
+                    temp = "〈" + pA1.StateName{ii} + "〉_{" + string(h_vec) + "}";
                     hmqStateName((ii-1)*numH + (1:numH)) = cellstr(temp);
                 end
 
-                for ii = 1:numel(o1.InputName)
-                    temp = "〈" + o1.InputName{ii} + "〉_{" + string(h_vec) + "}";
+                for ii = 1:numel(pA1.InputName)
+                    temp = "〈" + pA1.InputName{ii} + "〉_{" + string(h_vec) + "}";
                     hmqInputName((ii-1)*numH + (1:numH)) = cellstr(temp);
                 end
 
-                for ii = 1:numel(o1.OutputName)
-                    temp = "〈" + o1.OutputName{ii} + "〉_{" + string(h_vec) + "}";
+                for ii = 1:numel(pA1.OutputName)
+                    temp = "〈" + pA1.OutputName{ii} + "〉_{" + string(h_vec) + "}";
                     hmqOutputName((ii-1)*numH + (1:numH)) = cellstr(temp);
                 end
 
