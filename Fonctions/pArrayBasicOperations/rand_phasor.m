@@ -11,8 +11,17 @@ function [A] = rand_phasor(nx,ny,h,nvp)
     %
     %   Name-Value Arguments:
     %     'symmetry' (string array) - Symmetry class of the result (default: "real").
-    %                               Any combination of the 14 names listed in
-    %                               PHASORSYMMETRY. Pass [] for a full complex array.
+    %                               Pass [] for a full complex array. The 14 names,
+    %                               in signed pairs, are:
+    %                                 symmetric      skewSymmetric
+    %                                 real           imaginary
+    %                                 even           odd
+    %                                 hermitian      skewHermitian
+    %                                 paraSymmetric  skewParaSymmetric
+    %                                 paraConjugate  skewParaConjugate
+    %                                 paraHermitian  skewParaHermitian
+    %                               PHASORSYMMETRY states what each one means and
+    %                               which combinations are reachable.
     %     'T' (scalar)            - Period of the system (default: 2*pi).
     %     'output' (char)         - Output format: 'NDarray' (default) or 'PhasorArray'.
     %     'average_power_decay'   - Decay rate of harmonic amplitudes (default: 2).
@@ -27,6 +36,13 @@ function [A] = rand_phasor(nx,ny,h,nvp)
     %     - 'symmetry' constrains structure, never the spectrum. For prescribed
     %       Floquet exponents use PhasorArray.randomWithNPole; for positive
     %       definiteness use PhasorArray.randomSPD.
+    %     - A sparsity pattern is not a symmetry and has no name here. Mask the
+    %       coefficients instead; the 2-D mask broadcasts over the harmonics, and
+    %       zeroing entries preserves realness:
+    %           A = PhasorArray.random(3, 3, 5);
+    %           U = PhasorArray(A.value .* triu(ones(3)));   % A(t) upper triangular
+    %       For an ndsdpvar the mask has to match all three dimensions:
+    %           M = repmat(triu(ones(3)), 1, 1, 2*h+1);
     %
     %   Example
     %       A = rand_phasor(3, 3, 5, "symmetry", ["real" "symmetric"]);

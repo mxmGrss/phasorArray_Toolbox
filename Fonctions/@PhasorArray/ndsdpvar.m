@@ -15,9 +15,17 @@ function [P, held] = ndsdpvar(n1,n2,h,nvp)
     %   reports what survived.
     %
     %   Name-Value Arguments:
-    %     'symmetry' (string array) - Symmetry class of P(t), same vocabulary as
-    %                           PHASORSYMMETRY (default: ["real" "symmetric"], the
-    %                           Lyapunov variable). Pass [] for a full complex P.
+    %     'symmetry' (string array) - Symmetry class of P(t) (default:
+    %                           ["real" "symmetric"], the Lyapunov variable).
+    %                           Pass [] for a full complex P. The 14 names are:
+    %                             symmetric      skewSymmetric
+    %                             real           imaginary
+    %                             even           odd
+    %                             hermitian      skewHermitian
+    %                             paraSymmetric  skewParaSymmetric
+    %                             paraConjugate  skewParaConjugate
+    %                             paraHermitian  skewParaHermitian
+    %                           PHASORSYMMETRY states what each one means.
     %
     %   Outputs:
     %     P    - (PhasorArray) PhasorArray containing `sdpvar` elements.
