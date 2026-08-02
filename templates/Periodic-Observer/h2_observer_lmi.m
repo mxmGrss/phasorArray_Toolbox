@@ -24,7 +24,7 @@ hP = 6;  h = 6;
 
 %% 1. Decision variables 
 % Find P(t) minimizing trace(P) subject to Riccati inequality
-P  = PhasorArray.ndsdpvar(nx, nx, hP, 'PhasorType', 'symmetric', 'real', true);
+P  = PhasorArray.ndsdpvar(nx, nx, hP);
 
 PT = P.T_tb(h);
 N  = N_tb(nx, h, T);
@@ -69,7 +69,8 @@ if sol.problem == 0
     L  = (PP * C.') / V;
     L = L.reduce('reduceMethod', 'relative', 'reduceThreshold', 1e-4);
 
-    fprintf('Observer variance (Trace P): %.6f\n', value(obj));
+    % obj is -trace(P_0) because the solver minimises; report the trace itself.
+    fprintf('Observer covariance (trace P_0): %.6f\n', -value(obj));
     figure('Name','h2_observer_lmi — Observer gain'); stem(L); sgtitle('Observer gain L(\theta)');
     figure('Name','h2_observer_lmi — Observer eigenvalues'); plot(HmqNEig(A - L*C, h, T), 'o'); title('H₂-optimal observer eig');
     figure('Name','h2_observer_lmi — Error dynamics'); lsim(A - L*C, 4, [], T); title('Observer error dynamics');

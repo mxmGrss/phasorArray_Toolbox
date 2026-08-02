@@ -23,7 +23,7 @@ Dw = PhasorArray(eye(nx));          % disturbance input
 hP = 10;  hlmi = 10;
 
 %% 1. Decision variables
-Y = PhasorArray.ndsdpvar(nu, nx, hP, 'PhasorType', 'full');
+Y = PhasorArray.ndsdpvar(nu, nx, hP, "symmetry","real");
 P = PhasorArray.ndsdpvar(nx, nx, hP);
 X = PhasorArray.ndsdpvar(nu, nu, hP);
 

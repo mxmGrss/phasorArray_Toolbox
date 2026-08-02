@@ -25,9 +25,9 @@ hP  = 10;
 h   = 10;
 
 % Q is the information matrix (inverse error covariance, symmetric, nx x nx)
-Q_var = PhasorArray.ndsdpvar(nx, nx, hP, 'PhasorType', 'symmetric', 'real', true);
+Q_var = PhasorArray.ndsdpvar(nx, nx, hP);
 % Z = Q L — note: Z is nx × ny because L is nx × ny
-Z     = PhasorArray.ndsdpvar(nx, ny, hP, 'PhasorType', 'full', 'real', true);
+Z     = PhasorArray.ndsdpvar(nx, ny, hP, "symmetry","real");
 
 QT = Q_var.T_tb(h);
 N  = N_tb(A, h, T);

@@ -25,7 +25,7 @@ Bw = PhasorArray(eye(nx));
 hP = 10;  hlmi = 10;
 
 %% 1. Decision variables
-Y = PhasorArray.ndsdpvar(nu, nx, hP, 'PhasorType', 'full');
+Y = PhasorArray.ndsdpvar(nu, nx, hP, "symmetry","real");
 P = PhasorArray.ndsdpvar(nx, nx, hP);
 W = PhasorArray.ndsdpvar(ny, ny, hP);
 

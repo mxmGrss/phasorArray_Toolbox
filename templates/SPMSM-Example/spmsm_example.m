@@ -83,7 +83,7 @@ Dw = PhasorArray(eye(nx_aug));                      % disturbance input matrix
 hP   = 10;    % Lyapunov harmonic order
 hlmi = 10;    % LMI truncation order
 
-Y = PhasorArray.ndsdpvar(nu, nx_aug, hP, 'PhasorType', 'full');
+Y = PhasorArray.ndsdpvar(nu, nx_aug, hP, "symmetry","real");
 P = PhasorArray.ndsdpvar(nx_aug, nx_aug, hP);
 X = PhasorArray.ndsdpvar(nu, nu, hP);
 sdpvar gam;

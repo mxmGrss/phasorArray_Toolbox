@@ -23,8 +23,8 @@ Rl = PhasorArray(diag( 1*ones(nu,1)));   % control weight
 hP  = 10;           % harmonic order of the Lyapunov variable
 h   = 10;           % LMI truncation order
 
-Q_var = PhasorArray.ndsdpvar(nx, nx, hP, 'PhasorType', 'symmetric', 'real', true);
-Y     = PhasorArray.ndsdpvar(nu, nx, hP, 'PhasorType', 'full', 'real', true);
+Q_var = PhasorArray.ndsdpvar(nx, nx, hP);
+Y     = PhasorArray.ndsdpvar(nu, nx, hP, "symmetry","real");
 
 QT = Q_var.T_tb(h);
 N  = N_tb(A, h, T);

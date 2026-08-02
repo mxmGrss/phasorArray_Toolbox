@@ -22,9 +22,9 @@ Dz = PhasorArray.random(nz, nu, ha);
 hP = 6;  h = 6;
 
 %% 1. Decision variables
-Q = PhasorArray.ndsdpvar(nx, nx, hP, 'PhasorType', 'symmetric', 'real', true);
-Y = PhasorArray.ndsdpvar(nu, nx, hP, 'PhasorType', 'full', 'real', true);
-Z = PhasorArray.ndsdpvar(nz, nz, hP, 'PhasorType', 'symmetric', 'real', true);
+Q = PhasorArray.ndsdpvar(nx, nx, hP);
+Y = PhasorArray.ndsdpvar(nu, nx, hP, "symmetry","real");
+Z = PhasorArray.ndsdpvar(nz, nz, hP);
 
 QT = Q.T_tb(h);
 YT = Y.T_tb(h);

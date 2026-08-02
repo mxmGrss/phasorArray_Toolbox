@@ -25,11 +25,11 @@ V = PhasorArray(eye(ny));          % measurement noise covariance
 %  R_dual = V    (measurement noise = "control weight" in dual)
 L0 = PhasorArray(zeros(ny, nx));   % initial dual gain (ny × nx)
 
-[L_dual, Sigma, info_ric] = RicHarmonicKlein(A.', C.', W, V, L0, T, ...
-    'maxIter', 100, 'thresholdResidual', 1e-3, 'autoUpdateh', true);
+[L_dual, Sigma, info_ric] = hare(A.', C.', W, V, "K0", L0, "T", T, ...
+    "maxIter", 100, "thresholdResidual", 1e-3, "autoUpdateh", true);
 
 %% 2. Observer gain: L = Σ C' V⁻¹
-%  Note: RicHarmonicKlein returns K = R⁻¹B'S in the control sense
+%  Note: hare returns K = R⁻¹B'S in the control sense
 %        which corresponds to L' = V⁻¹ C Σ in the observer sense.
 %  So L = L_dual' if viewing through duality.
 L = L_dual.';

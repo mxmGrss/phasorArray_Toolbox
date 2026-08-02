@@ -19,7 +19,7 @@ R_ric = PhasorArray(eye(nu));
 N_ric = PhasorArray(zeros(nu, nx));     % cross-term (often zero)
 
 %% 1. Decision variable
-P  = PhasorArray.ndsdpvar(nx, nx, hP, 'PhasorType', 'symmetric', 'real', true);
+P  = PhasorArray.ndsdpvar(nx, nx, hP);
 PT = P.T_tb(h);
 N  = N_tb(nx, h, T);
 

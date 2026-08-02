@@ -20,8 +20,8 @@ R = PhasorArray(eye(nu));        % control weight
 K0 = [];                         % [] → DC LQR fallback (required when A is open-loop unstable)
 
 %% 1. Solve — automatic harmonic truncation growth
-[K, S, info_ric] = RicHarmonicKlein(A, B, Q, R, K0, T, ...
-    'maxIter', 100, 'thresholdResidual', 1e-5, 'autoUpdateh', true,verbose=2,warmStartFraction=0.7);
+[K, S, info_ric] = hare(A, B, Q, R, "K0", K0, "T", T, ...
+    "maxIter", 100, "thresholdResidual", 1e-5, "autoUpdateh", true, "verbose", 2);
 
 %% 2. Inspect result
 fprintf('Final truncation order: h = %d\n', info_ric.h);

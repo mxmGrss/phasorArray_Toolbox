@@ -22,7 +22,7 @@ Dz = PhasorArray.random(nz, nw, ha);
 hP = 6;  h = 6;
 
 %% 1. Decision variables
-P   = PhasorArray.ndsdpvar(nx, nx, hP, 'PhasorType', 'symmetric', 'real', true);
+P   = PhasorArray.ndsdpvar(nx, nx, hP);
 gam = sdpvar(1, 1);
 
 PT = P.T_tb(h);

@@ -163,7 +163,7 @@ Q = PhasorArray(blkdiag(eye(3), alpha));
 %% 4c. Solve harmonic Lyapunov equation
 h_solve = 10;              % truncation order for solving
 
-P = PhasorArray(LyapHarmonic(A_err, Q, h_solve, T));
+P = lyap(A_err, Q, "h", h_solve, "T", T);
 
 % Inspect harmonic content of P
 
@@ -207,7 +207,7 @@ L_pa = PhasorArray(L_full);   % 7×7 PhasorArray (constant)
 
 O_pa = PhasorArray(zeros(nz));   % O = 0: no oscillator!
 
-M = PhasorArray(SylvHarmonic(O_pa, A_err, L_pa * Cout, h_solve, T));
+M = lyap(O_pa, A_err, L_pa * Cout, "h", h_solve, "T", T);
 
 % Inspect M
 figure('Name','acdc — Forwarding M harmonics'); stem(M);   sgtitle('Forwarding matrix M — harmonic content (O=0)');
