@@ -707,6 +707,13 @@ the reasoning is kept inline rather than in a separate decision record.
   does not expose; its name here is `enforce_real`, and it is forwarded to `hmq_sim` as
   `isRealValued`. Both corrected.
 
+- **The spectral-decay figure never showed decay.** `rand(1,1,h+1) .* exp(-0.3*(0:h))`
+  expands a row vector against dimension 2, giving a `1 x 16 x 16` array whose
+  first column carries no decay -- and that is the column the script read back.
+  Wrong since the figure was first generated. The regenerated figure falls over
+  five decades. Its `sgtitle` also landed on top of the title `pageEnergy` draws
+  itself, and is dropped.
+
 - **Two `pageEnergy` calls in `docs/generateWikiFigures.m` were positional** where the
   signature is name-value, so they raised `MATLAB:TooManyInputs`. They had never been
   reached: the script dies earlier on `exportgraphics(..., '.svg')`, which MATLAB only

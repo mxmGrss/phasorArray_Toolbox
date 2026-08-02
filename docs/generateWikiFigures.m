@@ -54,13 +54,18 @@ exportgraphics(figA, fullfile(assetDir, 'reconstruction_h_comparison.svg'), 'Bac
 fprintf('Generating Figure B: Spectral Decay — pageEnergy (SVG)...\n');
 rng(42); % Fix seed for reproducibility
 h_spec = 15;
-A_pos = (rand(1, 1, h_spec+1) + 1i*rand(1, 1, h_spec+1)) .* exp(-0.3*(0:h_spec));
+% The decay must run along the harmonic dimension. A row vector here expands
+% against dimension 2 instead, giving a 1x16x16 array whose first column --
+% the one read back below -- carries no decay at all: the figure has shown a
+% flat spectrum since it was first generated.
+A_pos = (rand(1, 1, h_spec+1) + 1i*rand(1, 1, h_spec+1)) .* exp(-0.3*reshape(0:h_spec, 1, 1, []));
 pA_spec = PhasorArray(A_pos(1,1,1), A_pos(1,1,2:end), 'isreal', true);
 
 figB = figure('Name', 'spectral_decay', 'Position', [100 100 600 400]);
 set(gcf, 'Color', 'none');
+% pageEnergy titles the axes itself; an sgtitle on a single-axes figure lands
+% on top of it.
 pageEnergy(pA_spec, 'normalized', true, 'plot', 'log');
-sgtitle('Normalised Energy per Harmonic (log scale)');
 exportgraphics(figB, fullfile(assetDir, 'spectral_decay.svg'), 'BackgroundColor', 'none', 'ContentType', 'vector');
 
 
