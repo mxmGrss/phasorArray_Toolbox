@@ -128,6 +128,7 @@ best = struct('sol', sol, 'resnorm', resnorm, 'resrelnorm', resrelnorm, ...
               'resPhasor', resPhasor, 'h', h);
 
 algebraic_hit_count = 0;
+algebraic_streak_h0 = Inf;      % h at which the current algebraic streak began
 
 if cfg.verbose
     fprintf('%s', cfg.preamble);
@@ -205,10 +206,19 @@ while status == -1 && h < maxh
             h      = min(h2 + deltah, maxh);
 
             % Algebraic early exit: the extrapolated target lies beyond maxh.
-            % Require two consecutive hits so a single noisy slope cannot abort.
+            % Two consecutive hits are not enough on their own. A geometric decay
+            % looks algebraic at first: on 1/(1+0.95cos) the slope between h=3 and
+            % h=5 reads -0.91, squarely inside the algebraic band, and predicts a
+            % target of 1e15 -- while the residual actually reaches 1e-15 at
+            % h=160. The loop has to climb far enough for the true regime to show
+            % (there the slope is -18.7, well outside the band), so the exit also
+            % waits for h to have quadrupled since the streak began.
             if strcmp(regime, 'algebraic') && h_alg > maxh
                 algebraic_hit_count = algebraic_hit_count + 1;
-                if algebraic_hit_count >= 2
+                if algebraic_hit_count == 1
+                    algebraic_streak_h0 = h2;
+                end
+                if algebraic_hit_count >= 2 && h2 >= 4 * algebraic_streak_h0
                     status    = 4;
                     statusMsg = sprintf( ...
                         'Algebraic convergence too slow (slope=%.2f). Target %s=%d unreachable (max%s=%d). Best: %s=%d, resrel=%.2e.', ...
@@ -221,6 +231,7 @@ while status == -1 && h < maxh
                 end
             else
                 algebraic_hit_count = 0;
+                algebraic_streak_h0 = Inf;
             end
         end
     end
