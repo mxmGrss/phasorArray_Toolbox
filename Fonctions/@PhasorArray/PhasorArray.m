@@ -4100,7 +4100,7 @@ methods (Access=public)
         r=PhasorArray(value(pA1));
     end
 
-    [K,P,res] = place(A,B,poles,nvp) ;
+    [K,P,res,info] = place(A,B,poles,nvp) ;
 
 
 end

@@ -510,6 +510,40 @@ classdef PhasorArraySolversTest < matlab.unittest.TestCase
             end
         end
 
+
+        function testPlaceRefinesTheOrderOnAStrongPerturbation(testCase)
+            % At the fixed hLyap = 4*A.h a strongly periodic system places its
+            % exponents to 5e-05 only, and says so through the Sylvester
+            % residual. Refinement is on by default so a caller who never
+            % thought about the order still gets the poles asked for.
+            A0 = [0 1; -2 -3];
+            A1 = [0.6 0.3; 0.2 0.5];
+            A  = PhasorArray(cat(3, conj(A1), A0, A1));
+            B  = PhasorArray([0; 1]);
+            mus = [-4; -5];
+            hv = 80;
+
+            placedError = @(K) max(arrayfun(@(m) ...
+                min(abs(eig(subsref(A - B*K, substruct('.','T_tb','()',{hv})) ...
+                             - N_tb(2, hv, 2*pi)) - m)), mus));
+
+            [Kfix, ~, ~, iFix] = place(A, B, mus, 'autoUpdateh', false);
+            [Kad,  ~, ~, iAd]  = place(A, B, mus);
+
+            testCase.verifyEqual(iFix.status, 3, 'fixed h should report status 3');
+            testCase.verifyEqual(iAd.status, 0, ...
+                sprintf('refinement did not converge: %s', iAd.statusMsg));
+            testCase.verifyGreaterThan(iAd.h, iFix.h, 'refinement should raise the order');
+
+            errFix = placedError(Kfix);
+            errAd  = placedError(Kad);
+            testCase.verifyLessThan(errAd, 1e-10, ...
+                sprintf('refined placement is off by %.2e', errAd));
+            testCase.verifyLessThan(errAd, errFix / 100, ...
+                'refinement should beat the fixed order by orders of magnitude');
+            testCase.verifyLessThan(iAd.resrelnorm, 1e-10, 'residual not converged');
+        end
+
     end
 
     methods (Test, TestTags = {'Install'})
