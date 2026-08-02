@@ -22,6 +22,10 @@ function [res, info] = lyap(pA1, pA2, pA3, nvp)
 %                         (default: 1e-6). Relative to the constant term:
 %                         norm(residual,'fro') / norm(Q,'fro'), never to the
 %                         solution, so a large P cannot flatter a bad answer.
+%                         It sets where you stop on the accuracy / order
+%                         curve, not accuracy alone; ADAPTIVEHSOLVE documents
+%                         what that costs, and info.resrel_history against
+%                         info.h_history is the curve for your own problem.
 %     autoUpdateh         Enable adaptive h-refinement loop (default: false)
 %     maxh                Hard upper bound on h during adaptive loop; [] = h0*20 (default: [])
 %     stagnationWindow    Look-back window for stagnation detection (default: 5)

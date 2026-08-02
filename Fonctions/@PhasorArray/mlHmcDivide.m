@@ -16,6 +16,10 @@ function [r, info] = mlHmcDivide(A, B, nvp)
 %     thresholdResidual   Convergence threshold on the relative residual
 %                         (default: 5e-4). Relative to the right-hand side:
 %                         norm(A*X-B,'fro') / norm(B,'fro'), never to X.
+%                         Tightening it raises the order of X: cheap when the
+%                         quotient is smooth, not when it is not. See
+%                         ADAPTIVEHSOLVE, and info.resrel_history for the
+%                         curve on your own problem.
 %     autoUpdateh         Enable adaptive hIn-refinement loop (default: false)
 %     maxh                Hard upper bound on hIn; [] = max(hIn*20, hIn+20) (default: [])
 %     stagnationWindow    Look-back window for stagnation detection (default: 15)

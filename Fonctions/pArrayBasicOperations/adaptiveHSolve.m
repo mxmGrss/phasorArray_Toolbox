@@ -44,7 +44,8 @@ function [best, trace] = adaptiveHSolve(solveAtH, h0, cfg)
 %                  .thresholdResidual  Target relative residual. The callback
 %                                      owns the normalisation; every solver
 %                                      here divides by the right-hand side,
-%                                      never by the solution.
+%                                      never by the solution. See the note on
+%                                      what it costs, below.
 %                  .maxh               Upper bound on h; [] = max(h0*20, h0+20).
 %                  .stagnationWindow   Look-back length for stagnation detection,
 %                                      which watches the residual and aborts.
@@ -72,6 +73,26 @@ function [best, trace] = adaptiveHSolve(solveAtH, h0, cfg)
 %
 %   Status 3 (fixed h) is never produced here — callers handle the fixed-h path
 %   themselves and do not enter this driver.
+%
+%   WHAT THE THRESHOLD COSTS
+%   It does not buy accuracy alone: it decides where to stop on the accuracy /
+%   order curve, and the order is the size of the answer. How much that costs
+%   depends entirely on how fast the solution's spectrum decays.
+%
+%   Geometric decay — a smooth periodic solution — is cheap. On a 2x2 Lyapunov
+%   problem, ten orders of residual cost a factor of three in h and nothing
+%   measurable in time:
+%
+%       threshold    5e-4   1e-6   1e-8   1e-10   1e-12   1e-14
+%       h (mild)        2      4      5       6       7       8
+%       h (stiff)       6     10     12      14      16      18
+%
+%   Slow decay is not. Dividing by 1 + 0.95*cos(t), whose reciprocal has a wide
+%   spectrum, the same tightening takes h from 5 to 99.
+%
+%   There is no need to guess which case you are in: one solve at a tight
+%   threshold returns the whole curve in trace.h_history against
+%   trace.resrel_history, and the operating point can be read off it.
 %
 %   EXAMPLES
 %     solve = @(hh) solveMyEquation(A, B, hh);
