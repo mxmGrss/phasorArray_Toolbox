@@ -1,4 +1,4 @@
-function obj = randomPhasorArrayWithPole(nx,poles,T,varg)
+function obj = randomPhasorArrayWithPole(nx,poles,T,nvp)
     % RANDOMPHASORARRAYWITHPOLE Generate a PhasorArray with prescribed poles.
     %
     %   OBJ = RANDOMPHASORARRAYWITHPOLE(NX, POLES, T, VARG) constructs a
@@ -25,49 +25,49 @@ function obj = randomPhasorArrayWithPole(nx,poles,T,varg)
         nx
         poles
         T  = 2*pi
-        varg.h = []
-        varg.BG = []
-        varg.isReal = true
-        varg.badPoleTol = 25/100; % Tolerance for the number of bad poles
-        varg.poleTol = 1e-2; % Tolerance for the pole values compared to the desired poles
+        nvp.h = []
+        nvp.BG = []
+        nvp.isReal = true
+        nvp.badPoleTol = 25/100; % Tolerance for the number of bad poles
+        nvp.poleTol = 1e-2; % Tolerance for the pole values compared to the desired poles
     end
-    if isempty(varg.h) && isempty(varg.BG)
-        varg.h=5;
-        A  = PhasorArray.random(nx,nx,varg.h);
-        BG = PhasorArray.random(nx,nx,varg.h);
-    elseif isempty(varg.BG)
-        A  = PhasorArray.random(nx,nx,varg.h);
-        BG = PhasorArray.random(nx,nx,varg.h);
-    elseif isempty(varg.h)
-        varg.h = varg.BG.h;
-        A  = PhasorArray.random(nx,nx,varg.h);
+    if isempty(nvp.h) && isempty(nvp.BG)
+        nvp.h=5;
+        A  = PhasorArray.random(nx,nx,nvp.h);
+        BG = PhasorArray.random(nx,nx,nvp.h);
+    elseif isempty(nvp.BG)
+        A  = PhasorArray.random(nx,nx,nvp.h);
+        BG = PhasorArray.random(nx,nx,nvp.h);
+    elseif isempty(nvp.h)
+        nvp.h = nvp.BG.h;
+        A  = PhasorArray.random(nx,nx,nvp.h);
     else
-        A  = PhasorArray.random(nx,nx,varg.h);
+        A  = PhasorArray.random(nx,nx,nvp.h);
     end
     assert(numel(poles)==nx)
     La = PhasorArray(diag(poles));
 
     %Solve the appropriate Sylvester equation
-    P = PhasorArray(SylvHarmonic(-A,La,BG,4*varg.h,2*pi/T));
+    P = PhasorArray(SylvHarmonic(-A,La,BG,4*nvp.h,2*pi/T));
     %Compute K
     K = BG/P;
     %compute the new A with appropriate eigen values
     obj = A-K;
 
     % Check if the generated PhasorArray has the desired poles
-    E = HmqNEig(trunc(obj,varg.h),4*varg.h,T);
+    E = HmqNEig(trunc(obj,nvp.h),4*nvp.h,T);
 
     % Check if the eigenvalues match the desired poles
-    matchedPoles = sum(any(abs(real(E) - poles) < varg.poleTol, 2));
+    matchedPoles = sum(any(abs(real(E) - poles) < nvp.poleTol, 2));
 
     prop = matchedPoles / numel(E);
-    if prop < 1 - varg.badPoleTol
+    if prop < 1 - nvp.badPoleTol
         warning('PhasorArray:randomWithPole:desiredPolesMissed', 'Generated PhasorArray does not match desired poles (%.1f%% match).', prop*100);
 
         %recall the function with the same parameters
-        %convert varg to cell
-        varg = namedargs2cell(varg);
-        obj = PhasorArray.randomPhasorArrayWithPole(nx,poles,T,varg{:});
+        %convert nvp to cell
+        nvp = namedargs2cell(nvp);
+        obj = PhasorArray.randomPhasorArrayWithPole(nx,poles,T,nvp{:});
     end
 end
 

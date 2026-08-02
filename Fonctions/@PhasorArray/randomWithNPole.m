@@ -1,4 +1,4 @@
-function [Aper, info] = randomWithNPole(J_or_V, h, opts)
+function [Aper, info] = randomWithNPole(J_or_V, h, nvp)
 % RANDOMWITHNPOLE  Generate a random periodic matrix with prescribed Floquet exponents.
 %
 %   Returns a PhasorArray representing a random nx×nx time-periodic matrix A(t)
@@ -7,7 +7,7 @@ function [Aper, info] = randomWithNPole(J_or_V, h, opts)
 %   Floquet exponents play the same role as eigenvalues for LTI systems:
 %   stability (Re < 0 → stable), oscillatory modes (Im part).
 %
-%   Two underlying constructions, three options (opts.Method):
+%   Two underlying constructions, three options (nvp.Method):
 %
 %   --- Construction 1 : triangular P  (Method = 'structured') ---------------
 %
@@ -90,9 +90,17 @@ function [Aper, info] = randomWithNPole(J_or_V, h, opts)
 %   amp       Rotation amplitude, 'generic'/'truncated' only (default 0.4).
 %             Larger amp → richer harmonic content, larger Bessel error.
 %   hRot      Harmonics in rotation angle, 'generic'/'truncated' only (default 4).
+%   T         Period the result is meant to be evaluated at (default 2*pi).
+%             Only 'generic'/'truncated' need it: their rotation angle is
+%             parameterised by the normalised angle, so its time derivative
+%             carries omega = 2*pi/T. Without the factor the exponents drift
+%             once evaluated elsewhere (-1 -> -1.0726 at T = 0.1).
+%             'structured' is period-independent: its mismatch term is
+%             strictly lower triangular and leaves the diagonal of J alone,
+%             so the exponents hold at any period.
 %
 % Output
-%   Aper : PhasorArray, nx×nx, omega = 1 (T = 2π)
+%   Aper : PhasorArray, nx×nx, exponents = eig(J) when evaluated at period T
 %   info : struct with the full chain of similarity-transform matrices:
 %          J -> Q -> P -> L -> (S) -> Aper
 %            .J    prescribed Jordan/diagonal form (nx×nx double)
@@ -143,16 +151,17 @@ function [Aper, info] = randomWithNPole(J_or_V, h, opts)
 arguments
     J_or_V  double
     h       (1,1) {mustBeInteger,mustBePositive}
-    opts.Method (1,1) string ...
-        {mustBeMember(opts.Method, ["structured","generic","truncated"])} = "structured"
-    opts.seed   = []
-    opts.amp    (1,1) double = 0.4
-    opts.hRot   (1,1) double = 4
-    opts.acAmp  (1,1) double = 0.3   % 'structured' only: Q harmonic amplitude (AC/DC ratio knob)
-    opts.Densify (1,1) logical = true   % conjugate by a random constant orthogonal S (exact)
+    nvp.Method (1,1) string ...
+        {mustBeMember(nvp.Method, ["structured","generic","truncated"])} = "structured"
+    nvp.seed   = []
+    nvp.amp    (1,1) double = 0.4
+    nvp.hRot   (1,1) double = 4
+    nvp.acAmp  (1,1) double = 0.3   % 'structured' only: Q harmonic amplitude (AC/DC ratio knob)
+    nvp.Densify (1,1) logical = true   % conjugate by a random constant orthogonal S (exact)
+    nvp.T      (1,1) double {mustBePositive} = 2*pi   % period the result is meant for
 end
 
-if ~isempty(opts.seed), rng(opts.seed); end
+if ~isempty(nvp.seed), rng(nvp.seed); end
 
 % --- Build J and infer nx
 if isvector(J_or_V)
@@ -173,22 +182,22 @@ if nx == 1
     % directly (exact exponent, exact bandwidth h). The matrix
     % constructions below require nx >= 2 (strictly triangular Q,
     % skew-symmetric rotation generator).
-    Xk   = (opts.acAmp * randn(h,1) ./ (1:h)') .* exp(2i*pi*rand(h,1)) / 2;
+    Xk   = (nvp.acAmp * randn(h,1) ./ (1:h)') .* exp(2i*pi*rand(h,1)) / 2;
     Aper = PhasorArray(reshape([conj(flip(Xk)); J; Xk], 1, 1, []));
     return
 end
-switch opts.Method
+switch nvp.Method
     case "structured"
-        [Aper, info.P, info.Pinv, info.Q] = buildStructured(nx, J, h, opts.acAmp);
+        [Aper, info.P, info.Pinv, info.Q] = buildStructured(nx, J, h, nvp.acAmp);
     case "generic"
-        Aper = buildGeneric(nx, J, h, opts.amp, opts.hRot);
+        Aper = buildGeneric(nx, J, h, nvp.amp, nvp.hRot, nvp.T);
     case "truncated"
-        Aper = buildGeneric(nx, J, h, opts.amp, opts.hRot);
+        Aper = buildGeneric(nx, J, h, nvp.amp, nvp.hRot, nvp.T);
         Aper = Aper.trunc(h);
 end
 
 % --- Optional densification: constant orthogonal similarity (exact) ---------
-if opts.Densify
+if nvp.Densify
     info.L = Aper;                 % pre-conjugation matrix, exponents = eig(J)
     info.S = orth(randn(nx));
     Aper   = info.S * Aper * info.S';
@@ -234,15 +243,22 @@ Aper = A_pa.trunc(h);
 end
 
 % =========================================================================
-function Aper = buildGeneric(nx, J, h, amp, hRot)
+function Aper = buildGeneric(nx, J, h, amp, hRot, Tphys)
 % Floquet-Lyapunov with R(t) = expm(theta(t)*G), G random skew-symmetric.
 % Floquet exponents = eig(J) exact.
 % Output bandwidth ≈ Nt/2 (Jacobi-Anger expansion, not controlled to h).
+%
+% theta is parameterised by the normalised angle, so its derivative with
+% respect to physical time carries omega = 2*pi/Tphys. Without that factor the
+% exponents drift as soon as the caller evaluates at another period: measured
+% -1 -> -1.0726 at T = 0.1. buildStructured needs no such correction, its
+% mismatch term being strictly lower triangular and leaving the diagonal alone.
 
-T     = 2*pi;
-omega = 1;
-Nt    = 2^nextpow2(8 * (2*h + 1));
-t     = (0:Nt-1)/Nt * T;
+T      = 2*pi;
+omega  = 1;
+omPhys = 2*pi / Tphys;
+Nt     = 2^nextpow2(8 * (2*h + 1));
+t      = (0:Nt-1)/Nt * T;
 
 % Random unit skew-symmetric generator
 S = randn(nx);
@@ -259,7 +275,7 @@ for i = 1:Nt
     th   = sum(amps .* sin(kvec * omega * t(i) + phases));
     thd  = sum(amps .* (kvec * omega) .* cos(kvec * omega * t(i) + phases));
     R    = expm(th * G);
-    At(:,:,i) = thd * G  +  R * J / R;
+    At(:,:,i) = omPhys * thd * G  +  R * J / R;
 end
 
 is_real_At = isreal(At) || (max(abs(imag(At(:)))) < 1e-12);

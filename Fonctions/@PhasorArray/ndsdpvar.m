@@ -1,7 +1,7 @@
-function P = ndsdpvar(n1,n2,h,varg)
-    % NDSPDPVAR Construct an `sdpvar`-based PhasorArray of specified size and structure.
+function [P, held] = ndsdpvar(n1,n2,h,nvp)
+    % NDSDPVAR Construct an `sdpvar`-based PhasorArray of specified size and symmetry.
     %
-    %   P = NDSPDPVAR(N1, N2, H, <name-value arguments>) generates an SDP variable-based
+    %   P = NDSDPVAR(N1, N2, H, <name-value arguments>) generates an SDP variable-based
     %   PhasorArray suitable for optimization in YALMIP.
     %
     %   Inputs:
@@ -10,38 +10,37 @@ function P = ndsdpvar(n1,n2,h,varg)
     %     H  - (integer, optional) Number of harmonics (default: 0).
     %
     %   Name-Value Arguments:
-    %     'PhasorType' (char) - Defines the structure of the phasor (default: 'symmetric').
-    %                           Options: 'symmetric', 'full', 'diagonal', etc.
-    %                           See YALMIP documentation for the complete list.
-    %     'real' (logical)    - If true, ensures conjugate symmetry for real-valued signals (default: true).
+    %     'symmetry' (string array) - Symmetry class of P(t), same vocabulary as
+    %                           PHASORSYMMETRY (default: ["real" "symmetric"], the
+    %                           Lyapunov variable). Pass [] for a full complex P.
     %
     %   Outputs:
-    %     P - (PhasorArray) PhasorArray containing `sdpvar` elements.
+    %     P    - (PhasorArray) PhasorArray containing `sdpvar` elements.
+    %     HELD - (string array) properties P satisfies, usually more than requested.
     %
-    %   Notes:
-    %     - The `PhasorType` argument defines **phasor structure**, not time-domain structure.
-    %     - Example: A **Hermitian** phasor structure enforces:
-    %          conj(A_(ij)(t)) = A_(ji)(-t)
-    %       However, for A(t) to be Hermitian in the **time domain**, phasors must satisfy:
-    %          A_k = ctrans(A_-k)
-    %     - If `real=true`, ensures the phasor array represents a real-valued periodic matrix.
-    %     - If `h>0`, higher-order harmonics are created as additional `sdpvar` variables.
+    %   Symmetries are stated on P(t) in the time domain, never on the coefficients.
+    %   The coefficient-level condition P_k = P_k' is a property in its own right,
+    %   named "paraHermitian", and it is NOT time-domain hermitian:
+    %
+    %       symmetry = "hermitian"       ->  P(t)' = P(t)
+    %       symmetry = "paraHermitian"   ->  P(-t)' = P(t), i.e. every P_k hermitian
+    %
+    %   Whenever the request maps onto a native YALMIP declaration the variable is
+    %   declared with it, so no degree of freedom is created only to be projected out.
     %
     %   Example:
-    %     P = PhasorArray.ndsdpvar(4,4,5, 'PhasorType', 'symmetric', 'real', true);
-    %       -> Produces a real-valued P(t), with 5 harmonics (size 11 along the third dimension),
-    %          and enforces symmetry (i.e., P_ij(t) = P_ji(t)).
+    %     P = PhasorArray.ndsdpvar(4,4,5);                             % real symmetric
+    %     P = PhasorArray.ndsdpvar(4,4,5, "symmetry", "hermitian");     % P(t)' = P(t)
+    %     A = PhasorArray.ndsdpvar(4,4,5, "symmetry", "real");          % real, no more
+    %     A = PhasorArray.ndsdpvar(4,4,5, "symmetry", []);              % full complex
     %
-    %     A = PhasorArray.ndsdpvar(4,4,5, 'PhasorType', 'full', 'real', true);
-    %       -> Produces a real-valued A(t) with no additional structure constraints.
-    %
-    %   See also: sdpvar, PhasorArray, PosPart2PhasorArray.
+    %   See also: sdpvar, phasorSymmetry, symmetryClosure, PhasorArray.random,
+    %             PosPart2PhasorArray.
     arguments
         n1
         n2=n1
         h=0
-        varg.PhasorType='symmetric'
-        varg.real=true
+        nvp.symmetry string = ["real" "symmetric"]
     end
     if nargin ==1
         switch numel(n1)
@@ -56,21 +55,61 @@ function P = ndsdpvar(n1,n2,h,varg)
                 n1 = n1(1);
         end
     end
-    if n1~=n2
-        if ismember(varg.PhasorType,{'symmetric'})
-            warning('PhasorArray:randomPhasorArray:phasorTypeFallback', 'Non-square matrix: PhasorType changed from ''symmetric'' to ''full''.')
-            varg.PhasorType='full';
+
+    req = nvp.symmetry;
+    if n1 ~= n2
+        transposing = intersect(req, ["symmetric" "skewSymmetric" "hermitian" ...
+            "skewHermitian" "paraSymmetric" "skewParaSymmetric" ...
+            "paraHermitian" "skewParaHermitian"]);
+        if ~isempty(transposing)
+            warning('PhasorArray:ndsdpvar:symmetryFallback', ...
+                'Non-square %dx%d: dropping [%s], which needs a square array.', ...
+                n1, n2, strjoin(transposing, ', '));
+            req = setdiff(req, transposing, 'stable');
         end
     end
-    if varg.real
-        P1=(ndsdpvar(n1,n2,1,varg.PhasorType,'real'));
-        if h>0
-            P2=(ndsdpvar(n1,n2,h,varg.PhasorType,'complex'));
-            P = PosPart2PhasorArray(P1,P2);
+
+    [pType, useReal, native] = nativeDeclaration(req);
+
+    if useReal
+        P1 = ndsdpvar(n1,n2,1,pType,'real');
+        if h > 0
+            P2 = ndsdpvar(n1,n2,h,pType,'complex');
+            P  = PosPart2PhasorArray(P1,P2);
         else
-            P=PhasorArray(P1);
+            P  = PhasorArray(P1);
         end
     else
-        P=PhasorArray(ndsdpvar(n1,n2,2*h+1,varg.PhasorType,'complex'));
+        P = PhasorArray(ndsdpvar(n1,n2,2*h+1,pType,'complex'));
     end
+
+    if ~native
+        P = phasorSymmetry(P, req);
+    end
+    if nargout > 1
+        held = symmetryClosure(req);
+    end
+end
+
+%% =========================================================================
+function [pType, useReal, native] = nativeDeclaration(req)
+%NATIVEDECLARATION  Largest part of REQ that YALMIP can declare directly.
+%   YALMIP structures act page by page, so they express the per-coefficient
+%   involutions only: 'symmetric' is P_k = P_k.', 'hermitian' is P_k = P_k',
+%   which is paraHermitian on P(t). Conjugate symmetry across +-k is the
+%   separate 'real' construction. NATIVE is true when nothing else is left.
+
+pType   = 'full';
+useReal = any(req == "real");
+covered = req(req == "real");
+
+pages = ["symmetric" "symmetric" ; "skewSymmetric" "skew" ; "paraHermitian" "hermitian"];
+for k = 1:size(pages,1)
+    if any(req == pages(k,1))
+        pType   = char(pages(k,2));
+        covered = [covered pages(k,1)];  %#ok<AGROW>
+        break
+    end
+end
+native = isempty(setdiff(req, covered));
 end

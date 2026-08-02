@@ -1,4 +1,4 @@
-function A = sym(nx,ny,h,name,options)
+function A = sym(nx,ny,h,name,nvp)
     % SYM Construct a symbolic PhasorArray with structured harmonic components.
     %
     %   A = SYM(NX, NY, H, NAME) creates an NX-by-NY PhasorArray where each
@@ -25,7 +25,7 @@ function A = sym(nx,ny,h,name,options)
         ny=nx
         h = 0
         name ="a"
-        options.isreal = false
+        nvp.isreal = false
     end
     %determine if an object is calling or class
 
@@ -66,7 +66,7 @@ function A = sym(nx,ny,h,name,options)
             name_i=name{ii};
             ap = sym(name_i+"_plus_",[1 h]);
 
-            if options.isreal
+            if nvp.isreal
                 a0 = sym(name_i+"_0","real");
                 a = cat(2,flip(conj(ap)),a0,ap);
             else
@@ -78,7 +78,7 @@ function A = sym(nx,ny,h,name,options)
         end
 
     else
-        if ~options.isreal
+        if ~nvp.isreal
             ap = sym(name+"__%d__%d_plus_%d",[nx ny h]);
             am = sym(name+"__%d__%d_minus_%d",[nx ny h] );
             a0 = sym(name+"__%d__%d_0",[nx ny]);
