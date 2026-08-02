@@ -662,6 +662,45 @@ classdef PhasorArrayCoreTest < matlab.unittest.TestCase
             testCase.verifyError(@() expm(S), 'PhasorArray:expm:symbolicPayload');
         end
 
+
+        function testKronAndRegularizeKeepSymbolicPayloads(testCase)
+            % Both used to fail on one payload type and not the other, for
+            % reasons that had nothing to do with the operation: kron
+            % concatenated blocks PhasorArrayTimes had wrapped, and regularize
+            % broadcast a 1x1xK weight that only double expands.
+            D = PhasorArray.random(2, 2, 1);
+
+            testCase.needSymbolic();
+            S = PhasorArray.sym(2, 2, 1, "A", "isreal", true);
+            testCase.verifySym(kron(S, D), 'kron(sym, double)');
+            testCase.verifySym(regularize(S, 0.3), 'regularize(sym)');
+
+            testCase.needYalmip();
+            P = PhasorArray.ndsdpvar(2, 2, 1, "symmetry", "real");
+            testCase.verifySdp(kron(P, D), 'kron(sdpvar, double)');
+            testCase.verifySdp(regularize(P, 0.3), 'regularize(sdpvar)');
+        end
+
+        function testNumericOnlyOperationsSpeakWithTheToolboxVoice(testCase)
+            % Refusing is fine; refusing with a YALMIP internal is not. Each of
+            % these names the toolbox function and what it needs.
+            testCase.needYalmip();
+            P = PhasorArray.ndsdpvar(2, 2, 1, "symmetry", "real");
+            D = PhasorArray.random(2, 2, 1);
+
+            testCase.verifyError(@() abs(P),   'PhasorArray:abs:unsolvedVariable');
+            testCase.verifyError(@() P == D,   'PhasorArray:eq:decisionVariable');
+            testCase.verifyError(@() P < D,    'PhasorArray:compare:symbolicPayload');
+            testCase.verifyError(@() mrdivide(D, P), ...
+                'PhasorArray:mrHmcDivide:unsolvedVariable');
+
+            % sym answers equality on its own and must not be caught by the
+            % decision-variable guard.
+            testCase.needSymbolic();
+            S = PhasorArray.sym(2, 2, 1, "A", "isreal", true);
+            testCase.verifyClass(S == S, 'logical');
+        end
+
     end
 
     methods (Test, TestTags = {'Install'})

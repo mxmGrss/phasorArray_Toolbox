@@ -869,6 +869,10 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             nvp.updateMethod    {mustBeMember(nvp.updateMethod,{'adaptive','incremental'})} = 'adaptive'
         end
 
+        % Same refusal mldivide already gets from sparray2TBlocks, said here so the
+        % right-hand division does not answer with a MATLAB internal message.
+        solvedPayload(pvalue(A), "mrHmcDivide");
+        solvedPayload(pvalue(B), "mrHmcDivide");
         C = namedargs2cell(nvp);
 
         [r,residual] = mlHmcDivide(A.', B.', C{:});
@@ -1902,6 +1906,10 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             pA1
             nvp.h {mustBeScalarOrEmpty, mustBeInteger, mustBePositive} = []
         end
+        % Sampled then transformed back, so it needs numbers: |A(t)| is not an
+        % expression a decision variable can carry, and its Fourier series is
+        % not the one of A anyway -- the modulus is not analytic.
+        solvedPayload(pvalue(pA1), "abs");
         Nt = 2^nextpow2(max(256, 16*(pA1.h+1)));
         th = (0:Nt-1)/Nt * 2*pi;
         r  = PhasorArray(TimeArray2Phasors(abs(evalp(pA1, th)), 1, th));
@@ -1951,7 +1959,13 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         end
         if epsilon == 0, r = pA1; return, end
         k = reshape(-pA1.h:pA1.h, 1, 1, []);
-        r = PhasorArray(pvalue(pA1) .* mollifierFT(epsilon * k * (2*pi/nvp.T)));
+        % The weight is one number per harmonic, grown to the payload's size:
+        % sym and sdpvar do not broadcast a 1x1xK against an n x m x K. It is
+        % not a phasor product either -- it scales coefficient k, it does not
+        % convolve with it.
+        w = mollifierFT(epsilon * k * (2*pi/nvp.T));
+        v = pvalue(pA1);
+        r = PhasorArray(v .* repmat(w, size(v, 1), size(v, 2), 1));
     end
     function r = eq(pA1,pA2)
         %EQ  A == B, meaning A_ij(t) = B_ij(t) for every t. Returns [n x m].
@@ -1962,7 +1976,18 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %   to a common order. For a tolerance, use iszero(A-B, tol).
         %
         %   See also ne, iszero, lt.
-        r = all(pvalue(pA1 - pA2) == 0, 3);
+        % Only decision variables are refused: == 0 on one builds a constraint
+        % rather than a logical, so all(...) would have nothing to reduce, and
+        % equality of unsolved variables is a constraint to state, not a
+        % question to ask. sym answers this perfectly well and is left alone.
+        dv = pvalue(pA1 - pA2);
+        if isa(dv, 'ndsdpvar') || isa(dv, 'sdpvar')
+            error('PhasorArray:eq:decisionVariable', ...
+                ['== compares values and this array holds unsolved decision ' ...
+                 'variables. Solve first and compare sdpval of the result, or ' ...
+                 'state the equality as a constraint.']);
+        end
+        r = all(dv == 0, 3);
     end
     function r = ne(pA1,pA2)
         %NE  A ~= B, the negation of EQ. Returns [n x m].
@@ -4786,6 +4811,15 @@ function [r, frac, crenel, Cph] = compareInTime(pA1, pA2, op)
 %   unlikely rather than impossible. Use a strict margin if the distinction
 %   matters, or evaluate with evalp on your own grid.
 D = pA1 - pA2;
+% Ordering samples A(t)-B(t) on a grid, so it needs numbers. A decision
+% variable has no order until it is solved, and a symbolic one has none at all.
+if ~isnumeric(pvalue(D))
+    error('PhasorArray:compare:symbolicPayload', ...
+        ['Ordering compares sampled values and needs a numeric array; this ' ...
+         'difference holds %s. Solve first and compare sdpval of the result, ' ...
+         'or state the relation as a constraint rather than a comparison.'], ...
+        class(pvalue(D)));
+end
 if ~isreal(D)
     error('PhasorArray:compare:complexOrder', ...
         ['Ordering requires A(t)-B(t) to be real; this difference is complex. ' ...
