@@ -1,4 +1,4 @@
-function [Mt,t] = PhasorArray2time(Mph,T,t,arg)
+function [Mt,t] = PhasorArray2time(Mph,T,t,nvp)
 % PHASORARRAY2TIME Evaluate a periodic matrix function A(t) or A(θ) from its phasor representation.
 %
 %   PHASORARRAY2TIME reconstructs the time-domain representation of a periodic 
@@ -14,12 +14,12 @@ function [Mt,t] = PhasorArray2time(Mph,T,t,arg)
 %              - If `T` is a **vector**:
 %                 - If `t` is empty, it is interpreted as `θ`, and A(θ) is computed.
 %                 - If `T` and `t` have matching sizes, `T` is interpreted as a time-dependent frequency phase `θ(t)`.
-%              - Default: `1`.
+%              - Default: `2*pi`.
 %     t    - (vector, optional) Time instants at which to evaluate A(t).
 %              - If `T` is a vector and `t` is empty, then `T` is interpreted as `θ`, and `t = T`.
 %              - If `T` and `t` have matching sizes, `T` is interpreted as `θ(t)`, defining a time-varying phase.
 %              - If empty, a default time grid is computed.
-%     arg  -  Name-value pair arguments:
+%     nvp  -  Name-value pair arguments:
 %              - 'plot' (logical): Plot matrix coefficients versus time (default: `false`).
 %              - 'explosed' (logical): Plot each coefficient in a separate subplot (default: `true`).
 %              - 'hold' (logical): Hold the current plot (default: `false`).
@@ -57,7 +57,7 @@ function [Mt,t] = PhasorArray2time(Mph,T,t,arg)
 %   Example Usage:
 %     % Evaluate a periodic matrix at given time points
 %     Mph = rand(3, 3, 5);
-%     T = 1;
+%     T = 2*pi;
 %     t = 0:0.01:1;
 %     [Mt, t] = PhasorArray2time(Mph, T, t);
 %
@@ -79,49 +79,49 @@ arguments
     Mph
     T=2*pi
     t=[]
-    arg.plot logical         = false
-    arg.explosed logical     = true
-    arg.hold logical         = false
-    arg.DispImag logical     = false
-    arg.DispReal logical     = true
-    arg.ZeroCentered logical = false
-    arg.forceReal logical    = []
-    arg.checkReal logical    = false
-    arg.checkRealTol         = 1e-8
-    arg.title                = []
-    arg.plot3D logical       = false
-    arg.LineStyle             = '-'
-    arg.GlobalYLim logical   = false
-    arg.linkaxes             = 'x';
-    arg.computationMethod    = 1
-    arg.providedPhasorForm {mustBeMember(arg.providedPhasorForm,["exp","SinCos"])} = "exp"
-    arg.parent               = [];
-    arg.grid {mustBeMember(arg.grid,["off","on","minor"])}                = 'on'
-    arg.squeeze logical      = false
+    nvp.plot logical         = false
+    nvp.explosed logical     = true
+    nvp.hold logical         = false
+    nvp.DispImag logical     = false
+    nvp.DispReal logical     = true
+    nvp.ZeroCentered logical = false
+    nvp.forceReal logical    = []
+    nvp.checkReal logical    = false
+    nvp.checkRealTol         = 1e-8
+    nvp.title                = []
+    nvp.plot3D logical       = false
+    nvp.LineStyle             = '-'
+    nvp.GlobalYLim logical   = false
+    nvp.linkaxes             = 'x';
+    nvp.computationMethod    = 1
+    nvp.providedPhasorForm {mustBeMember(nvp.providedPhasorForm,["exp","SinCos"])} = "exp"
+    nvp.parent               = [];
+    nvp.grid {mustBeMember(nvp.grid,["off","on","minor"])}                = 'on'
+    nvp.squeeze logical      = false
 end
 
-% Use a less efficient but compatible computation method for older MATLAB releases
-if isMATLABReleaseOlderThan("R2022a")
-    arg.computationMethod = 3;
-end
+% No release gate here any more: methods 1 and 2 went through tensorprod, which
+% is R2022a, so older releases were pushed onto the slower sparse method 3. Both
+% now go through harmonicCombine and a plain product, so every release takes the
+% fast path.
 
 
 
-if isempty(arg.forceReal)
-    if arg.providedPhasorForm == "exp"
+if isempty(nvp.forceReal)
+    if nvp.providedPhasorForm == "exp"
         if isrealp(Mph)
-            arg.forceReal = true;
+            nvp.forceReal = true;
         end
     else
-        arg.forceReal = false;
+        nvp.forceReal = false;
     end
 end
 
 % User specified that the input PhasorArray is in SinCos form
-if arg.providedPhasorForm == "SinCos"
+if nvp.providedPhasorForm == "SinCos"
     % Ensure that the matrix is real valued
-    if ~arg.forceReal
-        arg.forceReal = true;
+    if ~nvp.forceReal
+        nvp.forceReal = true;
         warning('PhasorArray2time:sinCosForceReal', 'SinCos phasor form is only compatible with real-valued matrices. Forcing real-valued computation.')
     end
 
@@ -146,6 +146,14 @@ end
     h_len = size(Mph_val, 3);
     h = (h_len - 1) / 2;
 
+% An empty t means T carries the phase samples, so the abscissa is an angle.
+% Decided here because t is resolved just below and the distinction is lost.
+if isempty(t)
+    nvp.xlabelStr = 'angle (rad)';
+else
+    nvp.xlabelStr = 'time (sec)';
+end
+
 % Compute the time vector if not provided
 if and(numel(t) < 3 , numel(T) == 1)
     dt = computeTimeStep(T, h);
@@ -160,13 +168,13 @@ t = reshape(t, 1, []);
 theta = computeTheta(T, t);
 
 % Compute the basis for evaluation
-if ~arg.forceReal
+if ~nvp.forceReal
     % Complex-valued basis
     eit = exp(1i * (-h:h)' * theta);
     Meval = Mph_val;
 else
     % Real-valued basis (Sin/Cos representation)
-    if arg.providedPhasorForm == "exp"
+    if nvp.providedPhasorForm == "exp"
         % Convert exponential phasors to real conjugate-symmetric form
         Mphr  = real(Mph_val + flip(Mph_val, 3)) / 2 + 1i * imag(Mph_val - flip(Mph_val, 3)) / 2;
         Meval = real(cat(3, 1i * (flip(Mphr(:, :, h+2:end), 3) - Mphr(:, :, 1:h)), Mphr(:, :, h+1), (Mphr(:, :, h+2:end) + flip(Mphr(:, :, 1:h), 3))));
@@ -177,20 +185,20 @@ else
 end
 
 if isa(t,'sym')
-    arg.computationMethod=3;
+    nvp.computationMethod=3;
 end
 
 %choose the computation method to compute the matrix at each time
-switch arg.computationMethod
+switch nvp.computationMethod
     case 1
         %best time but tensorprod reliant so matlab >22a
-        Mt=tensorprod(Meval,double(eit),3,1); %est un 3D array dont Mt(:,:,k) est M(t(k))
+        Mt=harmonicCombine(Meval,double(eit)); %est un 3D array dont Mt(:,:,k) est M(t(k))
 
     case 2
         %bad time very slow
         reM=reshape(Meval,nx,[],1);
         reEit=kron(eit,eye(ny));
-        rMt=tensorprod(reM,reEit,2,1);
+        rMt=reM*reEit;   % 2-D operands: the mode-2 contraction is a plain product
         Mt=reshape(rMt,nx,ny,[]);
 
     otherwise
@@ -202,8 +210,8 @@ switch arg.computationMethod
 end
 
 % Check if the imaginary part of Mt is negligible
-if arg.checkReal
-    if all(abs(imag(Mt)) < arg.checkRealTol, 'all')
+if nvp.checkReal
+    if all(abs(imag(Mt)) < nvp.checkRealTol, 'all')
         Mt = real(Mt);
     else
         warning('PhasorArray2time:notReal', 'Output is complex-valued despite checkReal flag (imaginary part above tolerance).');
@@ -211,16 +219,12 @@ if arg.checkReal
 end
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%  Ploting function  %%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-if arg.plot
-    t = plot2(arg,t,T,Mt);
-
+% Plotting lives in TimeArray2plot: most callers here only want [Mt, t].
+if nvp.plot
+    t = TimeArray2plot(Mt, t, T, nvp);
 end
 
-if arg.squeeze
+if nvp.squeeze
     Mt = squeeze(Mt);
 end
 
@@ -231,7 +235,7 @@ end
             Mph = value(Mph);
         elseif isa(Mph, 'sym')
             Mph = vpa(value(Mph));
-            arg.computationMethod = 3;
+            nvp.computationMethod = 3;
         end
     end
     function dt = computeTimeStep(T, h)
@@ -268,482 +272,4 @@ end
             theta = 2 * pi / T * t;
         end
     end
-end
-
-
-% function t = plot1(arg,t,T,Mt)
-% 
-% 
-% nx = size(Mt,1);
-% ny = size(Mt,2);
-% 
-% if isempty(arg.parent) 
-%     % If the parent figure is not specified, use the current figure
-%     parent = gcf;
-% else
-%     % If the parent figure is specified, use it
-%     parent = arg.parent;
-% end
-% 
-% 
-% 
-% if ~arg.hold && arg.explosed
-%     clf
-% end
-% 
-% % If T is a vector, t must be either empty or have the same number of elements as T for plotting
-% if isempty(t) % case of a phase vector over T
-%     t=T;
-%     xlabelStr= 'angle (rad)';
-% elseif numel(T)>1 && numel(t) ~= numel(T)
-%     error('If T is a vector, t must be either empty or have the same number of elements as T for plotting')
-% else
-%     xlabelStr= 'time (sec)';
-% end
-% 
-% 
-% % % Calculate the number of expected subplots based on the display options
-% % if xor(arg.DispImag, arg.DispReal) || arg.plot3D
-% %     % If only one part is displayed or 3D plot is enabled, one subplot per matrix element
-% %     numSubplots = nx * ny;
-% %     doublesubplot = 0;
-% % else
-% %     % If both real and imaginary parts are displayed, two subplots per matrix element
-% %     numSubplots = 2 * nx * ny;
-% %     doublesubplot = 1;
-% % end
-% % if arg.explosed
-% %     T = manageTiledLayout32(parent,numSubplots,nx,ny*(1+doublesubplot));
-% % else
-% %     T = manageTiledLayout32(parent,numSubplots,1,1+doublesubplot);
-% % end
-% 
-% if arg.explosed
-%     % Find all axes in the current figure to prevent bugs when plotting on top of an old plot
-%     old_ax=findall(gcf,'Type','axes');
-%     if ~isempty(old_ax)
-%         % Unlink all axes to prevent bugs when plotting on top of an old plot
-%         linkaxes(old_ax,'');
-%     end
-%     % numOldA stores the number of old axes in the figure
-%     numOldA=numel(old_ax);
-% 
-%     % arg.explosed checks if the plot should be exploded or not
-%     nx=size(Mt,1);
-%     ny=size(Mt,2);
-%     if xor(arg.DispImag,arg.DispReal) || arg.plot3D
-%         % if only one part is displayed, only one subplot is needed for each coefficient
-%         ax = gobjects(nx,ny);
-%         expectedPlotNumber=nx*ny;
-%         if numOldA==expectedPlotNumber
-%             old_ax=reshape(flip(old_ax),nx,ny);
-%         end
-%     else
-%         % if both parts are displayed, two subplots are needed for each coefficient
-%         ax = gobjects(2*nx,ny);
-%         expectedPlotNumber=nx*ny*2;
-%         if numOldA==expectedPlotNumber
-%             old_ax=reshape(flip(old_ax),nx*2,ny);
-%         end
-%     end
-% 
-% 
-% 
-%     for nxi=1:nx
-%         for nyi=1:ny
-%             %   if only one part is displayed, only one subplot is needed for each coefficient
-%             if xor(arg.DispImag,arg.DispReal) || arg.plot3D
-%                 ax(nxi,nyi)=subplot(nx,ny,(nxi-1)*ny+nyi);
-%                 if arg.hold
-%                     hold on
-%                 end
-%                 if arg.plot3D
-%                     plot3(real(squeeze(Mt(nxi,nyi,:))),imag(squeeze(Mt(nxi,nyi,:))),t,arg.LineStyle)
-%                     xlabel("Re(a_{"+num2str(nxi)+num2str(nyi)+"})")
-%                     ylabel("Im(a_{"+num2str(nxi)+num2str(nyi)+"})")
-%                     zlabel(xlabelStr)
-% 
-%                     ylim('auto')
-%                     xlim('auto')
-%                     if arg.ZeroCentered
-%                         ylim(max(abs(ylim)).*[-1 1])
-%                         xlim(max(abs(xlim)).*[-1 1])
-%                     end
-%                 else
-%                     if arg.DispImag
-%                         plot(t,imag(squeeze(Mt(nxi,nyi,:))),arg.LineStyle)
-%                         % ylabel("Im(a_{"+num2str(nxi)+num2str(nyi)+"})")
-%                     else
-%                         plot(t,real(squeeze(Mt(nxi,nyi,:))),arg.LineStyle)
-%                         % if isreal(Mt)
-%                         %     ylabel("a_{"+num2str(nxi)+num2str(nyi)+"}")
-%                         % else
-%                         %     ylabel("Re(a_{"+num2str(nxi)+num2str(nyi)+"})")
-%                         % end
-%                     end
-%                     if nxi == nx
-%                         xlabel(xlabelStr)
-%                     end
-%                     ylim('auto')
-%                     if arg.ZeroCentered
-%                         ylim(max(abs(ylim)).*[-1 1])
-%                     end
-%                 end
-%                 %  if both parts are displayed, two subplots are needed for each coefficient
-%             else
-%                 % real part
-%                 ax(2*(nxi-1)*ny+nyi)=subplot(2*nx,ny,2*(nxi-1)*ny+nyi);
-%                 if arg.hold
-%                     hold on
-%                 end
-%                 plot(t,real(squeeze(Mt(nxi,nyi,:))),arg.LineStyle)
-%                 ylabel("Re(a_{"+num2str(nxi)+num2str(nyi)+"})")
-%                 ylim('auto')
-%                 if arg.ZeroCentered
-%                     ylim(max(abs(ylim)).*[-1 1])
-%                 end
-% 
-%                 grid off
-%                 grid(arg.grid)
-% 
-%                 % imaginary part
-%                 ax((2*(nxi-1)+1)*ny+nyi)=subplot(2*nx,ny,(2*(nxi-1)+1)*ny+nyi);
-%                 if arg.hold
-%                     hold on
-%                 end
-%                 plot(t,imag(squeeze(Mt(nxi,nyi,:))),arg.LineStyle)
-%                 ylabel("Im(a_{"+num2str(nxi)+num2str(nyi)+"})")
-%                 ylim('auto')
-%                 if arg.ZeroCentered
-%                     ylim(max(abs(ylim)).*[-1 1])
-%                 end
-% 
-%                 if nxi == nx
-%                     xlabel(xlabelStr)
-%                 end
-% 
-%             end
-%             grid off
-%             grid(arg.grid)
-% 
-% 
-%         end
-%     end
-%     if isempty(arg.title)
-%         % sgtitle('M(t), vue explosée de la matrice')
-%     else
-%         sgtitle(arg.title)
-%     end
-%     % Link the axes if the user specified it
-%     % Possible values for arg.linkaxes are : 'x', 'y', 'z', 'xy', 'yx', 'yz', 'zy', 'xyz', 'yxz', 'xzy', 'zxy', 'zyx', 'yzx'
-%     uuu_y={'y','xy','yx','yz','zy','xyz','yxz','xzy','zxy','zyx','yzx'};
-%     uuu_x={'x','xy','yx','xz','zx','xyz','yxz','xzy','zxy','zyx','yzx'};
-%     uuu_z={'z','zy','yz','xz','zx','xyz','yxz','xzy','zxy','zyx','yzx'};
-% 
-%     % Set the same y limits for all the subplots if the user specified it or if the user wants to link the y axes
-%     if arg.GlobalYLim || any(strcmp(arg.linkaxes,uuu_y))
-%         uu=max(abs( cell2mat(ylim(ax))),[],'all');
-%         set(ax,'ylim',uu*[-1,1])
-%     end
-% 
-%     % Set the same x limits for all the subplots if the user specified it or if the user wants to link the x axes
-%     if arg.plot3D
-%         if arg.GlobalYLim || any(strcmp(arg.linkaxes,uuu_x))
-%             uu=max(abs( cell2mat(xlim(ax))),[],'all');
-%             set(ax,'xlim',uu*[-1,1])
-%             Link = linkprop(ax(:),{'CameraUpVector', 'CameraPosition', ...
-%                 'CameraTarget', 'ZLim'});
-%             setappdata(gcf, 'StoreTheLink', Link);
-%         end
-%     end
-% 
-%     linkaxes(ax,arg.linkaxes);
-% else
-% 
-%     % If the plot is not exploded, plot the matrix coefficients in a single figure
-%     if xor(arg.DispImag,arg.DispReal)
-%         if arg.hold
-%             hold on
-%         end
-%         if arg.DispImag
-%             plot(t,imag(reshape(Mt,[],numel(t))),arg.LineStyle)
-%             if isempty(arg.title)
-%                 title('M(t), imag part')
-%             else
-%                 title(arg.title)
-%             end
-%         else
-%             plot(t,real(reshape(Mt,[],numel(t))),arg.LineStyle)
-%             if isempty(arg.title)
-%                 title('M(t), real part')
-%             else
-%                 title(arg.title)
-%             end
-%         end
-% 
-%         ylim('auto')
-%         if arg.ZeroCentered
-%             %arg.zeroCentered checks if the plot should be centered on 0
-%             ylim(max(abs(ylim)).*[-1 1])
-%         end
-% 
-%     else
-%         ff = gcf; 
-%         if isa(ff.Children(1),"TiledChartLayout")
-%             TOuter = ff.Children(1);
-%         else
-%             TOuter = gcf;
-%         end
-% 
-%         % If both parts are displayed, plot the real and imaginary parts of the matrix coefficients superposed in two subplots
-%         nexttile(TOuter,1)
-%         if arg.hold
-%             % arg.hold checks if the plot should be superposed on the current figure
-%             hold on
-%         end
-%         plot(t,real(reshape(Mt,[],numel(t))),arg.LineStyle)
-% 
-%         ylim('auto')
-%         if arg.ZeroCentered
-%             ylim(max(abs(ylim)).*[-1 1])
-%         end
-%         title('M(t), real part')
-% 
-%         nexttile(TOuter,2)
-%         if arg.hold
-%             % arg.hold checks if the plot should be superposed on the current figure
-%             hold on
-%         end
-%         plot(t,imag(reshape(Mt,[],numel(t))),arg.LineStyle)
-% 
-%         ylim('auto')
-%         if arg.ZeroCentered
-%             % make y limits symetric
-%             ylim(max(abs(ylim)).*[-1 1])
-%         end
-%         title('M(t), imag part')
-%     end
-% end
-% end
-% 
-
-function t = plot2(arg,t,T,Mt)
-
-nx = size(Mt,1);
-ny = size(Mt,2);
-if isempty(arg.parent) 
-    % If the parent figure is not specified, use the current axes as start
-    parent = gca; 
-else
-    % If the parent figure is specified, use it
-    parent = arg.parent;
-end
-
-
-
-% If T is a vector, t must be either empty or have the same number of elements as T for plotting
-if isempty(t) % case of a phase vector over T
-    t=T;
-    xlabelStr= 'angle (rad)';
-elseif numel(T)>1 && numel(t) ~= numel(T)
-    error('PhasorArray2time:tVectorMismatch', 'If T is a vector, t must be either empty or have the same number of elements as T for plotting.')
-else
-    xlabelStr= 'time (sec)';
-end
-
-
-% Calculate the number of expected subplots based on the display options
-if xor(arg.DispImag, arg.DispReal) || arg.plot3D
-    % If only one part is displayed or 3D plot is enabled, one subplot per matrix element
-    numSubplots = nx * ny;
-    doublesubplot = 0;
-else
-    % If both real and imaginary parts are displayed, two subplots per matrix element
-    numSubplots = 2 * nx * ny;
-    doublesubplot = 1;
-end
-if arg.explosed
-    T = manageTiledLayout(parent,nx,ny*(1+doublesubplot),"ishold",arg.hold);
-else
-    T = manageTiledLayout(parent,1,1+doublesubplot,"ishold",arg.hold);
-end
-
-if arg.explosed
-    for nxi=1:nx
-        for nyi=1:ny
-            %   if only one part is displayed, only one subplot is needed for each coefficient
-            if xor(arg.DispImag,arg.DispReal) || arg.plot3D
-                nexttile(T,sub2ind([ny, nx], nyi, nxi))
-                if arg.hold
-                    hold on
-                end
-                if arg.plot3D
-                    plot3(real(squeeze(Mt(nxi,nyi,:))),imag(squeeze(Mt(nxi,nyi,:))),t,arg.LineStyle)
-                    xlabel("Re(a_{"+num2str(nxi)+num2str(nyi)+"})")
-                    ylabel("Im(a_{"+num2str(nxi)+num2str(nyi)+"})")
-                    zlabel(xlabelStr)
-
-                    ylim('auto')
-                    xlim('auto')
-                    if arg.ZeroCentered
-                        ylim(max(abs(ylim)).*[-1 1])
-                        xlim(max(abs(xlim)).*[-1 1])
-                    end
-                else
-                    if arg.DispImag
-                        plot(t,imag(squeeze(Mt(nxi,nyi,:))),arg.LineStyle)
-                        % ylabel("Im(a_{"+num2str(nxi)+num2str(nyi)+"})")
-                    else
-                        plot(t,real(squeeze(Mt(nxi,nyi,:))),arg.LineStyle)
-                        % if isreal(Mt)
-                        %     ylabel("a_{"+num2str(nxi)+num2str(nyi)+"}")
-                        % else
-                        %     ylabel("Re(a_{"+num2str(nxi)+num2str(nyi)+"})")
-                        % end
-                    end
-                    if nxi == nx
-                        xlabel(xlabelStr)
-                    end
-                    ylim('auto')
-                    if arg.ZeroCentered
-                        ylim(max(abs(ylim)).*[-1 1])
-                    end
-                end
-                %  if both parts are displayed, two subplots are needed for each coefficient
-            else
-                % real part
-
-                nexttile(T,sub2ind([2*ny, nx], (nyi-1)*2+1, nxi))
-                % ax(2*(nxi-1)*ny+nyi)=subplot(2*nx,ny,2*(nxi-1)*ny+nyi);
-                if arg.hold
-                    hold on
-                end
-                plot(t,real(squeeze(Mt(nxi,nyi,:))),arg.LineStyle)
-                ylabel("Re(a_{"+num2str(nxi)+num2str(nyi)+"})")
-                ylim('auto')
-                if arg.ZeroCentered
-                    ylim(max(abs(ylim)).*[-1 1])
-                end
-
-                grid off
-                grid(arg.grid)
-
-                % imaginary part
-                % ax((2*(nxi-1)+1)*ny+nyi)=subplot(2*nx,ny,(2*(nxi-1)+1)*ny+nyi);
-
-                nexttile(T,sub2ind([2*ny, nx], nyi*2, nxi))
-                if arg.hold
-                    hold on
-                end
-                plot(t,imag(squeeze(Mt(nxi,nyi,:))),arg.LineStyle)
-                ylabel("Im(a_{"+num2str(nxi)+num2str(nyi)+"})")
-                ylim('auto')
-                if arg.ZeroCentered
-                    ylim(max(abs(ylim)).*[-1 1])
-                end
-
-                if nxi == nx
-                    xlabel(xlabelStr)
-                end
-
-            end
-            grid off
-            grid(arg.grid)
-
-
-        end
-    end
-    if isempty(arg.title)
-        % sgtitle('M(t), vue explosée de la matrice')
-    else
-        sgtitle(arg.title)
-    end
-
-
-    ax = findall(T,'Type','axes');
-
-    % Link the axes if the user specified it
-    % Possible values for arg.linkaxes are : 'x', 'y', 'z', 'xy', 'yx', 'yz', 'zy', 'xyz', 'yxz', 'xzy', 'zxy', 'zyx', 'yzx'
-    uuu_y={'y','xy','yx','yz','zy','xyz','yxz','xzy','zxy','zyx','yzx'};
-    uuu_x={'x','xy','yx','xz','zx','xyz','yxz','xzy','zxy','zyx','yzx'};
-    uuu_z={'z','zy','yz','xz','zx','xyz','yxz','xzy','zxy','zyx','yzx'};
-
-    % Set the same y limits for all the subplots if the user specified it or if the user wants to link the y axes
-    if arg.GlobalYLim || any(strcmp(arg.linkaxes,uuu_y))
-        uu=max(abs( cell2mat(ylim(ax))),[],'all');
-        set(ax,'ylim',uu*[-1,1])
-    end
-
-    % Set the same x limits for all the subplots if the user specified it or if the user wants to link the x axes
-    if arg.plot3D
-        if arg.GlobalYLim || any(strcmp(arg.linkaxes,uuu_x))
-            uu=max(abs( cell2mat(xlim(ax))),[],'all');
-            set(ax,'xlim',uu*[-1,1])
-            Link = linkprop(ax(:),{'CameraUpVector', 'CameraPosition', ...
-                'CameraTarget', 'ZLim'});
-            setappdata(gcf, 'StoreTheLink', Link);
-        end
-    end
-
-    linkaxes(ax,arg.linkaxes);
-else
-
-    % If the plot is not exploded, plot the matrix coefficients in a single figure
-    if xor(arg.DispImag,arg.DispReal)
-        nexttile(T,1)
-        if arg.hold
-            hold on
-        end
-        if arg.DispImag
-            plot(t,imag(reshape(Mt,[],numel(t))),arg.LineStyle)
-            if isempty(arg.title)
-                title('M(t), imaginary part')
-            else
-                title(arg.title)
-            end
-        else
-            plot(t,real(reshape(Mt,[],numel(t))),arg.LineStyle)
-            if isempty(arg.title)
-                title('M(t), real part')
-            else
-                title(arg.title)
-            end
-        end
-
-        ylim('auto')
-        if arg.ZeroCentered
-            %arg.zeroCentered checks if the plot should be centered on 0
-            ylim(max(abs(ylim)).*[-1 1])
-        end
-
-    else
-        % If both parts are displayed, plot the real and imaginary parts of the matrix coefficients superposed in two subplots
-        nexttile(T,1)
-        if arg.hold
-            % arg.hold checks if the plot should be superposed on the current figure
-            hold on
-        end
-        plot(t,real(reshape(Mt,[],numel(t))),arg.LineStyle)
-
-        ylim('auto')
-        if arg.ZeroCentered
-            ylim(max(abs(ylim)).*[-1 1])
-        end
-        title('M(t), real part')
-
-        nexttile(T,2)
-        if arg.hold
-            % arg.hold checks if the plot should be superposed on the current figure
-            hold on
-        end
-        plot(t,imag(reshape(Mt,[],numel(t))),arg.LineStyle)
-
-        ylim('auto')
-        if arg.ZeroCentered
-            % make y limits symetric
-            ylim(max(abs(ylim)).*[-1 1])
-        end
-        title('M(t), imag part')
-    end
-end
 end

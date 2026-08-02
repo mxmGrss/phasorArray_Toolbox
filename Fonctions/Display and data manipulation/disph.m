@@ -1,11 +1,11 @@
-function disph(inputArg1,opts)
+function disph(inputArg1,nvp)
 arguments (Repeating)
     inputArg1
 end
 arguments
-    opts.inhib=false
+    nvp.inhib=false
 end
-if ~opts.inhib
+if ~nvp.inhib
     if isempty(inputArg1)
         disp(strcat(string(datetime(),'HH:mm:ss.SSS')))
     else

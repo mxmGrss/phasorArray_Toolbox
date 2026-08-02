@@ -1,16 +1,16 @@
-function  plotAngularSFT(phasorStruct,plotTAPRI,optarg)
+function  plotAngularSFT(phasorStruct,plotTAPRI,nvp)
 arguments
     phasorStruct
     plotTAPRI {mustBeNumericOrLogical} = [true true false false false]
-    optarg.plotOmega logical = false
-    optarg.plotDebut logical = false
-    optarg.xAxes {mustBeMember(optarg.xAxes,{'time','phase','revolution'})} = 'time'
-    optarg.orientation {mustBeMember(optarg.orientation,{'ver','hor'})} = 'hor'
-    optarg.plotIndexes = 1:numel(phasorStruct)
-    optarg.Hm2plot = []
-    optarg.lang ='fr';
+    nvp.plotOmega logical = false
+    nvp.plotDebut logical = false
+    nvp.xAxes {mustBeMember(nvp.xAxes,{'time','phase','revolution'})} = 'time'
+    nvp.orientation {mustBeMember(nvp.orientation,{'ver','hor'})} = 'hor'
+    nvp.plotIndexes = 1:numel(phasorStruct)
+    nvp.Hm2plot = []
+    nvp.lang ='fr';
 end
-switch optarg.lang
+switch nvp.lang
     case 'fr'
         titleStr = 'Phaseurs de ';
         legendStr = 'Phaseur ';
@@ -36,21 +36,21 @@ for plotTAPRIi = 1:numel(plotTAPRI)
     end
 end
 
-phasorStruct=phasorStruct(optarg.plotIndexes);
-if isempty(optarg.Hm2plot)
-    optarg.Hm2plot = {phasorStruct.harmonics};
+phasorStruct=phasorStruct(nvp.plotIndexes);
+if isempty(nvp.Hm2plot)
+    nvp.Hm2plot = {phasorStruct.harmonics};
 end
 
-if isnumeric(optarg.Hm2plot)
-    optarg.Hm2plot = repmat({optarg.Hm2plot},1,numel(phasorStruct));
+if isnumeric(nvp.Hm2plot)
+    nvp.Hm2plot = repmat({nvp.Hm2plot},1,numel(phasorStruct));
 end
 
-if iscell(optarg.Hm2plot)
-    assert(all(cellfun(@isnumeric,optarg.Hm2plot)),'Hm2plot must be a cell array of numeric arrays')
-    assert(numel(phasorStruct)==numel(optarg.Hm2plot),'Hm2plot must have the same number of elements as phasorStruct')
-    assert(all(cellfun(@(x) all(x==round(x)),optarg.Hm2plot)),'Hm2plot must be an array of integers')
+if iscell(nvp.Hm2plot)
+    assert(all(cellfun(@isnumeric,nvp.Hm2plot)),'Hm2plot must be a cell array of numeric arrays')
+    assert(numel(phasorStruct)==numel(nvp.Hm2plot),'Hm2plot must have the same number of elements as phasorStruct')
+    assert(all(cellfun(@(x) all(x==round(x)),nvp.Hm2plot)),'Hm2plot must be an array of integers')
     %check that all elements of Hm2plot are in the harmonics of the corresponding phasorStruct
-    assert(all(arrayfun(@(i) all(ismember(optarg.Hm2plot{i},phasorStruct(i).harmonics)),1:numel(phasorStruct))),'All elements of Hm2plot must be in the harmonics of the corresponding phasorStruct')
+    assert(all(arrayfun(@(i) all(ismember(nvp.Hm2plot{i},phasorStruct(i).harmonics)),1:numel(phasorStruct))),'All elements of Hm2plot must be in the harmonics of the corresponding phasorStruct')
 end
 
 plotTAPRI=ploto;
@@ -63,7 +63,7 @@ if sum(plotTAPRI)>0
     end
 
     nplot_hor=numel(phasorStruct);
-    nplot_vert=sum((plotTAPRI>0))+(optarg.plotOmega>0);
+    nplot_vert=sum((plotTAPRI>0))+(nvp.plotOmega>0);
 
     ff = gcf; % Get the current figure handle
     set(ff, 'Visible', 'off'); % Make the current figure invisible
@@ -117,12 +117,12 @@ if sum(plotTAPRI)>0
     theta = phasorStruct(1).theta;
     omega = phasorStruct(1).omega;
 
-    if optarg.plotDebut
+    if nvp.plotDebut
         IDXp=ones(size(IDX))*2;
     else
         IDXp=IDX;
     end
-    switch optarg.xAxes
+    switch nvp.xAxes
         case 'time'
             xAx = time(IDXp>1);
             xlabelVar = 'time (s)';
@@ -148,8 +148,8 @@ if sum(plotTAPRI)>0
 
         temp_sig_plot.time=xAx;
 
-        %get the indexes of optarg.Hm2plot{ii} in phasorStruct(ii).harmonics
-        [~,indPh]=ismember(optarg.Hm2plot{ii},phasorStruct(ii).harmonics);
+        %get the indexes of nvp.Hm2plot{ii} in phasorStruct(ii).harmonics
+        [~,indPh]=ismember(nvp.Hm2plot{ii},phasorStruct(ii).harmonics);
 
         temp_sig_plot.sig{1}=Signal_ii(IDXp>1);
         temp_sig_plot.sig{2}=abs(phasor_v(indPh,IDXp>1));
@@ -166,10 +166,10 @@ if sum(plotTAPRI)>0
 
         iter_i_real=0;
         % ax=gobjects(nplot_vert,nplot_hor);
-        if logical(optarg.plotOmega)
+        if logical(nvp.plotOmega)
             % ax(1,ii)=subplot(nplot_vert,nplot_hor,ii);
             nexttile(T,ii)
-            switch optarg.plotOmega
+            switch nvp.plotOmega
                 case 1
                     plot(xAx,omega)
                     title('\omega(t) (rad/s)')
@@ -188,7 +188,7 @@ if sum(plotTAPRI)>0
             if logical(plotTAPRI(iter_i))
 
                 iter_i_real=iter_i_real+1;
-                ligne_i=iter_i_real+(optarg.plotOmega>0);
+                ligne_i=iter_i_real+(nvp.plotOmega>0);
 
                 nexttile(T,ii+(ligne_i-1)*nplot_hor);
 
@@ -207,13 +207,13 @@ if sum(plotTAPRI)>0
                 % grid minor
 
                 if iter_i>1
-                legend(legendStr+string(optarg.Hm2plot{ii}))
+                legend(legendStr+string(nvp.Hm2plot{ii}))
                 legend off
                 end
 
             end
         end
-        legend(legendStr+string(optarg.Hm2plot{ii}))
+        legend(legendStr+string(nvp.Hm2plot{ii}))
         legend('Location','best')
 
     end
@@ -228,7 +228,7 @@ if sum(plotTAPRI)>0
     end
 
 
-    if strcmp(optarg.orientation,'ver')
+    if strcmp(nvp.orientation,'ver')
         transposeTiledLayout(T)
     end
     setBottomXLabel(ff.Children, xlabelVar) % Set the x-label of the bottom axes

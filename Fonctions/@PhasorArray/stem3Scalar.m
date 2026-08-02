@@ -1,4 +1,4 @@
-function ax = stem3Scalar(o1, varopt)
+function ax = stem3Scalar(o1, nvp)
     % STEM3SCALAR Generate a 3D stem plot for a scalar `PhasorArray` object.
     %
     %   STEM3SCALAR(o1, marker) generates a 3D stem plot to visualize the phasors of a scalar
@@ -16,14 +16,14 @@ function ax = stem3Scalar(o1, varopt)
     %   See also: quiver3.
     arguments
         o1
-        varopt.marker (1,:) char = 'o'
-        varopt.parent = gca
-        varopt.scale {mustBeMember(varopt.scale,{'log','linear'})}='log'
-        varopt.side {mustBeMember(varopt.side,{'both','oneSided'})}='oneSided'
+        nvp.marker (1,:) char = 'o'
+        nvp.parent = gca
+        nvp.scale {mustBeMember(nvp.scale,{'log','linear'})}='log'
+        nvp.side {mustBeMember(nvp.side,{'both','oneSided'})}='oneSided'
     end
 
 
-    if strcmp(varopt.scale,'log')
+    if strcmp(nvp.scale,'log')
         oo1 = o1.value;
         oo1a = abs(oo1);
         oo1p = angle(oo1);
@@ -47,7 +47,7 @@ function ax = stem3Scalar(o1, varopt)
     v = -y;
     w = -z;
 
-    ax = quiver3(varopt.parent,x, y, z, u, v, w,'off', '-<','marker',varopt.marker);
+    ax = quiver3(nvp.parent,x, y, z, u, v, w,'off', '-<','marker',nvp.marker);
     xlabel('Harmonics');
     ylabel('Real Part');
     zlabel('Imaginary Part');
@@ -66,7 +66,7 @@ function ax = stem3Scalar(o1, varopt)
 
 
     varhold = ishold;
-    if strcmp(varopt.scale,'log')
+    if strcmp(nvp.scale,'log')
         delete(findall(a.Children, 'Type', 'line'));
         title(sprintf('3D Stem Plot of Logarithmic Scalar PhasorArray, with base 10^{%d} and max', base));
         for r=1:ceil(limvar)
@@ -92,7 +92,7 @@ function ax = stem3Scalar(o1, varopt)
         hold on
     end
 
-    switch varopt.side
+    switch nvp.side
         case 'both'
             xticks(-hmax:hmax);
             xlim([-hmax hmax]);

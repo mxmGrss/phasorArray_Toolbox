@@ -1,7 +1,7 @@
-function barsurf(o1,thres,hdel,varg)
+function barsurf(o1,thres,hdel,nvp)
     % BARSURF Generate a 3D bar surface plot of the phasors of a `PhasorArray`.
     %
-    %   BARSURF(o1, thres, hdel, varg) produces a 3D bar surface plot representing
+    %   BARSURF(o1, thres, hdel, nvp) produces a 3D bar surface plot representing
     %   the phasors of `o1`. Phasors below a specified threshold are truncated, except
     %   for the first `hdel` harmonics that meet the condition, which are retained as a margin.
     %
@@ -11,7 +11,7 @@ function barsurf(o1,thres,hdel,varg)
     %                - Default: `1e-6`.
     %     hdel   - (integer, optional) The number of harmonics to retain as a margin.
     %                - Default: `3`.
-    %     varg   - Name-value pair arguments:
+    %     nvp   - Name-value pair arguments:
     %                - 'scale' (char): Scale of the plot.
     %                    - 'log' (default): Logarithmic scale.
     %                    - 'linear': Linear scale.
@@ -36,8 +36,8 @@ function barsurf(o1,thres,hdel,varg)
         o1
         thres=1e-12;
         hdel=3
-        varg.scale {mustBeMember(varg.scale,{'log','linear'})} ='log'
-        varg.title  ='Phasor of Matrix'
+        nvp.scale {mustBeMember(nvp.scale,{'log','linear'})} ='log'
+        nvp.title  ='Phasor of Matrix'
     end
     if isa(o1.value,'ndsdpvar')
         o1=value(value(o1));
@@ -51,8 +51,8 @@ function barsurf(o1,thres,hdel,varg)
     end
     [nx,nz]=size(o1,[1 2]);
     nh=(size(o1,3)-1)/2;
-    o1 = o1.neglect(thres,exclude0Phasor=false,reduceMethod="relative");
-    [~,refM,hresM]=ReduceArray(o1,reduceMethod="relative",reduceThreshold=thres,exclude0Phasor=false);
+    o1 = o1.neglect(thres,"exclude0Phasor", false,"reduceMethod", "relative");
+    [~,refM,hresM]=ReduceArray(o1,"reduceMethod", "relative","reduceThreshold", thres,"exclude0Phasor", false);
     %refM contient en val absolue le plus grand phasor de chaque
     %composante de o1.
 
@@ -77,14 +77,14 @@ function barsurf(o1,thres,hdel,varg)
     hdel=min(nh-hresM,hdel);
 
     reshM=abs(reshape(o1.value,nx*nz,[]));
-    barsurf(reshM(:,((end+1)/2):end).',epsM,"yticklabel",(0:o1.h)','scale',varg.scale)
+    barsurf(reshM(:,((end+1)/2):end).',epsM,"yticklabel",(0:o1.h)','scale',nvp.scale)
 
 
     %     barsurf(reshM(:,hres+1:end),min(ref,[],'all')*thres,"xticklabel",(0:hres)','scale','log')
     xlabel("States")
     ylabel("Harmonics")
     zlabel('Abs')
-    title(varg.title)
+    title(nvp.title)
     xlim([0 nx*nz+1])
 
 end

@@ -1,7 +1,7 @@
-function  barsurf(X,llim,varg)
+function  barsurf(X,llim,nvp)
 %BARSURF Create a customizable 3D bar plot.
 %
-%   BARSURF(X, llim, varg) generates a 3D bar plot of the matrix `X` with
+%   BARSURF(X, llim, nvp) generates a 3D bar plot of the matrix `X` with
 %   options for clipping values, customizing axis labels, scaling, and 
 %   adding titles or colorbars.
 %
@@ -38,12 +38,12 @@ function  barsurf(X,llim,varg)
 arguments
     X
     llim = 1e-3
-    varg.title=[]
-    varg.xticklabel=[]
-    varg.yticklabel=[]
-    varg.scale {mustBeMember(varg.scale,{'log','linear'})} ='log'
-    varg.colorbar=false
-    varg.EdgeColor = 'black'
+    nvp.title=[]
+    nvp.xticklabel=[]
+    nvp.yticklabel=[]
+    nvp.scale {mustBeMember(nvp.scale,{'log','linear'})} ='log'
+    nvp.colorbar=false
+    nvp.EdgeColor = 'black'
 end
 
 if ndims(X)==3
@@ -51,11 +51,11 @@ if ndims(X)==3
     X=X.T_tb();
 end
 
-if ismatrix(varg.xticklabel) && ~isempty(varg.xticklabel)
-    varg.xticklabel=num2cell(varg.xticklabel);
+if ismatrix(nvp.xticklabel) && ~isempty(nvp.xticklabel)
+    nvp.xticklabel=num2cell(nvp.xticklabel);
 end
-if ismatrix(varg.yticklabel) && ~isempty(varg.yticklabel)
-    varg.yticklabel=num2cell(varg.yticklabel);
+if ismatrix(nvp.yticklabel) && ~isempty(nvp.yticklabel)
+    nvp.yticklabel=num2cell(nvp.yticklabel);
 end
 
 X=abs(X);
@@ -74,40 +74,40 @@ for i = 1:length(hchild)
     ZData(ZData<=llim) = llim;
     set(hchild(i), 'ZData', ZData);
 end
-set(gca,'ZScale',varg.scale)
-if varg.colorbar
+set(gca,'ZScale',nvp.scale)
+if nvp.colorbar
     colorbar 
-    set(gca,'ColorScale',varg.scale)
+    set(gca,'ColorScale',nvp.scale)
 else
     colorbar off
 end
 
 for k = 1:length(b)
     zdata = b(k).ZData;
-    switch varg.scale
+    switch nvp.scale
         case 'log'
             b(k).CData = log10(zdata);
         case 'linear'
             b(k).CData = zdata;
     end
     b(k).FaceColor = 'interp';
-    b(k).EdgeColor = varg.EdgeColor;
+    b(k).EdgeColor = nvp.EdgeColor;
     set(hggetbehavior(b(k), 'Datacursor'), 'Enable', true);
 %     dataTipInteraction('SnapToDataVertex','off')
 %     setinteractionhint(b(k), 'DataCursor', true);
 end
 %     fdgsgh
 
-if ~isempty(varg.title)
-    title(varg.title)
+if ~isempty(nvp.title)
+    title(nvp.title)
 end
 
-if ~isempty(varg.xticklabel)
-    set(gca,'xtick',1:numel(varg.xticklabel),'xticklabel',[varg.xticklabel{:}])
+if ~isempty(nvp.xticklabel)
+    set(gca,'xtick',1:numel(nvp.xticklabel),'xticklabel',[nvp.xticklabel{:}])
 end
 
-if ~isempty(varg.yticklabel)
-    set(gca,'ytick',1:numel(varg.yticklabel),'yticklabel',[varg.yticklabel{:}])
+if ~isempty(nvp.yticklabel)
+    set(gca,'ytick',1:numel(nvp.yticklabel),'yticklabel',[nvp.yticklabel{:}])
 end
 a=gca;
 a.Interactions = [dataTipInteraction panInteraction];

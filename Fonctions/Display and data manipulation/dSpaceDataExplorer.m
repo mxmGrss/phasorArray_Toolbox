@@ -24,7 +24,7 @@ classdef dSpaceDataExplorer < handle
     end
 
     methods
-        function obj = dSpaceDataExplorer(s,optarg)
+        function obj = dSpaceDataExplorer(s,nvp)
             %DSPACE DATA EXPLORER Explore and visualize dSpace data
             %   dSpaceDataExplorer(s) takes a struct variable s and displays its fields
             %   recursively in a hierarchical manner, allowing the user to select and
@@ -33,10 +33,10 @@ classdef dSpaceDataExplorer < handle
             % Extract Xdata and Ydata
             arguments
                 s = [];
-                optarg.speedSigName = 'motor_speed_res_rads';
-                optarg.phaseSigName = 'motor_angle_res_rad';
-                optarg.sftFactor = 1;
-                optarg.folder = []
+                nvp.speedSigName = 'motor_speed_res_rads';
+                nvp.phaseSigName = 'motor_angle_res_rad';
+                nvp.sftFactor = 1;
+                nvp.folder = []
             end
             if isempty(s)
                 %open file explorer, load the file, and use it as s
@@ -189,7 +189,7 @@ classdef dSpaceDataExplorer < handle
             sftFactorLabel.Layout.Row = 2;
             sftFactorLabel.Layout.Column = 1;
 
-            obj.sftFactorField = uieditfield(ActionGrid, 'numeric', 'Value', optarg.sftFactor);
+            obj.sftFactorField = uieditfield(ActionGrid, 'numeric', 'Value', nvp.sftFactor);
             obj.sftFactorField.Layout.Row = 2;
             obj.sftFactorField.Layout.Column = 2;
 
@@ -211,8 +211,8 @@ classdef dSpaceDataExplorer < handle
 
             % Set the default values for angular speed and phase dropdowns
             try
-            angularSpeedIdx = find(strcmp(obj.clearedSignalNames, optarg.speedSigName));
-            phaseIdx = find(strcmp(obj.clearedSignalNames, optarg.phaseSigName));
+            angularSpeedIdx = find(strcmp(obj.clearedSignalNames, nvp.speedSigName));
+            phaseIdx = find(strcmp(obj.clearedSignalNames, nvp.phaseSigName));
             if isempty(angularSpeedIdx);angularSpeedIdx=1;end
             if isempty(phaseIdx);phaseIdx=1;end
             set(obj.angularSpeedDropdown, 'Value', angularSpeedIdx);
@@ -221,7 +221,7 @@ classdef dSpaceDataExplorer < handle
             end
 
             % Set the default value for SFT factor
-            set(obj.sftFactorField, 'Value', optarg.sftFactor);
+            set(obj.sftFactorField, 'Value', nvp.sftFactor);
 
             % Create text fields for ref harmonic and max order
             refHarmonicLabel = uilabel(ActionGrid, 'Text', 'Ref Harmonic:');
@@ -370,8 +370,8 @@ classdef dSpaceDataExplorer < handle
                 set(obj.listbox, 'ItemsData', obj.flattenedTree(:,2));
 
                 % Set the default values for angular speed and phase dropdowns
-                angularSpeedIdx = find(strcmp(obj.clearedSignalNames, optarg.speedSigName));
-                phaseIdx = find(strcmp(obj.clearedSignalNames, optarg.phaseSigName));
+                angularSpeedIdx = find(strcmp(obj.clearedSignalNames, nvp.speedSigName));
+                phaseIdx = find(strcmp(obj.clearedSignalNames, nvp.phaseSigName));
                 try
                     set(obj.angularSpeedDropdown, 'Value', angularSpeedIdx);
                 catch

@@ -1,10 +1,10 @@
-function T = manageTiledLayout(parent, nx, ny, Tag, varg)
+function T = manageTiledLayout(parent, nx, ny, Tag, nvp)
     arguments
         parent = []          
         nx (1,1) double = 1
         ny (1,1) double = 1
         Tag string = "plotTimePhasor"
-        varg.ishold = []     
+        nvp.ishold = []     
     end
 
     % 1. Trouver l'ancre
@@ -17,7 +17,7 @@ function T = manageTiledLayout(parent, nx, ny, Tag, varg)
         if isempty(targetAx), targetAx = axes('Parent', parent); end
     end
 
-    holdState = varg.ishold;
+    holdState = nvp.ishold;
     if isempty(holdState), holdState = ishold(targetAx); end
 
     % 2. RECHERCHE DU LAYOUT EXISTANT

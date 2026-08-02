@@ -1,8 +1,8 @@
-function [phasor_cell, theta, omega, meta, phasorStruct] = angularsft_v2(theta, time, omega, signals, harmonics, NameSignals, PlotTAPRI, optarg)
-% ANGULARSFT_V2 Compute Sliding Fourier Transform for time-varying frequency signals (CLEAN VERSION)
+function [phasor_cell, theta, omega, meta, phasorStruct] = angularsft_v2(theta, time, omega, signals, harmonics, NameSignals, PlotTAPRI, nvp)
+% ANGULARSFT_V2 Compute Sliding Fourier Transform for time-varying frequency signals.
 %
-% This is a refactored version of angularsft with improved clarity, performance,
-% and explicit handling of fractional interpolation using find2piAntecedant.
+% Refactored version of angularsft with explicit handling of fractional
+% interpolation using find2piAntecedant.
 %
 %   [phasor_cell, theta, omega, meta, phasorStruct] = ANGULARSFT_V2(theta, time, omega, signals, harmonics, NameSignals, PlotTAPRI, options)
 %
@@ -78,13 +78,13 @@ arguments
     harmonics = 0:5
     NameSignals = {}
     PlotTAPRI {mustBeNumericOrLogical} = [true true false false false]
-    optarg.xAxes {mustBeMember(optarg.xAxes, {'time', 'phase', 'revolution'})} = 'time'
-    optarg.method {mustBeMember(optarg.method, {'angle', 'mixed'})} = 'angle'
-    optarg.orientation {mustBeMember(optarg.orientation, {'ver', 'hor'})} = 'hor'
-    optarg.plotDebut logical = true
-    optarg.plotOmega logical = false
-    optarg.plotlang = 'fr'
-    optarg.interpMethod {mustBeMember(optarg.interpMethod, {'find2pi', 'interp1'})} = 'find2pi'
+    nvp.xAxes {mustBeMember(nvp.xAxes, {'time', 'phase', 'revolution'})} = 'time'
+    nvp.method {mustBeMember(nvp.method, {'angle', 'mixed'})} = 'angle'
+    nvp.orientation {mustBeMember(nvp.orientation, {'ver', 'hor'})} = 'hor'
+    nvp.plotDebut logical = true
+    nvp.plotOmega logical = false
+    nvp.plotlang = 'fr'
+    nvp.interpMethod {mustBeMember(nvp.interpMethod, {'find2pi', 'interp1'})} = 'find2pi'
 end
 
 %% STEP 1: Validate and normalize inputs
@@ -92,7 +92,7 @@ end
     validateInputs_v2(theta, time, omega, signals, harmonics, NameSignals, PlotTAPRI);
 
 %% STEP 2: Find monotonic region and compute interpolation indices
-switch optarg.interpMethod
+switch nvp.interpMethod
     case 'find2pi'
         % Use find2piAntecedant (optimized, explicit fractional interpolation)
         [k, f] = find2piAntecedant(theta);
@@ -136,7 +136,7 @@ for ii = 1:nSignals
     
     % Compute phasors
     phasor_ii = computePhasors_v2(theta, time, omega, Signal_ii, Hmcs_ii, ...
-                                   istart, k, f, optarg.method, optarg.interpMethod);
+                                   istart, k, f, nvp.method, nvp.interpMethod);
     
     % Store results
     phasor_cell{ii} = phasor_ii;
@@ -158,17 +158,17 @@ meta.istart = istart;
 meta.k = k;
 meta.f = f;
 meta.nRevolutions = theta(end) / (2*pi);
-meta.method = optarg.method;
-meta.interpMethod = optarg.interpMethod;
+meta.method = nvp.method;
+meta.interpMethod = nvp.interpMethod;
 
 %% STEP 5: Plot if requested
 if sum(PlotTAPRI) > 0
     plotAngularSFT(phasorStruct, PlotTAPRI, ...
-                   "orientation", optarg.orientation, ...
-                   "plotDebut", optarg.plotDebut, ...
-                   "plotOmega", optarg.plotOmega, ...
-                   "xAxes", optarg.xAxes, ...
-                   "lang", optarg.plotlang);
+                   "orientation", nvp.orientation, ...
+                   "plotDebut", nvp.plotDebut, ...
+                   "plotOmega", nvp.plotOmega, ...
+                   "xAxes", nvp.xAxes, ...
+                   "lang", nvp.plotlang);
 end
 
 end

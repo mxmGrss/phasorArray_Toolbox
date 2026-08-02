@@ -1,4 +1,4 @@
-function [trueMu, trueL, stats] = findTruelm(ev, T, nx, varg)
+function [trueMu, trueL, stats] = findTruelm(ev, T, nx, nvp)
 % FINDTRUELM  Extract true Floquet exponents from a Hill/HSS spectrum.
 %   Single coherent topological solver (V3 Engine).
 %   Fixes the two known failure modes of previous versions:
@@ -18,12 +18,12 @@ arguments
     ev   (:,1) double
     T    (1,1) double
     nx   (1,1) {mustBeInteger, mustBePositive}
-    varg.trA0    = []
-    varg.Rmerge  (1,1) double = 0      % 0 = auto (fraction of spectrum scale)
-    varg.verbose (1,1) logical = false
+    nvp.trA0    = []
+    nvp.Rmerge  (1,1) double = 0      % 0 = auto (fraction of spectrum scale)
+    nvp.verbose (1,1) logical = false
     
     % Legacy options ignored
-    varg.method = []
+    nvp.method = []
 end
 
 omega   = 2*pi / T;
@@ -42,8 +42,8 @@ for i = 1:N
 end
 cdist2 = @(ar,ai,br,bi) (ar-br).^2 + wrapToHalf(ai-bi,omega).^2;
 
-if varg.Rmerge > 0
-    R_merge = varg.Rmerge;
+if nvp.Rmerge > 0
+    R_merge = nvp.Rmerge;
 else
     core    = reEV(dens > 0.2*max(dens));         % dense points; never empty
     scaleD  = (max(core)-min(core)) + omega;
@@ -118,11 +118,11 @@ end
 trueL = exp(T * trueMu);
 
 % ---- Liouville validation --------------------------------------------------
-if ~isempty(varg.trA0)
-    if abs(varg.trA0) > 1e-12*nx
-        liou = abs(sum(trueMu) - varg.trA0) / abs(varg.trA0);
+if ~isempty(nvp.trA0)
+    if abs(nvp.trA0) > 1e-12*nx
+        liou = abs(sum(trueMu) - nvp.trA0) / abs(nvp.trA0);
     else
-        liou = abs(sum(trueMu) - varg.trA0);
+        liou = abs(sum(trueMu) - nvp.trA0);
     end
 else
     liou = NaN;
@@ -132,7 +132,7 @@ stats = struct('method','v3-cylindrical-replicate', 'confidence',conf, ...
     'rmse',rmseV, 'cluster_size',csz, 'outlier_ratio', NaN, ...
     'liouvilleRes', liou, 'nPeaks', nP, 'mult', {mult(keep)});
 
-if varg.verbose
+if nvp.verbose
     fprintf('[v3] %d distinct peaks, masses=%s, mult=%s, Liouville=%.2e\n', ...
         nP, mat2str(mass'), mat2str(mult(keep)'), liou);
 end

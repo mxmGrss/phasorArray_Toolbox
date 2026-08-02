@@ -1,7 +1,7 @@
-function [r,t] = plot(o1,T,t,arg)
+function [r,t] = plot(o1,T,t,nvp)
     % PLOT Evaluate and plot a T-periodic `PhasorArray`.
     %
-    %   PLOT(o1, T, t, arg) computes and plots the time-domain representation of a
+    %   PLOT(o1, T, t, nvp) computes and plots the time-domain representation of a
     %   `PhasorArray`, assuming it is `T`-periodic.
     %
     %   This method evaluates the time-domain representation of a `PhasorArray` and
@@ -12,7 +12,7 @@ function [r,t] = plot(o1,T,t,arg)
     %   Inputs:
     %     o1  - (PhasorArray) The `PhasorArray` object to be evaluated and plotted.
     %     T   - (double, optional) Period of the `PhasorArray`.
-    %              - Default: `1`.
+    %              - Default: `2*pi`.
     %     t   - (vector or scalar, optional) Time instants for evaluation.
     %              - If `t = []`: A default time grid is generated as `0:dt:T-dt`, where `dt = T/(20*h)`, with `h` the highest harmonic.
     %              - If `t = [tmin tmax]`: Uses `t = tmin:dt:tmax` with `dt` computed as above.
@@ -59,51 +59,51 @@ function [r,t] = plot(o1,T,t,arg)
     %   See also: PhasorArray2time.
     arguments
         o1
-        T=1
+        T=2*pi
         t=[]
-        arg.plot logical =true
-        arg.explosed logical =true
-        arg.hold logical =false
-        arg.DispImag logical = []
-        arg.DispReal logical = []
-        arg.ZeroCentered logical =false
-        arg.title = [] %options : "none" or string or []
-        arg.LineStyle='-'
-        arg.GlobalYLim logical =false
-        arg.linkaxes='x'
-        arg.forceReal = false
-        arg.grid = 'on'
+        nvp.plot logical =true
+        nvp.explosed logical =true
+        nvp.hold logical =false
+        nvp.DispImag logical = []
+        nvp.DispReal logical = []
+        nvp.ZeroCentered logical =false
+        nvp.title = [] %options : "none" or string or []
+        nvp.LineStyle='-'
+        nvp.GlobalYLim logical =false
+        nvp.linkaxes='x'
+        nvp.forceReal = false
+        nvp.grid = 'on'
     end
 
     if isscalar(o1)
-        arg.explosed = false;
+        nvp.explosed = false;
     end
 
     if isspecial(o1)
         o1 = PhasorArray(value(o1.value));
     end
     if ishold
-        arg.hold = true;
+        nvp.hold = true;
     end
     if isreal(o1)
-        arg.forceReal = true;
-        if isempty(arg.DispImag)
-            arg.DispImag = false;
+        nvp.forceReal = true;
+        if isempty(nvp.DispImag)
+            nvp.DispImag = false;
         end
-        if isempty(arg.DispReal)
-            arg.DispReal = true;
+        if isempty(nvp.DispReal)
+            nvp.DispReal = true;
         end
     else
-        if isempty(arg.DispImag)
-            arg.DispImag = true;
+        if isempty(nvp.DispImag)
+            nvp.DispImag = true;
         end
-        if isempty(arg.DispReal)
-            arg.DispReal = true;
+        if isempty(nvp.DispReal)
+            nvp.DispReal = true;
         end
     end
-    [rr,tt]=PhasorArray2time(o1,T,t,plot=arg.plot, DispImag=arg.DispImag, ...
-        DispReal=arg.DispReal,explosed=arg.explosed,hold=arg.hold,ZeroCentered=arg.ZeroCentered, ...
-        title=arg.title,LineStyle=arg.LineStyle,GlobalYLim=arg.GlobalYLim,linkaxes=arg.linkaxes,forceReal=arg.forceReal,grid = arg.grid);
+    [rr,tt]=PhasorArray2time(o1,T,t,"plot", nvp.plot, "DispImag", nvp.DispImag, ...
+        DispReal=nvp.DispReal,explosed=nvp.explosed,hold=nvp.hold,ZeroCentered=nvp.ZeroCentered, ...
+        title=nvp.title,LineStyle=nvp.LineStyle,GlobalYLim=nvp.GlobalYLim,linkaxes=nvp.linkaxes,forceReal=nvp.forceReal,grid = nvp.grid);
 
     if nargout>0
         r=rr;

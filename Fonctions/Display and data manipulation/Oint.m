@@ -1,5 +1,6 @@
 function [O,L,hmlist,Lo,Oo] = Oint(T,ny,n_state,harmlist,gainlist)
-%[O,L] = Oint(T,ny,n_state,harmlist,gainlist)
+%OINT State matrices of a periodic multi-harmonic (resonant) integrator.
+%   [O,L] = Oint(T,ny,n_state,harmlist,gainlist)
 %  Produces matrix O(t) and L(t) of adapted size providing the index of the
 %state n_state on y (len(y) = ny), the list of harmonics to be rejected, and a gain (must be a scalar (same gain for all harmonics, or same length as harm_list))
 % Syntaxe

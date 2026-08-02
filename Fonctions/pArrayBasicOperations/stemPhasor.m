@@ -1,4 +1,4 @@
-function  T = stemPhasor(Aph,varopt)
+function  T = stemPhasor(Aph,nvp)
 %STEMPHASOR Plot phasors as stem plots to visualize their amplitudes against their order.
 %
 %   T = stemPhasor(Aph) generates a tiled layout of stem plots to visualize the amplitudes of
@@ -65,18 +65,18 @@ function  T = stemPhasor(Aph,varopt)
 %   See also: TILEDLAYOUT, STEM, PLOT.
 arguments
     Aph
-    varopt.scale {mustBeMember(varopt.scale,{'log','linear'})}='log'
-    varopt.hold=ishold
-    varopt.explosed= true
-    varopt.display {mustBeMember(varopt.display,{'real','imag','both','abs','absangle'})} = 'abs'
-    varopt.marker = "o"
-    varopt.side {mustBeMember(varopt.side,{'both','oneSided'})} = 'oneSided'
-    varopt.parent = []
-    varopt.uniformYLim = false;
+    nvp.scale {mustBeMember(nvp.scale,{'log','linear'})}='log'
+    nvp.hold=ishold
+    nvp.explosed= true
+    nvp.display {mustBeMember(nvp.display,{'real','imag','both','abs','absangle'})} = 'abs'
+    nvp.marker = "o"
+    nvp.side {mustBeMember(nvp.side,{'both','oneSided'})} = 'oneSided'
+    nvp.parent = []
+    nvp.uniformYLim = false;
 end
 
 if ishold
-    varopt.hold=true;
+    nvp.hold=true;
 end
 
 if isa(Aph,'PhasorArray')
@@ -91,7 +91,7 @@ if nh < 2
     nh = 2;
 end
 
-switch varopt.side
+switch nvp.side
     case 'oneSided'
         axe_x = 0:nh;
         phas_index = (nh+1):(2*nh+1);
@@ -100,27 +100,11 @@ switch varopt.side
         phas_index = 1:(2*nh+1);
 end
 
-%is parent a figure :
-%   - YES : is it empty ?
-%      - YES : create a new tiled layout
-%      - NO : is it a tiled layout ?
-%          - YES : is it the right size ?
-%              - YES : use it
-%              - NO : delete it and create a new one
-%          - NO : create a new tiled layout
-%   - NO : is it a tiled layout ?
-%       - YES : is it tagged 'stemPhasor' ?
-%           - YES : is it the right size ?
-%               - YES : use it
-%               - NO : create a new tiled layout inside the parent of parent and tag it 'stemPhasor'
-%           - NO : create a new tiled layout inside the parent in a available space and tag it 'stemPhasor'
-%       - NO : is it a graphical object able to have a tiledLayout as child ?
-%           - YES : create a new tiled layout inside the parent and tag it 'stemPhasor'
-%           - NO : create a new figure and a new tiled layout inside it and tag it 'stemPhasor', display a warning message
 
 
 
-% parent = varopt.parent;
+
+% parent = nvp.parent;
 % ff = ancestor(parent, 'figure'); % Get the figure handle of the parent
 % set(ff, 'Visible', 'off'); % Make the current figure invisible
 
@@ -129,46 +113,46 @@ end
 %T = createTiledLayout(nx, ny); % Create a new tiled layout
 %else
 
-if varopt.explosed
-    T = manageTiledLayout(varopt.parent, nx, ny);
+if nvp.explosed
+    T = manageTiledLayout(nvp.parent, nx, ny);
 else
-    T = manageTiledLayout(varopt.parent, 1, 1);
+    T = manageTiledLayout(nvp.parent, 1, 1);
 end
 
-if varopt.explosed
+if nvp.explosed
     for nyi=1:ny
         for nxi=1:nx
             toto=squeeze(Aph(nxi,nyi,phas_index));
             nexttile(T,sub2ind([ny, nx], nyi, nxi))
-            if varopt.hold
+            if nvp.hold
                 hold on
             end
-            switch varopt.display
+            switch nvp.display
                 case 'real'
-                    stem(phas_index-nh-1,squeeze(real(toto)),varopt.marker)
-                    set(gca,"yscale",varopt.scale)
+                    stem(phas_index-nh-1,squeeze(real(toto)),nvp.marker)
+                    set(gca,"yscale",nvp.scale)
                 case 'imag'
-                    stem(phas_index-nh-1,squeeze(imag(toto)),varopt.marker)
-                    set(gca,"yscale",varopt.scale)
+                    stem(phas_index-nh-1,squeeze(imag(toto)),nvp.marker)
+                    set(gca,"yscale",nvp.scale)
                 case 'both'
-                    stem(phas_index-nh-1,squeeze(real(toto)),varopt.marker)
+                    stem(phas_index-nh-1,squeeze(real(toto)),nvp.marker)
                     yyaxis right
-                    stem(squeeze(imag(toto)),varopt.marker)
+                    stem(squeeze(imag(toto)),nvp.marker)
                 case 'abs'
-                    stem(phas_index-nh-1,squeeze(abs(toto)),varopt.marker)
-                    set(gca,"yscale",varopt.scale)
+                    stem(phas_index-nh-1,squeeze(abs(toto)),nvp.marker)
+                    set(gca,"yscale",nvp.scale)
                     grid on
                     % yyaxis right
-                    % stem(squeeze(angle(toto)),varopt.marker)
+                    % stem(squeeze(angle(toto)),nvp.marker)
                     % ylim([-pi-0.1 pi+0.1])
                     % yyaxis left
                 case 'absangle'
-                    stem(phas_index-nh-1,squeeze(abs(toto)),varopt.marker)
-                    set(gca,"yscale",varopt.scale)
+                    stem(phas_index-nh-1,squeeze(abs(toto)),nvp.marker)
+                    set(gca,"yscale",nvp.scale)
                     grid on
                     ylabel('Abs')
                     yyaxis right
-                    stem(phas_index-nh-1,squeeze(angle(toto)),varopt.marker)
+                    stem(phas_index-nh-1,squeeze(angle(toto)),nvp.marker)
                     ylim([-pi-0.1 pi+0.1])
                     ylabel('angle')
                     yyaxis left
@@ -177,7 +161,7 @@ if varopt.explosed
             toto = xlim;
             xticks(gca,(ceil(toto(1)):1:floor(toto(2))))
             grid minor
-            if varopt.hold
+            if nvp.hold
                 hold off
             end
             if nxi == nx
@@ -186,7 +170,7 @@ if varopt.explosed
         end
     end
     try
-        if varopt.uniformYLim
+        if nvp.uniformYLim
             allAxes = findall(T, 'Type', 'axes');
             % Get the current y-limits of all axes
             yLimits = arrayfun(@(ax) ax.YLim, allAxes, 'UniformOutput', false);
@@ -205,11 +189,11 @@ else
     toto=reshape(Aph,[nx*ny 2*nh+1]);
     toto=toto(:,phas_index);
     nexttile(T,1)
-    if varopt.hold
+    if nvp.hold
         hold on
     end
-    stem(phas_index-nh-1,abs(toto)',varopt.marker)
-    if varopt.hold
+    stem(phas_index-nh-1,abs(toto)',nvp.marker)
+    if nvp.hold
         hold off
     end
     xlim(gca,"padded")
@@ -217,10 +201,10 @@ else
     xticks(gca,(ceil(toto(1)):1:floor(toto(2))))
     grid on
     grid minor
-    set(gca,"yscale",varopt.scale)
+    set(gca,"yscale",nvp.scale)
 end
-if varopt.explosed
-    switch varopt.display
+if nvp.explosed
+    switch nvp.display
         case 'real'
             sgtitle('stem real part of phasor of Matrix')
         case 'imag'
@@ -231,7 +215,7 @@ if varopt.explosed
             sgtitle('stem abs of phasor of Matrix')
     end
 else
-    switch varopt.display
+    switch nvp.display
         case 'real'
             title('stem real part of phasor of Matrix')
         case 'imag'

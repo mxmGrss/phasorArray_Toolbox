@@ -1,4 +1,4 @@
-function [UHat, istart, i_first_rev, thetaHat, timeHat, L, F, IDX] = shift2pi(theta, time, U, optargin)
+function [UHat, istart, i_first_rev, thetaHat, timeHat, L, F, IDX] = shift2pi(theta, time, U, nvp)
     %SHIFT2PI Shifts the signal U by 2*pi in the theta domain.
     %
     % This function performs angular domain signal shifting, which is useful for
@@ -8,13 +8,13 @@ function [UHat, istart, i_first_rev, thetaHat, timeHat, L, F, IDX] = shift2pi(th
     %
     % Syntax:
     %   [UHat, istart, i_first_rev, thetaHat, timeHat, L, F, IDX] = ...
-    %       SHIFT2PI(theta, time, U, optargin)
+    %       SHIFT2PI(theta, time, U, nvp)
     %
     % Inputs:
     %   theta    - Angular position vector [rad] or angular velocity if isOmega=true
     %   time     - Time vector [s]
     %   U        - Signal matrix to shift (optional, can be empty)
-    %   optargin - Options structure with fields:
+    %   nvp - Name-Value arguments with fields:
     %              .isOmega - logical, true if theta is angular velocity [rad/s]
     %
     % Outputs:
@@ -33,13 +33,13 @@ function [UHat, istart, i_first_rev, thetaHat, timeHat, L, F, IDX] = shift2pi(th
         theta (:,1) double
         time (:,1) double
         U (:,:) double = []
-        optargin.isOmega (1,1) logical = false
+        nvp.isOmega (1,1) logical = false
     end
     % Constants
     ANGULAR_SHIFT = 2*pi;
     
     % Step 1: Preprocess and validate inputs
-    [theta, time, U] = preprocessInputs(theta, time, U, optargin.isOmega);
+    [theta, time, U] = preprocessInputs(theta, time, U, nvp.isOmega);
     
     % Step 2: Find the monotonic increasing region
     istart = findMonotonicRegionStart(theta);
@@ -146,6 +146,7 @@ function istart = findMonotonicRegionStart(theta)
     % - Interpolation requires unique mapping: each angle should appear only once
     % - Non-monotonic regions create ambiguity in the shift operation
     % - Starting from a monotonic region ensures stable numerical behavior
+
     %
     % Algorithm: Uses forward search with minimum length requirement
     
@@ -212,6 +213,7 @@ function IDX = computeShiftIndexMapping(theta, istart, angularShift)
     %
     % Physical meaning: IDX(k) tells us which past sample to use when we want
     % the signal value from 2π radians ago relative to sample k.
+
     
     nSamples = numel(theta);
     IDX = nan(size(theta));  % Use NaN for undefined regions (more explicit)

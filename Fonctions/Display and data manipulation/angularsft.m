@@ -1,4 +1,4 @@
-function [phasor_cell,theta,omega,IDX, phasorStruct] = angularsft(theta,time,omega,signals,harmonics,NameSignals,PlotTAPRI,optarg)
+function [phasor_cell,theta,omega,IDX, phasorStruct] = angularsft(theta,time,omega,signals,harmonics,NameSignals,PlotTAPRI,nvp)
 % ANGULARSFT Compute Sliding Fourier Transform for a non-uniformly sampled periodic signal
 % where the fundamental frequency varies over time.
 %
@@ -64,15 +64,15 @@ arguments
     harmonics  = 0:5
     NameSignals={}
     PlotTAPRI {mustBeNumericOrLogical}=[true true false false false]
-    optarg.xAxes {mustBeMember(optarg.xAxes,{'time','phase','revolution'})} = 'time'
-    optarg.method {mustBeMember(optarg.method,{'angle','mixed'})} = 'angle'
-    optarg.orientation {mustBeMember(optarg.orientation,{'ver','hor'})} = 'hor'
-    optarg.plotDebut logical = true
-    optarg.plotOmega logical = false
-    optarg.plotlang = 'fr'
+    nvp.xAxes {mustBeMember(nvp.xAxes,{'time','phase','revolution'})} = 'time'
+    nvp.method {mustBeMember(nvp.method,{'angle','mixed'})} = 'angle'
+    nvp.orientation {mustBeMember(nvp.orientation,{'ver','hor'})} = 'hor'
+    nvp.plotDebut logical = true
+    nvp.plotOmega logical = false
+    nvp.plotlang = 'fr'
 end
 
-[theta,time,omega,signals,harmonics,NameSignals,PlotTAPRI,~,~] = validate_input(theta,time,omega,signals,harmonics,NameSignals,PlotTAPRI,optarg);
+[theta,time,omega,signals,harmonics,NameSignals,PlotTAPRI,~,~] = validate_input(theta,time,omega,signals,harmonics,NameSignals,PlotTAPRI,nvp);
 
 %first we check that d theta/dt is not changing sign
 % dtth = gradient(theta);
@@ -150,7 +150,7 @@ for ii = 1:numel(signals)
 
 
         baseExp = exp(-1i*Hmcs_ii'*theta');
-        switch optarg.method
+        switch nvp.method
             case 'angle'
                 base = baseExp;
                 x_int = theta;
@@ -227,7 +227,7 @@ end
 %%%%%%%% Affichage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if sum(PlotTAPRI)>0
-    plotAngularSFT(phasorStruct,PlotTAPRI,"orientation",optarg.orientation,"plotDebut",optarg.plotDebut,"plotOmega",optarg.plotOmega,"xAxes",optarg.xAxes,"lang",optarg.plotlang)
+    plotAngularSFT(phasorStruct,PlotTAPRI,"orientation",nvp.orientation,"plotDebut",nvp.plotDebut,"plotOmega",nvp.plotOmega,"xAxes",nvp.xAxes,"lang",nvp.plotlang)
 end
 
     function [theta,time,w,sig,hm,nm_sig,PlotTAPRI,outcell,cor_i]= validate_input(theta,time,w,sig,hm,nm_sig,PlotTAPRI,plotdeb,plotw,options)

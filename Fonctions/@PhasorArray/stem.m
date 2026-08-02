@@ -1,7 +1,7 @@
-function Tout = stem(o1,varopt)
+function Tout = stem(o1,nvp)
     % STEM Generate a stem plot for one or more `PhasorArray` objects.
     %
-    %   STEM(o1, varopt) generates a stem plot to visualize the phasors of one or more
+    %   STEM(o1, nvp) generates a stem plot to visualize the phasors of one or more
     %   `PhasorArray` objects. Each input object is plotted with a distinct marker style,
     %   and the function integrates seamlessly with existing figures, axes, or tiled layouts.
     %
@@ -58,13 +58,13 @@ function Tout = stem(o1,varopt)
         o1
     end
     arguments
-        varopt.scale {mustBeMember(varopt.scale,{'log','linear'})}='log'
-        varopt.explosed = true
-        varopt.display {mustBeMember(varopt.display,{'real','imag','both','abs','absangle'})} = 'abs'
-        varopt.marker = {};   % empty = not user-provided (sentinel)
-        varopt.side {mustBeMember(varopt.side,{'both','oneSided'})} = 'oneSided'
-        varopt.parent = gcf
-        varopt.uniformYLim logical = false;
+        nvp.scale {mustBeMember(nvp.scale,{'log','linear'})}='log'
+        nvp.explosed = true
+        nvp.display {mustBeMember(nvp.display,{'real','imag','both','abs','absangle'})} = 'abs'
+        nvp.marker = {};   % empty = not user-provided (sentinel)
+        nvp.side {mustBeMember(nvp.side,{'both','oneSided'})} = 'oneSided'
+        nvp.parent = gcf
+        nvp.uniformYLim logical = false;
     end
 
 
@@ -87,42 +87,42 @@ function Tout = stem(o1,varopt)
 
     if hasInlineMarkers
         % Warn if the 'marker' name-value is also set
-        if ~isempty(varopt.marker)
+        if ~isempty(nvp.marker)
             warning('PhasorArray:stem:markerConflict', ...
                 ['Markers were specified both inline and via the ''marker'' name-value argument. ' ...
                 'Inline markers take precedence; ''marker'' is ignored.']);
         end
-        varopt.marker = o1(2:2:end);
+        nvp.marker = o1(2:2:end);
         o1 = o1(1:2:end);
     end
 
     % Apply default marker list if none was provided (neither inline nor name-value)
-    if isempty(varopt.marker)
-        varopt.marker = {"o","*","x","square","diamond","^","v",">","<"};
+    if isempty(nvp.marker)
+        nvp.marker = {"o","*","x","square","diamond","^","v",">","<"};
     end
 
     % Check if all PhasorArray objects in o1 are real
     if ~all(cellfun(@(x) isreal(x), o1))
-        varopt.side = 'both';
+        nvp.side = 'both';
     end
 
     if isscalar(o1{1})
-        varopt.explosed = false;
+        nvp.explosed = false;
     end
 
-    if ~isa(varopt.marker, "cell")
-        varopt.marker = {varopt.marker};
+    if ~isa(nvp.marker, "cell")
+        nvp.marker = {nvp.marker};
     end
     varhold = ishold;
-    T = stemPhasor(o1{1}, scale=varopt.scale, hold=varhold, explosed=varopt.explosed, display=varopt.display, marker=varopt.marker{1}, side=varopt.side, parent=varopt.parent, uniformYLim=varopt.uniformYLim);
+    T = stemPhasor(o1{1}, "scale", nvp.scale, "hold", varhold, "explosed", nvp.explosed, "display", nvp.display, "marker", nvp.marker{1}, "side", nvp.side, "parent", nvp.parent, "uniformYLim", nvp.uniformYLim);
     n = numel(o1);
-    nmarker = numel(varopt.marker);
+    nmarker = numel(nvp.marker);
     for n_iter = 2:n
         oi = o1{n_iter};
         ni = mod(n_iter - 1, nmarker) + 1;   % 1-based cyclic index
         hold on
-        stemPhasor(oi, scale=varopt.scale, hold=true, explosed=varopt.explosed, ...
-            marker=varopt.marker{ni}, display=varopt.display, parent=gca, uniformYLim=varopt.uniformYLim);
+        stemPhasor(oi, "scale", nvp.scale, "hold", true, "explosed", nvp.explosed, ...
+            marker=nvp.marker{ni}, display=nvp.display, parent=gca, uniformYLim=nvp.uniformYLim);
     end
     hold off
     if varhold
