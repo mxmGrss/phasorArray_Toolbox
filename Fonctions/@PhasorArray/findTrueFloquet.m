@@ -29,6 +29,11 @@ else
     if isempty(nvp.hinit), nvp.hinit = 8; end
 end
 
+% Guarantee at least one loop pass: if the input already carries more
+% harmonics than hmax, the while below would be skipped and `st` (assigned
+% only inside it) would be undefined at the post-loop stats build.
+nvp.hmax = max(nvp.hmax, nvp.hinit);
+
 omega = 2*pi/T;
 prevMu = [];
 hist = [];
