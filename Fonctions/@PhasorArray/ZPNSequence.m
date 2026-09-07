@@ -6,7 +6,7 @@ function out = ZPNSequence(dephase,order,include0)
     %   P(θ) = [ 1 1 1;
     %            1 a^2 a;
     %            1 a a^2]
-    %   where θ = k ϑ + dephase, with k the order of the transformation,
+    %   where θ = k (ϑ + dephase), with k the order of the transformation,
     %    and ϑ the angle of the transformation, often the electrical angle.
     %
     %  The zero, positive, and negative sequence transformation is used to transform three-phase quantities from abc to the ZPN frame.

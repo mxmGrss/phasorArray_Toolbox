@@ -3,7 +3,7 @@ function out = dq0(dephase, order, include0)
     %  out = DQ0(dephase, order) returns a PhasorArray representation of the dq0 transformation matrix.
     %
     %  The dq0 transform is defined as P(θ) = Rotdq0(θ) * Concordia(),
-    %    with θ = k ϑ + dephase, where k is the order of the transformation,
+    %    with θ = k (ϑ + dephase), where k is the order of the transformation,
     %    and ϑ is the angle of the transformation, often the electrical angle.
     %
     %   Hence P(θ) = [cos(θ) cos(θ-2π/3) cos(θ+2π/3);

@@ -7,7 +7,7 @@ function out = negativeRotdq0(dephase,order,include0)
     %  It is defined as the matrix C(θ) = [ cos(θ)  -sin(θ) 0;
     %                                      -sin(θ)  -cos(θ) 0;
     %                                       0       0      1 ]
-    %                   where θ = k ϑ + dephase, with k the order of the transformation,
+    %                   where θ = k (ϑ + dephase), with k the order of the transformation,
     %                    and ϑ the angle of the transformation, often the electrical angle.
     %
     %   If include0 is false, the zero sequence is removed from the transformation, resulting in the 2x2 rotation matrix:

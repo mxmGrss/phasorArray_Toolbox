@@ -3,7 +3,7 @@ function out = negativePark(dephase,order,include0)
     %  out = NEGATIVEPARK() returns a PhasorArray representation of the negative Park transformation matrix.
     %
     %  The negative dq0 transform is defined as P(θ) = negativeRot(θ) * Clark(),
-    %    with θ = k ϑ + dephase. where k is the order of the transformation,
+    %    with θ = k (ϑ + dephase). where k is the order of the transformation,
     %    and ϑ is the angle of the transformation, often the electrical angle.
     %
     %   Hence P(θ) = [cos(θ) cos(θ+2π/3) cos(θ-2π/3);

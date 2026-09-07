@@ -4,7 +4,7 @@ function out = zeroPosNegSequenceDQ(dephase,order,include0)
     %
     %  The zero, positive, and negative sequence dq transform is defined as:
     %    P(θ) = [zero(θ) ; dq(θ) ; negativeDQ(θ)],
-    %    with θ = k ϑ + dephase, where k is the order of the transformation,
+    %    with θ = k (ϑ + dephase), where k is the order of the transformation,
     %    and ϑ is the angle of the transformation, often the electrical angle.
     %
     %   Hence P(θ) = [  1/√2     1/√2         1/√2  ;
