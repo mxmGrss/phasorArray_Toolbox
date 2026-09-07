@@ -88,7 +88,8 @@ function [res, info] = lyapG(pA1, pA2, pA3, pA4, pA5, nvp)
 %     info  Solver diagnostics struct — same fields as PhasorArray/lyap:
 %       .status .statusMsg .resrelnorm .resnorm .h .h_history .resrel_history
 %       .res_history .time_history .regime_history .s_alg_history .s_exp_history
-%       .resPsym .residualPhasor
+%       .solskewnorm .hForTargetResidual .targetResidual .residualPhasor
+%     Built by PACKSOLVERINFO, which defines the contract once for all solvers.
 %
 %   EXAMPLES:
 %     % Descriptor Lyapunov, E(t) periodic, adaptive truncation
@@ -219,10 +220,14 @@ solveAtH = @(hh) solveOnce(pA1, pA2, pA3, pA4, pA5, hh, omega, T, nvp);
 
 if ~autoUpdateh
     [res, resnorm, resrelnorm, resPhasor] = solveAtH(h);
-    info = packInfo(3, sprintf('Fixed h=%d.', h), ...
-        resrelnorm, resnorm, h, [], [], [], [], {}, [], [], res, resPhasor, nvp);
-    info.hForTargetResidual = NaN;   % no refinement, nothing to extrapolate
-    info.targetResidual     = NaN;
+    % No refinement ran, so the histories and the extrapolated order stay at
+    % their documented defaults -- packSolverInfo fills them in.
+    info = packSolverInfo( ...
+        struct('h', h, 'resnorm', resnorm, 'resrelnorm', resrelnorm), ...
+        struct('status', 3, 'statusMsg', sprintf('Fixed h=%d.', h)), ...
+        solution            = res, ...
+        storeResidualPhasor = nvp.storeResidualPhasor, ...
+        residualPhasor      = resPhasor);
     return
 end
 
@@ -249,13 +254,10 @@ cfg = struct( ...
 [best, trace] = adaptiveHSolve(solveAtH, h, cfg);
 
 res  = best.sol;
-info = packInfo(trace.status, trace.statusMsg, best.resrelnorm, best.resnorm, best.h, ...
-    trace.h_history, trace.resrel_history, trace.res_history, trace.time_history, ...
-    trace.regime_history, trace.s_alg_history, trace.s_exp_history, ...
-    best.sol, best.resPhasor, nvp);
-% The order a near-zero residual would need, extrapolated at the exit.
-info.hForTargetResidual = trace.hForTargetResidual;
-info.targetResidual     = trace.targetResidual;
+info = packSolverInfo(best, trace, ...
+    solution            = best.sol, ...
+    storeResidualPhasor = nvp.storeResidualPhasor, ...
+    residualPhasor      = best.resPhasor);
 
 end % lyapG
 
@@ -319,35 +321,4 @@ resPhasor  = derivTerm + pA1*res*pA5 + pA4*res*pA2 + pA3;
 resnorm    = norm(resPhasor.value, 'fro');
 Cnorm      = norm(pA3.value, 'fro');
 resrelnorm = resnorm / (Cnorm + eps);
-end
-
-%% =========================================================================
-function info = packInfo(status, statusMsg, resrelnorm, resnorm, h, ...
-        h_history, resrel_history, res_history, time_history, ...
-        regime_history, s_alg_history, s_exp_history, res, resPhasor, nvp)
-%PACKINFO  Build the info struct with all fields always present.
-info.status         = status;
-info.statusMsg      = statusMsg;
-info.resrelnorm     = resrelnorm;
-info.resnorm        = resnorm;
-info.h              = h;
-info.h_history      = h_history;      % [] when autoUpdateh=false
-info.resrel_history = resrel_history; % [] when autoUpdateh=false
-info.res_history    = res_history;    % [] when autoUpdateh=false
-info.time_history   = time_history;   % [] when autoUpdateh=false
-info.regime_history = regime_history; % {} when autoUpdateh=false
-info.s_alg_history  = s_alg_history;  % [] when incremental or no algebraic detected
-info.s_exp_history  = s_exp_history;  % [] when incremental or no exponential detected
-
-if size(res,1) == size(res,2)
-    info.resPsym = norm(value(res - res'), 'fro');
-else
-    info.resPsym = NaN;
-end
-
-if nvp.storeResidualPhasor
-    info.residualPhasor = resPhasor;
-else
-    info.residualPhasor = [];
-end
 end

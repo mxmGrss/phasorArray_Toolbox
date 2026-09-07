@@ -44,8 +44,11 @@ function [r, info] = mlHmcDivide(A, B, nvp)
 %       .regime_history  'initial'/'exponential'/'algebraic'/'stagnated' per iter
 %       .s_alg_history   Algebraic slope estimates   ([] if initial regime only)
 %       .s_exp_history   Exponential slope estimates ([] if initial regime only)
-%       .ressym          ||(r - r')/2||_F  (NaN if r not square)
-%       .resasym         ||(r + r')/2||_F  (NaN if r not square)
+%       .solskewnorm     ||(X - X')/2||_F, how far the solution is from
+%                        Hermitian (NaN if it is not square). Replaces .ressym;
+%                        the Hermitian part, formerly .resasym, is recoverable
+%                        as sqrt(energy(X) - solskewnorm^2) since the two parts
+%                        are orthogonal.
 %       .residualPhasor  Residual PhasorArray ([] unless storeResidualPhasor=true)
 %
 %   See also: lyap, mrHmcDivide, plotHmcConvergence
@@ -76,8 +79,11 @@ if isscalar(A) && A.h == 0
         error('PhasorArray:mlHmcDivide:singularScalar', 'Division by zero scalar.')
     end
     r    = PhasorArray(B.value / scalarVal);
-    info = packInfo(3, 'Scalar constant — direct division.', ...
-        0, 0, 0, [], [], [], [], [], [], [], r, [], nvp);
+    info = packSolverInfo( ...
+        struct('h', 0, 'resnorm', 0, 'resrelnorm', 0), ...
+        struct('status', 3, 'statusMsg', 'Scalar constant, direct division.'), ...
+        solution            = r, ...
+        storeResidualPhasor = nvp.storeResidualPhasor);
     return
 end
 
@@ -99,8 +105,12 @@ if isscalar(A) && ~isscalar(B)
     Bnorm        = norm(B.value, 'fro');
     resrelnorm   = resnorm / (Bnorm + eps);
     hFinal       = (size(r.value,3)-1)/2;
-    info = packInfo(3, 'Scalar-periodic × matrix — element-wise recursion.', ...
-        resrelnorm, resnorm, hFinal, [], [], [], [], [], [], [], r, resPhasor, nvp);
+    info = packSolverInfo( ...
+        struct('h', hFinal, 'resnorm', resnorm, 'resrelnorm', resrelnorm), ...
+        struct('status', 3, 'statusMsg', 'Scalar-periodic × matrix, element-wise recursion.'), ...
+        solution            = r, ...
+        storeResidualPhasor = nvp.storeResidualPhasor, ...
+        residualPhasor      = resPhasor);
     return
 end
 
@@ -133,8 +143,14 @@ solve = @(hh) solveAtH(A, B, hh, Bnorm);
 
 if ~nvp.autoUpdateh
     [r, resnorm, resrelnorm, resPhasor] = solve(hIn);
-    info = packInfo(3, sprintf('Fixed hIn=%d.', hIn), ...
-        resrelnorm, resnorm, hIn, [], [], [], [], [], [], [], r, resPhasor, nvp);
+    % No refinement ran, so the histories and the extrapolated order stay at
+    % their documented defaults -- packSolverInfo fills them in.
+    info = packSolverInfo( ...
+        struct('h', hIn, 'resnorm', resnorm, 'resrelnorm', resrelnorm), ...
+        struct('status', 3, 'statusMsg', sprintf('Fixed hIn=%d.', hIn)), ...
+        solution            = r, ...
+        storeResidualPhasor = nvp.storeResidualPhasor, ...
+        residualPhasor      = resPhasor);
     return
 end
 
@@ -160,13 +176,10 @@ cfg = struct( ...
 [best, trace] = adaptiveHSolve(solve, hIn, cfg);
 
 r    = best.sol;
-info = packInfo(trace.status, trace.statusMsg, best.resrelnorm, best.resnorm, best.h, ...
-    trace.h_history, trace.res_history, trace.resrel_history, trace.time_history, ...
-    trace.regime_history, trace.s_alg_history, trace.s_exp_history, ...
-    best.sol, best.resPhasor, nvp);
-% The order a near-zero residual would need, extrapolated at the exit.
-info.hForTargetResidual = trace.hForTargetResidual;
-info.targetResidual     = trace.targetResidual;
+info = packSolverInfo(best, trace, ...
+    solution            = best.sol, ...
+    storeResidualPhasor = nvp.storeResidualPhasor, ...
+    residualPhasor      = best.resPhasor);
 
 end % mlHmcDivide
 
@@ -179,39 +192,4 @@ r       = PhasorArray(TFTB_2_array(res_tb, size(A,2), size(B,2)));
 resPhasor  = A*r - B;
 resnorm    = norm(resPhasor.value, 'fro');
 resrelnorm = resnorm / (Bnorm + eps);
-end
-
-%% =========================================================================
-function info = packInfo(status, statusMsg, resrelnorm, resnorm, h, ...
-        h_history, res_history, resrel_history, time_history, regime_history, ...
-        s_alg_history, s_exp_history, r, resPhasor, nvp)
-%PACKINFO  Build the info struct with all fields always present.
-info.status         = status;
-info.statusMsg      = statusMsg;
-info.resrelnorm     = resrelnorm;
-info.hForTargetResidual = NaN;   % overwritten below when refinement ran
-info.targetResidual     = NaN;
-info.resnorm        = resnorm;
-info.h              = h;
-info.h_history      = h_history;
-info.res_history    = res_history;
-info.resrel_history = resrel_history;
-info.time_history   = time_history;
-info.regime_history = regime_history;
-info.s_alg_history  = s_alg_history;
-info.s_exp_history  = s_exp_history;
-
-if size(r,1) == size(r,2)
-    info.ressym  = norm(value(r - r')/2, 'fro');
-    info.resasym = norm(value(r + r')/2, 'fro');
-else
-    info.ressym  = NaN;
-    info.resasym = NaN;
-end
-
-if nvp.storeResidualPhasor
-    info.residualPhasor = resPhasor;
-else
-    info.residualPhasor = [];
-end
 end
