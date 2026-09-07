@@ -459,5 +459,326 @@ classdef PhasorArrayCalculusTest < matlab.unittest.TestCase
             err = energy(dL - dManual);
             testCase.verifyTrue(err < testCase.tol, sprintf('2x2 Leibniz error: %e', err));
         end
+
+    end
+
+    methods (Test)
+        % Symmetry projections and three-phase transformations.
+        %
+        % Deliberately outside the Install block above: these are regression
+        % coverage, not installation checks. The smoke set answers "is the
+        % install functional", one check per layer in a few seconds, and
+        % every test added to it is paid on every run.
+        function testHermAndSymSplitsAreExact(testCase)
+            % Each split reconstructs A, and each part carries none of the other.
+            % Complex data on purpose: PhasorArray.random returns a real-valued
+            % A(t), on which the Hermitian and symmetric notions coincide and
+            % the test would not separate them.
+            A = PhasorArray(randn(3, 3, 9) + 1i * randn(3, 3, 9));
+            H = mherm(A);   Kh = mherm(A, skewOption='skew');
+            S = msym(A);    Ks = msym(A,  skewOption='skew');
+            testCase.verifyEqual(value(H + Kh), value(A), 'AbsTol', testCase.tol, ...
+                'Hermitian split must reconstruct A');
+            testCase.verifyEqual(value(S + Ks), value(A), 'AbsTol', testCase.tol, ...
+                'symmetric split must reconstruct A');
+            % The next two projections are empty by construction -- that is the
+            % property under test -- so phasorSymmetry warns. Silenced here so
+            % a passing test stays quiet.
+            ws = warning('off', 'PhasorArray:symmetry:emptyProjection');
+            restore = onCleanup(@() warning(ws)); %#ok<NASGU>
+            testCase.verifyLessThan(energy(mherm(H, skewOption='skew')), testCase.tol, ...
+                'the Hermitian part must carry no skew-Hermitian content');
+            testCase.verifyLessThan(energy(msym(S, skewOption='skew')), testCase.tol, ...
+                'the symmetric part must carry no skew-symmetric content');
+        end
+
+        function testHermAndSymAreDistinctNotions(testCase)
+            % A = A' and A = A.' are different properties on complex data: the
+            % Hermitian split conjugates and mirrors the harmonics, the
+            % symmetric one does neither.
+            A = PhasorArray(randn(3, 3, 9) + 1i * randn(3, 3, 9));
+            testCase.verifyFalse(isreal(A), 'the fixture must be complex for this test to mean anything');
+            testCase.verifyGreaterThan(energy(mherm(A) - msym(A)), testCase.tol, ...
+                'Hermitian and symmetric parts must differ on complex data');
+            % They coincide on a real-valued A(t), where conjugation is a no-op.
+            R = PhasorArray.random(3, 3, 4);
+            testCase.verifyTrue(isreal(R), 'PhasorArray.random is expected to give a real A(t)');
+            testCase.verifyLessThan(energy(mherm(R) - msym(R)), 1e-9, ...
+                'on a real A(t) the two notions must agree');
+        end
+
+        function testHermAndSymMatchTheOperatorForms(testCase)
+            % The raw-payload implementations must agree with the operators.
+            % Complex, so that ' and .' are genuinely different operators here.
+            A = PhasorArray(randn(3, 3, 9) + 1i * randn(3, 3, 9));
+            testCase.verifyEqual(value(mherm(A)), value((A + A') * (1/2)), ...
+                'AbsTol', testCase.tol, 'mherm must equal (A + A'')/2');
+            testCase.verifyEqual(value(mherm(A, skewOption='skew')), value((A - A') * (1/2)), ...
+                'AbsTol', testCase.tol, 'skew mherm must equal (A - A'')/2');
+            testCase.verifyEqual(value(msym(A)), value((A + A.') * (1/2)), ...
+                'AbsTol', testCase.tol, 'msym must equal (A + A.'')/2');
+            testCase.verifyEqual(value(msym(A, skewOption='skew')), value((A - A.') * (1/2)), ...
+                'AbsTol', testCase.tol, 'skew msym must equal (A - A.'')/2');
+        end
+
+        function testEnergiesSplitTheTotal(testCase)
+            % Both decompositions are orthogonal, so each pair of energies adds
+            % up to the total -- the identity realEnergy/imagEnergy satisfy.
+            A = PhasorArray(randn(3, 3, 9) + 1i * randn(3, 3, 9));
+            Et = energy(A);
+            testCase.verifyTrue(abs(Et - hermEnergy(A) - hermEnergy(A, false, skewOption='skew')) ...
+                < testCase.tol * max(Et, 1), 'Energy: total ~= herm + skew-herm');
+            testCase.verifyTrue(abs(Et - symEnergy(A) - symEnergy(A, false, skewOption='skew')) ...
+                < testCase.tol * max(Et, 1), 'Energy: total ~= sym + skew-sym');
+        end
+
+        function testSymmetryPredicatesAgreeWhereTheyShould(testCase)
+            % Each predicate must agree with its magnitude counterpart.
+            % ISSYMMETRIC tests every harmonic independently: A(t) is
+            % symmetric exactly when every A_k is. ISHERMITIAN pairs k
+            % with -k (A_k = A_{-k}'), because conjugation mirrors the spectrum.
+            raw = randn(3, 3, 7) + 1i * randn(3, 3, 7);
+
+            Asym = PhasorArray((raw + pagetranspose(raw)) * (1/2));
+            testCase.verifyLessThan(symEnergy(Asym, false, skewOption='skew'), testCase.tol, ...
+                'built symmetric, so it must carry no skew-symmetric energy');
+            testCase.verifyTrue(issymmetric(Asym), 'issymmetric must agree with msym');
+
+            Aherm = PhasorArray((raw + flip(pagectranspose(raw), 3)) * (1/2));
+            testCase.verifyLessThan(hermEnergy(Aherm, false, skewOption='skew'), testCase.tol, ...
+                'built Hermitian in time, so it must carry no skew-Hermitian energy');
+            testCase.verifyTrue(ishermitian(Aherm), 'ishermitian must agree with mherm');
+
+            % The per-slice reading is the wrong one and must not pass: every
+            % A_k Hermitian does not make A(t) Hermitian.
+            Apage = PhasorArray((raw + pagectranspose(raw)) * (1/2));
+            testCase.verifyFalse(ishermitian(Apage), ...
+                'per-slice Hermitian symmetry must not be mistaken for A(t) = A(t)''');
+            testCase.verifyGreaterThan(hermEnergy(Apage, false, skewOption='skew'), testCase.tol, ...
+                'and it must carry skew-Hermitian energy');
+        end
+
+        function testEnergyElementwiseShape(testCase)
+            A = PhasorArray.random(3, 3, 4);
+            Eew = hermEnergy(A, true);
+            testCase.verifySize(Eew, [3 3], 'element-wise energy must be n x m');
+            [Eew2, Etot] = symEnergy(A);
+            testCase.verifySize(Eew2, [3 3], 'two outputs must give the element-wise matrix first');
+            testCase.verifyEqual(sum(Eew2, 'all'), Etot, 'AbsTol', testCase.tol, ...
+                'total must be the sum of the element-wise energies');
+        end
+
+        % ---------------------------------------------------------------
+        % Three-phase transformations
+        %
+        % Public API a user reaches for directly, and until now covered only
+        % for Concordia, dq0 and Park. What follows pins the algebra of the
+        % whole family: which product is orthogonal, which is merely
+        % diagonal, how the pieces compose, and what `order` and `dephase`
+        % actually do.
+        % ---------------------------------------------------------------
+
+        function testClarkIsAmplitudeInvariantAndConstant(testCase)
+            % Clark preserves amplitude, not power: K*K.' is diagonal but not
+            % the identity. The d,q rows carry 2/3 and the zero row 1/3.
+            K = PhasorArray.Clark();
+            testCase.verifyEqual(K.h, 0, 'Clark is a constant matrix, so h must be 0');
+            testCase.verifyEqual(size(value(K)), [3 3], 'Clark must be 3x3 with a single harmonic');
+            testCase.verifyEqual(evalp(K * K.', 0), diag([2/3 2/3 1/3]), ...
+                'AbsTol', testCase.tol, 'Clark*Clark.'' must be diag(2/3, 2/3, 1/3)');
+        end
+
+        function testConcordiaIsPowerInvariant(testCase)
+            % The counterpart of the test above: Concordia is orthogonal, so
+            % it preserves power. testConcordia only checks one entry of the
+            % matrix, which a wrong row ordering would survive.
+            C = PhasorArray.Concordia();
+            testCase.verifyEqual(evalp(C * C.', 0), eye(3), 'AbsTol', testCase.tol, ...
+                'Concordia must be orthogonal');
+        end
+
+        function testRotationsAreOrthogonalAtEveryInstant(testCase)
+            % A rotation stays a rotation at every instant, not only at t=0 --
+            % which is where a sign error in one of the four sine entries
+            % would hide.
+            rotations = {PhasorArray.Rotdq0(0, 1), PhasorArray.negativeRotdq0(0, 1)};
+            for ii = 1:numel(rotations)
+                for t = [0, 0.7, pi/3, 2.1, 5.5]
+                    Rt = evalp(rotations{ii}, t);
+                    testCase.verifyEqual(Rt * Rt.', eye(3), 'AbsTol', testCase.tol, ...
+                        sprintf('rotation not orthogonal at t = %g', t));
+                end
+            end
+        end
+
+        function testDq0FamilyIsPowerInvariantAndParkFamilyIsNot(testCase)
+            % dq0 = rotation * Concordia inherits orthogonality; Park =
+            % rotation * Clark inherits the diagonal-but-not-identity form.
+            % Checking both together is what makes the distinction testable.
+            for t = [0, 0.4, pi/2, 3.3]
+                orthogonal = {PhasorArray.dq0(0, 1), PhasorArray.negativeDQ0(0, 1)};
+                for ii = 1:numel(orthogonal)
+                    Dt = evalp(orthogonal{ii}, t);
+                    testCase.verifyEqual(Dt * Dt.', eye(3), 'AbsTol', testCase.tol, ...
+                        sprintf('dq0-family must be orthogonal at t = %g', t));
+                end
+                diagonal = {PhasorArray.Park(0, 1), PhasorArray.negativePark(0, 1)};
+                for ii = 1:numel(diagonal)
+                    Pt = evalp(diagonal{ii}, t);
+                    testCase.verifyEqual(Pt * Pt.', diag([2/3 2/3 1/3]), ...
+                        'AbsTol', testCase.tol, ...
+                        sprintf('Park-family must be diag(2/3,2/3,1/3) at t = %g', t));
+                end
+            end
+        end
+
+        function testTransformsFactorThroughTheirRotation(testCase)
+            % Each composite transform is exactly rotation * static frame,
+            % as the docstrings promise.
+            testCase.verifyLessThan(energy(PhasorArray.Park(0, 1) ...
+                - PhasorArray.Rotdq0(0, 1) * PhasorArray.Clark()), testCase.tol, ...
+                'Park must equal Rotdq0 * Clark');
+            testCase.verifyLessThan(energy(PhasorArray.dq0(0, 1) ...
+                - PhasorArray.Rotdq0(0, 1) * PhasorArray.Concordia()), testCase.tol, ...
+                'dq0 must equal Rotdq0 * Concordia');
+            testCase.verifyLessThan(energy(PhasorArray.negativeDQ0(0, 1) ...
+                - PhasorArray.negativeRotdq0(0, 1) * PhasorArray.Concordia()), testCase.tol, ...
+                'negativeDQ0 must equal negativeRotdq0 * Concordia');
+            testCase.verifyLessThan(energy(PhasorArray.negativePark(0, 1) ...
+                - PhasorArray.negativeRotdq0(0, 1) * PhasorArray.Clark()), testCase.tol, ...
+                'negativePark must equal negativeRotdq0 * Clark');
+        end
+
+        function testDq0MapsBalancedThreePhaseToAConstant(testCase)
+            % The power-invariant twin of testParkMapsBalancedThreePhaseToConstantDq0.
+            % The d component lands on sqrt(3/2), not 1: that factor is the
+            % whole difference between the two conventions, so a test that
+            % only checked q = 0 would not see them swapped.
+            abc = [PhasorArray.cos(0, 1); PhasorArray.cos(-2*pi/3, 1); PhasorArray.cos(2*pi/3, 1)];
+            y   = PhasorArray.dq0(0, 1) * abc;
+            testCase.verifyEqual(real(y{:,:,0}), [sqrt(3/2); 0; 0], 'AbsTol', 1e-10, ...
+                'dq0 of a balanced direct set must be [sqrt(3/2); 0; 0]');
+            ac = value(y);
+            ac(:, :, y.h + 1) = 0;
+            testCase.verifyLessThan(norm(ac(:)), 1e-10, 'the image must be constant in time');
+        end
+
+        function testNegativeDq0RejectsTheDirectSequence(testCase)
+            % What makes the negative frame worth having: fed the direct
+            % sequence it produces no constant term and keeps oscillating,
+            % where dq0 produces a constant. Without this, negativeDQ0 could
+            % be an exact copy of dq0 and every other test would still pass.
+            abc = [PhasorArray.cos(0, 1); PhasorArray.cos(-2*pi/3, 1); PhasorArray.cos(2*pi/3, 1)];
+            y   = PhasorArray.negativeDQ0(0, 1) * abc;
+            testCase.verifyLessThan(norm(y{:,:,0}), 1e-10, ...
+                'the negative frame must leave no DC on a direct sequence');
+            ac = value(y);
+            ac(:, :, y.h + 1) = 0;
+            testCase.verifyGreaterThan(norm(ac(:)), 1, 'and must keep it oscillating');
+        end
+
+        function testDocumentedMatricesMatchTheCode(testCase)
+            % The help text of each transform prints its matrix; this
+            % transcribes those four and compares them to what the code
+            % actually evaluates to.
+            t = 0.4;
+            c  = @(x) cos(t + x);
+            s  = @(x) sin(t + x);
+            p  = 2*pi/3;
+            documented = struct( ...
+                'Park',        (2/3)     * [c(0) c(-p) c(p); -s(0) -s(-p) -s(p); 1/2 1/2 1/2], ...
+                'negativePark',(2/3)     * [c(0) c(p) c(-p); -s(0) -s(p) -s(-p); 1/2 1/2 1/2], ...
+                'dq0',         sqrt(2/3) * [c(0) c(-p) c(p); -s(0) -s(-p) -s(p); ...
+                                            1/sqrt(2) 1/sqrt(2) 1/sqrt(2)], ...
+                'negativeDQ0', sqrt(2/3) * [c(0) c(p) c(-p); -s(0) -s(p) -s(-p); ...
+                                            1/sqrt(2) 1/sqrt(2) 1/sqrt(2)]);
+            for name = string(fieldnames(documented))'
+                testCase.verifyEqual(evalp(PhasorArray.(name)(0, 1), t), ...
+                    documented.(name), 'AbsTol', testCase.tol, ...
+                    sprintf('%s does not evaluate to the matrix its help text prints', name));
+            end
+        end
+
+        function testOrderPlacesTheHarmonic(testCase)
+            % order = k puts the rotation at harmonics +/-k and nowhere else.
+            for k = 1:3
+                R = PhasorArray.Rotdq0(0, k);
+                occupied = [];
+                for j = -R.h:R.h
+                    if norm(R{:,:,j}, 'fro') > testCase.tol, occupied(end+1) = j; end %#ok<AGROW>
+                end
+                testCase.verifyEqual(occupied, [-k 0 k], ...
+                    sprintf('Rotdq0 of order %d must occupy harmonics -%d, 0, +%d', k, k, k));
+            end
+        end
+
+        function testDephaseShiftsTheBaseAngle(testCase)
+            % dephase is phi in cos(k*(theta + phi)): it shifts the base
+            % angle, so Rotdq0(d,k) at t equals Rotdq0(0,k) at t+d for every k.
+            d = 0.37; t = 0.9;
+            for k = 1:3
+                testCase.verifyEqual(evalp(PhasorArray.Rotdq0(d, k), t), ...
+                    evalp(PhasorArray.Rotdq0(0, k), t + d), 'AbsTol', testCase.tol, ...
+                    sprintf('dephase must act as a time shift at order %d', k));
+            end
+        end
+
+        function testInclude0FalseDropsTheZeroSequence(testCase)
+            % Same flag, two row conventions: the abc-side transforms carry
+            % the zero sequence last and drop the last row, the sequence
+            % transforms carry it first and drop the first. Both are correct;
+            % only the resulting size is common to all of them.
+            % size() of a PhasorArray reports the harmonic axis too, so the
+            % matrix dimensions have to be asked for by name.
+            shape = @(X) size(X, [1 2]);
+            testCase.verifyEqual(shape(PhasorArray.Clark(false)),        [2 3], 'Clark(false)');
+            testCase.verifyEqual(shape(PhasorArray.Concordia(false)),    [2 3], 'Concordia(false)');
+            testCase.verifyEqual(shape(PhasorArray.Rotdq0(0, 1, false)), [2 2], 'Rotdq0(...,false) is square');
+            testCase.verifyEqual(shape(PhasorArray.dq0(0, 1, false)),    [2 3], 'dq0(...,false)');
+            testCase.verifyEqual(shape(PhasorArray.Park(0, 1, false)),   [2 3], 'Park(...,false)');
+            testCase.verifyEqual(shape(PhasorArray.ZPNSequence(0, 1, false)), [2 3], 'ZPNSequence(...,false)');
+            testCase.verifyEqual(shape(PhasorArray.zeroPosNegSequenceDQ(0, 1, false)), [4 3], ...
+                'zeroPosNegSequenceDQ(...,false) keeps both dq frames');
+        end
+
+        function testZeroPosNegSequenceDqStacksTheTwoFrames(testCase)
+            % It is a stack, not an independent derivation: zero row, then
+            % the direct dq pair, then the inverse dq pair. Pinning the row
+            % order is the point -- swapping the two frames is invisible to
+            % any norm-based check.
+            ZQ = PhasorArray.zeroPosNegSequenceDQ(0, 1);
+            Dp = PhasorArray.dq0(0, 1, false);
+            Dn = PhasorArray.negativeDQ0(0, 1, true);
+            testCase.verifyEqual(size(ZQ, [1 2]), [5 3], 'zeroPosNegSequenceDQ must be 5x3');
+            testCase.verifyLessThan(energy(ZQ{1,:}   - Dn{3,:}),   testCase.tol, 'row 1 is the zero sequence');
+            testCase.verifyLessThan(energy(ZQ{2:3,:} - Dp),        testCase.tol, 'rows 2-3 are the direct dq frame');
+            testCase.verifyLessThan(energy(ZQ{4:5,:} - Dn{1:2,:}), testCase.tol, 'rows 4-5 are the inverse dq frame');
+        end
+
+        function testZpnSequenceCarriesTheFortescueMatrix(testCase)
+            % The matrix itself is the classical Fortescue operator and is
+            % unitary up to the factor 3. Order 3 is excluded on purpose: a
+            % becomes 1 there and the matrix degenerates to rank one, which
+            % is the expected behaviour for a triplen order.
+            for k = [1 2]
+                Z = PhasorArray.ZPNSequence(0, k);
+                testCase.verifyEqual(size(Z, [1 2]), [3 3], 'ZPNSequence must be 3x3');
+                a = exp(2i*pi*k/3);
+                F = [1 1 1; 1 a^2 a; 1 a a^2];
+                testCase.verifyEqual(Z{:,:,1}, F, 'AbsTol', testCase.tol, ...
+                    sprintf('ZPNSequence of order %d must carry the Fortescue matrix', k));
+                % Unitarity checked on the matrix ZPNSequence produced, not on
+                % the reference F built above.
+                testCase.verifyEqual(Z{:,:,1} * Z{:,:,1}' / 3, eye(3), ...
+                    'AbsTol', testCase.tol, ...
+                    'the operator must be unitary up to the factor 3');
+            end
+            % Rank collapse at a triplen order, stated so it is not mistaken
+            % for a regression later.
+            a3 = exp(2i*pi);
+            testCase.verifyEqual(a3, 1, 'AbsTol', testCase.tol, ...
+                'at order 3 the sequence operator degenerates by construction');
+        end
+
     end
 end

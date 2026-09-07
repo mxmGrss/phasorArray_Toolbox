@@ -197,8 +197,8 @@ classdef PhasorArraySolversTest < matlab.unittest.TestCase
             testCase.verifyTrue(isfinite(E) && E > 0, 'LTP Lyapunov solution should have finite positive energy');
     
             % Symmetry residual should be small (P should be symmetric)
-            assert(residual.resPsym < 1e-6, ...
-                sprintf('LTP Lyapunov symmetry residual: %e', residual.resPsym));
+            assert(residual.solskewnorm < 1e-6, ...
+                sprintf('LTP Lyapunov symmetry residual: %e', residual.solskewnorm));
         end
 
         function testLyapSolutionIsSymmetricAndPositive(testCase)
@@ -701,5 +701,49 @@ classdef PhasorArraySolversTest < matlab.unittest.TestCase
             testCase.verifyLessThan(elapsed, 5, ...
                 sprintf('lyap took %.2f s on a 2x2 h=10 problem', elapsed));
         end
+
+        function testInfoContractIsIdenticalAcrossSolvers(testCase)
+            % Every solver publishes the same info field set, defined once in
+            % packSolverInfo.
+            expected = sort({'status','statusMsg','h','resnorm','resrelnorm', ...
+                'solskewnorm','h_history','res_history','resrel_history', ...
+                'time_history','regime_history','s_alg_history','s_exp_history', ...
+                'hForTargetResidual','targetResidual','residualPhasor'});
+
+            A0 = [-3 0.4; 0.1 -2];
+            A1 = [0.6 0.3; 0.2 0.5];
+            A  = PhasorArray(cat(3, conj(A1), A0, A1));
+            Q  = PhasorArray(eye(2));
+            B  = PhasorArray([0; 1]);
+
+            [~, iLyapFix] = lyap(A, Q, 'autoUpdateh', false, 'h', 4);
+            [~, iLyapAd ] = lyap(A, Q);
+            [~, iLyapG  ] = lyapG(A, Q, PhasorArray(eye(2)));
+            [~, iDivide ] = mlHmcDivide(A, Q);
+            [~, ~, ~, iPlaceFix] = place(A, B, [-4; -5], 'autoUpdateh', false);
+            [~, ~, ~, iPlaceAd ] = place(A, B, [-4; -5]);
+
+            named = {'lyap (fixed h)', iLyapFix; 'lyap (adaptive)', iLyapAd; ...
+                     'lyapG', iLyapG; 'mlHmcDivide', iDivide; ...
+                     'place (fixed h)', iPlaceFix; 'place (adaptive)', iPlaceAd};
+            for k = 1:size(named, 1)
+                testCase.verifyEqual(sort(fieldnames(named{k,2})'), expected, ...
+                    sprintf('%s publishes a different info contract', named{k,1}));
+            end
+        end
+
+        function testSolskewnormMeasuresTheSolutionDrift(testCase)
+            % solskewnorm is a norm, homogeneous with resnorm: ||(P-P')/2||_F.
+            A0 = [-3 0.4; 0.1 -2];
+            A1 = [0.6 0.3; 0.2 0.5];
+            A  = PhasorArray(cat(3, conj(A1), A0, A1));
+            [P, info] = lyap(A, PhasorArray(eye(2)));
+            testCase.verifyEqual(info.solskewnorm, norm(value((P - P') * (1/2)), 'fro'), ...
+                'AbsTol', 1e-12, 'solskewnorm must be the skew-Hermitian norm of the solution');
+            % Orthogonality: the Hermitian part needs no field of its own.
+            testCase.verifyEqual(hermEnergy(P) + info.solskewnorm^2, energy(P), ...
+                'RelTol', 1e-9, 'the two parts must account for the whole solution');
+        end
+
     end
 end

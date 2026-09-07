@@ -432,8 +432,8 @@ function test_lyap_LTP(~)
     assert(isfinite(E) && E > 0, 'LTP Lyapunov solution should have finite positive energy');
     
     % Symmetry residual should be small (P should be symmetric)
-    assert(residual.resPsym < 1e-6, ...
-        sprintf('LTP Lyapunov symmetry residual: %e', residual.resPsym));
+    assert(residual.solskewnorm < 1e-6, ...
+        sprintf('LTP Lyapunov symmetry residual: %e', residual.solskewnorm));
 end
 
 function test_sylvester(~)
