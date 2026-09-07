@@ -1404,21 +1404,24 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             H = freqresp(ssTB, 2*pi*freq);
 
             Hsel = H(outIdx, inIdx, :);
-        
-            % Plot the Bode plot
-            figure;
-            for ii = 1:size(Hsel, 1)
-                for jj = 1:size(Hsel, 2)
-                    subplot(size(Hsel, 1), size(Hsel, 2), (ii-1)*size(Hsel, 2) + jj);
-                    mag = abs(squeeze(Hsel(ii, jj, :)));
-                    phase = angle(squeeze(Hsel(ii, jj, :))) * 180 / pi;
-                    semilogx(freq, 20*log10(mag));
-                    yyaxis right;
-                    semilogx(freq, phase);
-                    title(['Input ' ssTB.InputName{inIdx(jj)} ' to Output ' ssTB.OutputName{outIdx(ii)}]);
-                    xlabel('Frequency (Hz)');
-                    ylabel('Magnitude (dB) / Phase (degrees)');
-                    grid on;
+
+            % Plot only as a side effect of calling with no output arguments,
+            % matching hmqDcGain's convention.
+            if nargout == 0
+                figure;
+                for ii = 1:size(Hsel, 1)
+                    for jj = 1:size(Hsel, 2)
+                        subplot(size(Hsel, 1), size(Hsel, 2), (ii-1)*size(Hsel, 2) + jj);
+                        mag = abs(squeeze(Hsel(ii, jj, :)));
+                        phase = angle(squeeze(Hsel(ii, jj, :))) * 180 / pi;
+                        semilogx(freq, 20*log10(mag));
+                        yyaxis right;
+                        semilogx(freq, phase);
+                        title(['Input ' ssTB.InputName{inIdx(jj)} ' to Output ' ssTB.OutputName{outIdx(ii)}]);
+                        xlabel('Frequency (Hz)');
+                        ylabel('Magnitude (dB) / Phase (degrees)');
+                        grid on;
+                    end
                 end
             end
         end
@@ -1524,7 +1527,11 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                         idxList = [idxList, idx];
                     end
                     formattedRange{i} = idxList;
+                else
+                    % ':' or a numeric block index -- pass through unchanged.
+                    formattedRange{i} = input;
                 end
+                formattedRange{i+1} = inputRange{i+1};   % the paired harmonic list
             end
         end
 

@@ -411,4 +411,52 @@ classdef PhasorArrayHarmonicOperatorsTest < matlab.unittest.TestCase
                 'N_tb(Nc=1) does not match hardcoded expectation for matrix.');
         end
     end
+
+    methods (Test)
+        % Deliberately outside the Install block above: regression coverage,
+        % not an installation check. A test appended after this file's
+        % Install-tagged block lands inside it by default -- verify the
+        % receiving block before adding here.
+
+        function testHarmonicCombineMatchesTensorprodWhenSizesMatch(testCase)
+            % When the sizes already agree, harmonicCombine must equal tensorprod(M,E,3,1).
+            M = randn(3,2,5) + 1i*randn(3,2,5);
+            E = randn(5,7) + 1i*randn(5,7);
+            testCase.verifyEqual(harmonicCombine(M,E), tensorprod(M,E,3,1), ...
+                'AbsTol', testCase.tol, 'must equal tensorprod(M,E,3,1) when p == size(E,1)');
+        end
+
+        function testHarmonicCombineCentreTruncatesTheLargerSide(testCase)
+            % When size(M,3) and size(E,1) disagree, harmonicCombine
+            % centre-truncates the larger to the smaller's count, keeping the
+            % DC term (the middle entry) aligned. See its docstring.
+            angle = 0.7;
+
+            % M larger than E (even excess: p=5, q=3).
+            Mfull = randn(2,2,5) + 1i*randn(2,2,5);
+            eit3  = exp(1i*(-1:1)'*angle);
+            expected1 = reshape(reshape(Mfull(:,:,2:4),4,[]) * eit3, 2, 2);
+            testCase.verifyEqual(harmonicCombine(Mfull,eit3), expected1, 'AbsTol', testCase.tol, ...
+                'M larger than E must be centre-truncated to E''s harmonic count');
+
+            % E larger than M (the PhasorSS.evalAngle case): a constant 1x1
+            % combined against a basis built for h=1 must reduce to a scalar,
+            % equal to the constant itself (exp(i*0*angle) = 1 at the centre).
+            D = 0.5;
+            testCase.verifyEqual(harmonicCombine(D,eit3), D, 'AbsTol', testCase.tol, ...
+                'a constant combined against a wider basis must reduce to itself');
+
+            % Odd excess (p=5, q=4): the convention is the extra element
+            % drops from the high-harmonic end, not the low one.
+            Mx = reshape(1:2*2*5, 2, 2, 5);
+            Ex = ones(4,1);
+            expected2 = reshape(reshape(Mx(:,:,1:4),4,[]) * Ex, 2, 2);
+            testCase.verifyEqual(harmonicCombine(Mx,Ex), expected2, 'AbsTol', testCase.tol, ...
+                'an odd excess must drop its extra element from the high-harmonic end');
+
+            % n and m are never touched, whichever side gets truncated.
+            out = harmonicCombine(randn(7,9,3), ones(1,4));
+            testCase.verifySize(out, [7 9 4], 'M''s first two dimensions must survive untouched');
+        end
+    end
 end

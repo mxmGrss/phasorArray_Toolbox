@@ -63,7 +63,7 @@ arguments
     A (:,:) double
     rowIndices {mustBeA(rowIndices, 'cell')}
     colIndices {mustBeA(colIndices, 'cell')}
-    h (1,1) double {mustBePositive, mustBeInteger}
+    h (1,1) double {mustBeNonnegative, mustBeInteger}
     rowLabels (:,:) cell = {}
     colLabels (:,:) cell = {}
 end
