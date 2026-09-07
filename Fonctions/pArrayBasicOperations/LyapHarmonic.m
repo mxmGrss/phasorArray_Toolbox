@@ -1,6 +1,10 @@
 function [Xph, M, M1, M2, colQ, colX] = LyapHarmonic(Ahm, Qhm, h, omega, nvp)
 %LYAPHARMONIC Solve Harmonic Lyapunov equations using Toeplitz blocks
 %
+%   SUPERSEDED by SylvHarmonic, reached through PhasorArray/lyap. That route
+%   controls its truncation ('rectangle' or 'square'); this one is the 'square'
+%   case only, and its Riccati mode errors. Kept for reference, may be behind.
+%
 %   X = LyapHarmonic(Ahm, Qhm, h, omega) solves the Continuous-Time
 %   Harmonic Lyapunov equation:
 %       (Ahm - Nh)' * X + X * Ahm + Qhm = 0
@@ -42,6 +46,9 @@ function [Xph, M, M1, M2, colQ, colX] = LyapHarmonic(Ahm, Qhm, h, omega, nvp)
         nvp.R = []
         nvp.direction {mustBeMember(nvp.direction, {'backward','forward'})} = 'backward'
     end
+
+    warning('LyapHarmonic:superseded', ...
+        'Superseded by SylvHarmonic and may be behind it; use PhasorArray/lyap or SylvHarmonic instead.')
 
     if isempty(nvp.B)
         % --- Lyapunov Mode ---
