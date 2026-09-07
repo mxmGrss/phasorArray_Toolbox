@@ -24,7 +24,7 @@ function deps = checkDependencies(options)
 %       deps = checkDependencies;
 %       deps = checkDependencies("verbose", true);
 %
-%   See also: test_PhasorArray_basic, test_PhasorArray_advanced
+%   See also: run_all_tests
 
 arguments
     options.verbose (1,1) logical = true

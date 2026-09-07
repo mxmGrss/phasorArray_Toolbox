@@ -4,7 +4,7 @@
 
 # Checklist
 
-- [ ] `test_PhasorArray_basic` and `test_PhasorArray_advanced` pass without new failures
+- [ ] `run_all_tests()` passes without new failures
 - [ ] New behavior comes with a test (same style as the existing suites)
 - [ ] Commits are atomic; the PR covers a single feature or fix
 

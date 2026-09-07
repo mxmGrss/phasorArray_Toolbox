@@ -138,10 +138,13 @@ disp_warning_audit.md
 /+tests
 
 # Private dev tests & audits — throwaway, never commit (kept on disk for running).
-# The shipped verification suite (test_PhasorArray_basic/advanced, test.m) stays tracked.
+# The shipped verification suite (tests/, run_all_tests.m) stays tracked.
 /Fonctions/test_PhasorArray_lyapLMI.m
 /Fonctions/test_PhasorArray_solverFamily.m
 /docs/audit/
 Exemples/figures/*
 validation_cache.mat
 validation_results.log
+
+# Local CodeGraph analysis scripts -- not part of the shipped toolbox.
+/tools/

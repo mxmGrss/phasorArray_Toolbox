@@ -100,8 +100,8 @@ Direct integration with **YALMIP** for convex optimization over periodic systems
 
 4.  **Check your setup** (optional):
     ```matlab
-    test_PhasorArray_basic       % Core tests (no toolboxes required)
-    test_PhasorArray_advanced    % Advanced tests (YALMIP, Symbolic, etc.)
+    run_all_tests("install")    % Smoke set, no optional toolbox, a few seconds
+    run_all_tests()              % Full regression suite
     ```
 
 > **📋 Full Requirements:** See [REQUIREMENTS.md](REQUIREMENTS.md) for detailed dependency information, version compatibility, and optional toolbox features.

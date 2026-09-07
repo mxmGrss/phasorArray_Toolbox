@@ -122,17 +122,12 @@ The following capabilities are unavailable without the corresponding optional de
 A built-in test suite is provided to verify the integrity of the installation and detect available capabilities.
 
 ```matlab
-% Base functionality verification
-test_PhasorArray_basic
-
-% Advanced functionality verification (Symbolic, YALMIP integration)
-test_PhasorArray_advanced
+run_all_tests("install")   % Smoke set: one check per layer, no optional toolbox
+run_all_tests()             % Full regression suite
 ```
 
-The test framework categorizes results as follows:
-- **Passed**: Functionality is verified.
-- **Skipped**: Optional toolboxes are absent; dependencies are unmet but non-critical.
-- **Failed**: Core regression or unmet base requirements.
+Tests that need an optional toolbox (Symbolic Math Toolbox, YALMIP) skip
+automatically when it is absent.
 
 ---
 

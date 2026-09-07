@@ -77,10 +77,9 @@ methods (Test, TestTags = {'Install'})
 `PhasorArrayCompatibilityTest`.
 
 `Fonctions/test_PhasorArray_basic.m` and `Fonctions/test_PhasorArray_advanced.m`
-are the earlier struct-returning runners. Nothing calls them and `run_all_tests`
-does not execute them. Their coverage is subsumed by `tests/`, verified theme by
-theme; they are kept only so an old reference does not dangle. Do not add new
-tests there.
+(the earlier struct-returning runners) were removed on 2026-09-07: nothing
+called them, `run_all_tests` did not execute them, and their coverage was
+subsumed by `tests/`, verified theme by theme.
 
 ---
 

@@ -14,14 +14,12 @@ and the full error message.
 1. For anything larger than a bug fix, open an issue first so we can discuss
    scope before you invest time.
 2. Fork, branch from `main`, run `installToolbox.m`, make your changes.
-3. Pre-validate: both test suites must pass without new failures:
+3. Pre-validate: the full suite must pass without new failures:
 
-       test_PhasorArray_basic();
-       test_PhasorArray_advanced();
+       run_all_tests();
 
-   As of today the suites use a custom lightweight runner (struct-based, not
-   `matlab.unittest`); new tests should follow the same style. A migration to
-   `matlab.unittest` is planned to enable CI on pull requests.
+   The suite is `matlab.unittest`, seven `TestCase` classes in `tests/`; new
+   tests should be added there, as methods of the relevant class.
 4. Keep commits atomic (one change per commit) and PRs focused (one feature
    or fix per PR).
 5. Purely cosmetic changes (reformatting, renaming) are generally not
