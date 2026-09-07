@@ -495,6 +495,96 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
             [Eew, E] = energyOf(pA1.extract(0), elementwise, nargout);
         end
 
+        function [Eew,E] = hermEnergy(pA1,elementwise,nvp)
+            %HERMENERGY Energy carried by the Hermitian part of A(t).
+            %   [Eew,E] = HERMENERGY(pA1, elementwise) returns the element-wise
+            %   energy Eew and the total energy E of (A(t) + A(t)')/2.
+            %   [Eew,E] = HERMENERGY(pA1, elementwise, skewOption='skew') does
+            %   the same for the skew-Hermitian part (A(t) - A(t)')/2, which is
+            %   zero exactly when A(t) is Hermitian at every t. That is the
+            %   number solver residuals report to say how far a solution that
+            %   should be Hermitian has drifted.
+            %
+            %   The two parts are orthogonal, so
+            %       hermEnergy(A) + hermEnergy(A, skewOption='skew') = energy(A)
+            %
+            %   Hermitian is not symmetric: use SYMENERGY for the plain
+            %   transpose. ISHERMITIAN is the boolean counterpart of this
+            %   method: it is true exactly when the skew energy is zero.
+            %
+            %   Inputs:
+            %       pA1 - The PhasorArray object.
+            %       elementwise - (Optional, for single output) Logical flag indicating whether to return element-wise energy.
+            %                     If true, returns element-wise energy. Default is false.
+            %                     If two outputs are requested, the total energy is returned as second output regardless of this flag.
+            %       skewOption - 'nonskew' (default) or 'skew'.
+            %
+            %   Outputs:
+            %       Eew - Element-wise energy of the (skew-)Hermitian part.
+            %       E   - Total energy of the (skew-)Hermitian part.
+            %
+            %   Example:
+            %       A = PhasorArray.random(3, 3, 5);
+            %       [~, E] = hermEnergy(A, false, skewOption='skew');   % 0 iff Hermitian
+            %
+            %   See also: symEnergy, energy, mherm
+            arguments
+                pA1
+                elementwise = false
+                nvp.skewOption {mustBeMember(nvp.skewOption,{'nonskew','skew'})} = 'nonskew'
+            end
+            % A converged solve carries no skew part, so phasorSymmetry's
+            % emptyProjection warning would otherwise fire on every call here.
+            ws = warning('off','PhasorArray:symmetry:emptyProjection');
+            restore = onCleanup(@() warning(ws)); %#ok<NASGU>
+            [Eew, E] = energyOf(mherm(pA1, skewOption=nvp.skewOption), elementwise, nargout);
+        end
+
+        function [Eew,E] = symEnergy(pA1,elementwise,nvp)
+            %SYMENERGY Energy carried by the symmetric part of A(t).
+            %   [Eew,E] = SYMENERGY(pA1, elementwise) returns the element-wise
+            %   energy Eew and the total energy E of (A(t) + A(t).')/2.
+            %   [Eew,E] = SYMENERGY(pA1, elementwise, skewOption='skew') does the
+            %   same for the skew-symmetric part (A(t) - A(t).')/2, zero exactly
+            %   when A(t) is symmetric.
+            %
+            %   The two parts are orthogonal, so
+            %       symEnergy(A) + symEnergy(A, skewOption='skew') = energy(A)
+            %
+            %   Symmetric is not Hermitian: this uses the plain transpose, with
+            %   no conjugation. Use HERMENERGY for the conjugate notion; they
+            %   coincide only when A(t) is real. ISSYMMETRIC is the boolean
+            %   counterpart: A(t) is symmetric exactly when every harmonic A_k
+            %   is. ISHERMITIAN pairs k with -k instead (see MHERM).
+            %
+            %   Inputs:
+            %       pA1 - The PhasorArray object.
+            %       elementwise - (Optional, for single output) Logical flag indicating whether to return element-wise energy.
+            %                     If true, returns element-wise energy. Default is false.
+            %                     If two outputs are requested, the total energy is returned as second output regardless of this flag.
+            %       skewOption - 'nonskew' (default) or 'skew'.
+            %
+            %   Outputs:
+            %       Eew - Element-wise energy of the (skew-)symmetric part.
+            %       E   - Total energy of the (skew-)symmetric part.
+            %
+            %   Example:
+            %       A = PhasorArray.random(3, 3, 5);
+            %       [~, E] = symEnergy(A, false, skewOption='skew');   % 0 iff symmetric
+            %
+            %   See also: hermEnergy, energy, msym, issymmetric
+            arguments
+                pA1
+                elementwise = false
+                nvp.skewOption {mustBeMember(nvp.skewOption,{'nonskew','skew'})} = 'nonskew'
+            end
+            % A converged solve carries no skew part, so phasorSymmetry's
+            % emptyProjection warning would otherwise fire on every call here.
+            ws = warning('off','PhasorArray:symmetry:emptyProjection');
+            restore = onCleanup(@() warning(ws)); %#ok<NASGU>
+            [Eew, E] = energyOf(msym(pA1, skewOption=nvp.skewOption), elementwise, nargout);
+        end
+
         function [Eew, E] = pageEnergy(pA1, nvp)
             % PAGEENERGY Compute and optionally plot the per-harmonic energy of a PhasorArray.
             %
@@ -796,8 +886,8 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 nvp.updateMethod    {mustBeMember(nvp.updateMethod,{'adaptive','incremental'})} = 'adaptive'
             end
             C = namedargs2cell(nvp);
-            [r, residual] = mrHmcDivide(PhasorArray(pA1), PhasorArray(pA2), C{:});
-            warnIfNotConverged(residual, 'mrHmcDivide(B, A, ...)');
+            [r, info] = mrHmcDivide(PhasorArray(pA1), PhasorArray(pA2), C{:});
+            warnIfNotConverged(info, 'mrHmcDivide(B, A, ...)');
         end
         function r = mldivide(pA1,pA2,nvp)
             %MLDIVIDE Overloads the left matrix division operator (\) for PhasorArray.
@@ -827,17 +917,21 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
                 nvp.updateMethod    {mustBeMember(nvp.updateMethod,{'adaptive','incremental'})} = 'adaptive'
             end
             C = namedargs2cell(nvp);
-            [r, residual] = mlHmcDivide(PhasorArray(pA1), PhasorArray(pA2), C{:});
+            [r, info] = mlHmcDivide(PhasorArray(pA1), PhasorArray(pA2), C{:});
             % The operator form takes no options, so a caller who hits a
             % non-converged solve has nowhere to turn unless told where.
-            warnIfNotConverged(residual, 'mlHmcDivide(A, B, ...)');
+            warnIfNotConverged(info, 'mlHmcDivide(A, B, ...)');
         end
 
 
-    function [r,residual] = mrHmcDivide(B, A, nvp)
+    function [r,info] = mrHmcDivide(B, A, nvp)
         % mrHmcDivide solves X(t)*A(t) = B(t) (equiv. X(t) = B(t) / A(t)) directly in the harmonic domain.
         %   X = mrHmcDivide(B, A) computes the harmonic division using Toeplitz matrices:
         %   F(X)_tb * T(A)_tb = F(B)_tb
+        %
+        %   [X, info] = mrHmcDivide(...) also returns the solver diagnostics
+        %   struct, in the shape every solver publishes -- see packSolverInfo.
+        %   It is a struct, not a residual: the residual is info.resnorm.
         %
         %   Fallback to lrHmcDivide noticing that X*A = B <=> A.'*X.' = B.'
         %
@@ -875,7 +969,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         solvedPayload(pvalue(B), "mrHmcDivide");
         C = namedargs2cell(nvp);
 
-        [r,residual] = mlHmcDivide(A.', B.', C{:});
+        [r,info] = mlHmcDivide(A.', B.', C{:});
         r = r.';
     end
 
@@ -3214,6 +3308,93 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         r = PhasorArray(r);
     end
 
+    function r = mherm(pA1, nvp)
+        %MHERM Hermitian part of a PhasorArray in the time domain.
+        %   r = MHERM(pA1) returns (A(t) + A(t)')/2, the Hermitian part.
+        %   r = MHERM(pA1, skewOption='skew') returns (A(t) - A(t)')/2, the
+        %   skew-Hermitian part, which is zero exactly when A(t) is Hermitian.
+        %
+        %   The two split A exactly:
+        %       mherm(A) + mherm(A, skewOption='skew') = A
+        %
+        %   Hermitian is not symmetric: this method uses the conjugate
+        %   transpose A(t)'; MSYM uses the plain transpose A(t).'. They coincide
+        %   only when A(t) is real.
+        %
+        %   INPUT:
+        %       pA1 - The PhasorArray object, square in its first two dimensions.
+        %       skewOption - 'nonskew' (default) or 'skew'.
+        %
+        %   OUTPUT:
+        %       r  - The Hermitian (or skew-Hermitian) part, as a PhasorArray.
+        %
+        %   Example:
+        %       A = PhasorArray.random(3, 3, 5);
+        %       H = mherm(A);                       % Hermitian part
+        %       K = mherm(A, skewOption='skew');    % zero iff A(t) is Hermitian
+        %
+        %   ISHERMITIAN is the boolean counterpart: ishermitian(A) is true
+        %   exactly when mherm(A, skewOption='skew') is zero.
+        %
+        %   See also: msym, hermEnergy, mctranspose, ishermitian
+        arguments
+            pA1
+            nvp.skewOption {mustBeMember(nvp.skewOption,{'nonskew','skew'})} = 'nonskew'
+        end
+        % Delegates to PHASORSYMMETRY, the single definition of this symmetry algebra.
+        if strcmp(nvp.skewOption,'skew')
+            r = phasorSymmetry(pA1, "skewHermitian");
+        else
+            r = phasorSymmetry(pA1, "hermitian");
+        end
+    end
+
+    function r = msym(pA1, nvp)
+        %MSYM Symmetric part of a PhasorArray in the time domain.
+        %   r = MSYM(pA1) returns (A(t) + A(t).')/2, the symmetric part.
+        %   r = MSYM(pA1, skewOption='skew') returns (A(t) - A(t).')/2, the
+        %   skew-symmetric part, zero exactly when A(t) is symmetric.
+        %
+        %   The two split A exactly:
+        %       msym(A) + msym(A, skewOption='skew') = A
+        %
+        %   Symmetric is not Hermitian: this method uses the plain transpose
+        %   A(t).', with no conjugation and no harmonic mirroring -- the k-th
+        %   phasor of A(t).' is the transpose of the k-th phasor of A(t).
+        %   MHERM is the conjugate counterpart; the two coincide only when
+        %   A(t) is real.
+        %
+        %   INPUT:
+        %       pA1 - The PhasorArray object, square in its first two dimensions.
+        %       skewOption - 'nonskew' (default) or 'skew'.
+        %
+        %   OUTPUT:
+        %       r  - The symmetric (or skew-symmetric) part, as a PhasorArray.
+        %
+        %   Example:
+        %       A = PhasorArray.random(3, 3, 5);
+        %       S = msym(A);                        % symmetric part
+        %       K = msym(A, skewOption='skew');     % zero iff A(t) is symmetric
+        %
+        %   ISSYMMETRIC is the exact boolean counterpart of this method: the
+        %   k-th phasor of A(t).' is A_k.', with no coupling between harmonics.
+        %   ISHERMITIAN has to pair k with -k instead -- see MHERM.
+        %
+        %   See also: mherm, symEnergy, mtranspose, issymmetric
+        arguments
+            pA1
+            nvp.skewOption {mustBeMember(nvp.skewOption,{'nonskew','skew'})} = 'nonskew'
+        end
+        % Same as MHERM: a named shortcut for PHASORSYMMETRY, which owns the
+        % symmetry algebra. 'symmetric' and 'skewSymmetric' are two of its 14
+        % classes.
+        if strcmp(nvp.skewOption,'skew')
+            r = phasorSymmetry(pA1, "skewSymmetric");
+        else
+            r = phasorSymmetry(pA1, "symmetric");
+        end
+    end
+
     function r = mconj(pA1)
         %MCONJ Compute the complex conjugate of a PhasorArray in the time domain.
         %   r = MCONJ(pA1) returns the complex conjugate of the PhasorArray pA1 in the time domain.
@@ -3343,43 +3524,69 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
     end
 
     function [r,R] = ishermitian(pA1,nvp)
-        % ISHERMITIAN Check if the PhasorArray object is Hermitian.
+        % ISHERMITIAN Check whether A(t) is Hermitian at every time t.
         %
-        %   [r, R] = ISHERMITIAN(pA1, nvp) checks if the PhasorArray object pA1
-        %   is Hermitian. The function returns a logical scalar r indicating
-        %   if all slices of the PhasorArray are Hermitian, and a logical array R
-        %   indicating if each individual slice is Hermitian.
+        %   [r, R] = ISHERMITIAN(pA1) is true when A(t) = A(t)' for all t.
+        %   [r, R] = ISHERMITIAN(pA1, skewOption='skew') tests A(t) = -A(t)'.
+        %   R reports the same, harmonic by harmonic.
+        %
+        %   In the harmonic domain this couples k and -k: the k-th phasor of
+        %   A(t)' is the conjugate transpose of the (-k)-th phasor of A(t), so
+        %   the condition is
+        %       A_k = A_{-k}'      (Hermitian)
+        %       A_k = -A_{-k}'     (skew-Hermitian)
+        %   not "every A_k is itself Hermitian" -- conjugation mirrors the
+        %   spectrum. R(ii) therefore reports the pairing of harmonic ii with
+        %   its mirror, not a property of that slice alone.
+        %
+        %   This is the opposite of ISSYMMETRIC, where the transpose does not
+        %   conjugate and so does not mirror: A(t) is symmetric exactly when
+        %   every A_k is, harmonic by harmonic and independently.
+        %
+        %   Compatibility note: earlier versions tested A_k = A_k' slice by
+        %   slice instead, a different property -- false for arrays that are
+        %   Hermitian at every t, true for arrays that are not.
+        %
+        %   HERMENERGY gives the same information as a magnitude rather than a
+        %   yes/no: ishermitian(A) is hermEnergy(A, skewOption='skew') == 0.
         %
         %   Input arguments:
         %       pA1 - PhasorArray object to be checked.
         %       nvp - Name-Value arguments:
-        %           skewOption - (optional) Specifies whether to check for
-        %                         'nonskew' (default) or 'skew' Hermitian.
-        %                         Must be one of {'nonskew', 'skew'}.
-        %           tol - (optional) Tolerance for numerical comparison. Default is 0.
+        %           skewOption - (optional) 'nonskew' (default) or 'skew'.
+        %           tol - (optional) Relative tolerance. Default 0, i.e. exact.
         %
         %   Output arguments:
-        %       r - Logical scalar indicating if all slices of the PhasorArray
-        %           are Hermitian.
-        %       R - Logical array indicating if each individual slice of the
-        %           PhasorArray is Hermitian.
+        %       r - True when the condition holds for every harmonic.
+        %       R - Per-harmonic logical array.
+        %
+        %   See also: issymmetric, mherm, hermEnergy, mctranspose
         arguments
             pA1
             nvp.skewOption {mustBeMember(nvp.skewOption,{'nonskew','skew'})} = 'nonskew'
             nvp.tol = 0
         end
-        if nvp.tol == 0
-            R = arrayfun(@(ii) ishermitian(pA1(:,:,ii),nvp.skewOption),1:(2*pA1.h+1));
+        v  = pA1.value;
+        % flip(pagectranspose(v),3) is mctranspose: conjugate transpose each
+        % page, then mirror the harmonics.
+        vh = flip(pagectranspose(v),3);
+        if strcmp(nvp.skewOption,'nonskew')
+            D = v - vh;
         else
-            tol=abs(nvp.tol);
-            switch nvp.skewOption
-                case 'nonskew'
-                    R = arrayfun(@(ii) norm(pA1(:,:,ii)-pA1(:,:,ii)',"inf")/norm(pA1(:,:,ii),"inf")<tol,1:(2*pA1.h+1));
-                otherwise
-                    R = arrayfun(@(ii) norm(pA1(:,:,ii)+pA1(:,:,ii)',"inf")/norm(pA1(:,:,ii),"inf")<tol,1:(2*pA1.h+1));
-            end
+            D = v + vh;
         end
-        r = ((nnz(R))==(2*pA1.h+1));
+        n  = 2*pA1.h+1;
+        nd = arrayfun(@(ii) norm(D(:,:,ii),"inf"), 1:n);
+        if nvp.tol == 0
+            R = (nd == 0);
+        else
+            % Relative to the harmonic's own magnitude. A zero defect passes
+            % whatever the magnitude, so an all-zero harmonic no longer fails
+            % on the 0/0 the previous implementation produced.
+            na = arrayfun(@(ii) norm(v(:,:,ii),"inf"), 1:n);
+            R  = (nd == 0) | (na > 0 & nd./na < abs(nvp.tol));
+        end
+        r = all(R);
     end
 
     function [r,R,tolmin] = isreal(pA1,tol)
