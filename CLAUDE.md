@@ -19,14 +19,15 @@ MATLAB OOP toolbox for **harmonic modeling, analysis, and control of Linear Time
 ```
 phasorArray_Toolbox/
 ├── Fonctions/
-│   ├── @PhasorArray/             ← Core class (6500+ lines, 150+ methods)
+│   ├── @PhasorArray/             ← Core class (38 files, 8500 lines, 223 methods;
+│   │                                PhasorArray.m alone is 4900 lines)
 │   ├── @PhasorSS/                ← Periodic state-space (LTP/LPV/LTV)
 │   ├── @sparsePhasorArray/       ← Sparse variant
-│   ├── pArrayBasicOperations/    ← Computational kernels (56 files)
+│   ├── pArrayBasicOperations/    ← Computational kernels (68 files)
 │   ├── Display and data manipulation/  ← Visualization (18 files)
 │   └── SimulationTools/          ← Floquet/simulation utilities (3 files)
-├── Exemples/                     ← 8 application examples + GettingStarted.m
-├── docs/                         ← Unified documentation (LaTeX, Wiki assets, audits)
+├── Exemples/                     ← 7 application examples + GettingStarted.m
+├── docs/                         ← Unified documentation (LaTeX, Wiki assets)
 ├── templates/                    ← Control design templates (ACDC, LQR, SPMSM…)
 ├── installToolbox.m              ← Path setup entry point
 ├── checkDependencies.m           ← Dependency checker
@@ -50,19 +51,36 @@ checkDependencies("verbose", true)
 
 ## Running Tests
 
-Custom lightweight test runner — **not** `matlab.unittest.TestCase`.
+The suite is `matlab.unittest`: seven `TestCase` classes in `tests/`, run through
+`run_all_tests.m`.
 
 ```matlab
-% Basic test suite (~40 tests: constructors, arithmetic, indexing, Toeplitz, reduction)
-results = test_PhasorArray_basic();
-
-% Advanced test suite (~20 tests: symbolic, YALMIP, Floquet, LMI — auto-skips missing toolboxes)
-results = test_PhasorArray_advanced();
-
-% Inspect failures
-failed = results(~[results.passed]);
-disp({failed.name; failed.message}')
+results = run_all_tests();            % full regression suite
+results = run_all_tests("install");   % Install-tagged smoke set only
 ```
+
+The two answer different questions. The full suite is the regression net and
+exercises paths a user never touches directly — fallback kernels, symbolic
+payloads, solver residuals. The install set is one check per layer, no optional
+toolbox, a couple of seconds: a red install run means the *installation* is
+wrong, a red full run means the *code* is.
+
+A test joins the smoke set by moving into a tagged block:
+
+```matlab
+methods (Test, TestTags = {'Install'})
+```
+
+`tests/` holds `PhasorArrayCoreTest`, `PhasorArrayCalculusTest`,
+`PhasorArrayHarmonicOperatorsTest`, `PhasorArraySolversTest`,
+`PhasorArraySimulationTest`, `PhasorArrayTimeDomainTest` and
+`PhasorArrayCompatibilityTest`.
+
+`Fonctions/test_PhasorArray_basic.m` and `Fonctions/test_PhasorArray_advanced.m`
+are the earlier struct-returning runners. Nothing calls them and `run_all_tests`
+does not execute them. Their coverage is subsumed by `tests/`, verified theme by
+theme; they are kept only so an old reference does not dangle. Do not add new
+tests there.
 
 ---
 
@@ -86,9 +104,9 @@ A `PhasorArray` of dimension `[n × m]` truncated at harmonic order `h` is store
 |---|---|
 | `PhasorArrayTimes.m` | Convolution multiplication via `tensorprod` (R2022a+) |
 | `PhasorArrayTimes2.m` | Fallback multiplication (R2021b, matrix-based) |
-| `SylvHarmonic.m` | Harmonic Sylvester equation solver |
-| `LyapHarmonic.m` | Harmonic Lyapunov solver |
+| `SylvHarmonic.m` | Harmonic Sylvester solver — **also the Lyapunov path**, as a special case |
 | `RicHarmonicKlein.m` | Iterative Riccati solver (adaptive h, LQR fallback) |
+| `adaptiveHSolve.m` | Shared adaptive-h driver — `lyap`, `lyapG`, `mlHmcDivide` and `place` all route through it, each supplying its own `solveOnce` / `buildPreamble` / `computeResidual` / `packInfo` |
 | `array2TBlocks.m` / `array2BToeplitz.m` | Harmonic array → Toeplitz-Block (TB) / Block-Toeplitz (BT) operators, harmonics ascending (−h..+h) in both |
 
 ### Version Compatibility
@@ -127,16 +145,48 @@ never actually run.
 
 ### Method Return Patterns
 
-Solvers (`lyap`, `mlHmcDivide`, `RicHarmonicKlein`) return a structured `info` output:
+Solvers (`lyap`, `lyapG`, `mlHmcDivide`, `place`) return a structured `info`
+output. Fields produced by every one of them:
+
 ```matlab
 [X, info] = lyap(PA, Q)
-% info.status: 0=CONVERGED, 1=STAGNATED, 2=MAXH_REACHED, 3=FIXED_H
-% info.h_final, info.iterations, info.residual
+% info.status      0=CONVERGED, 1=STAGNATED, 2=MAXH_REACHED, 3=FIXED_H,
+%                  4=UNREACHABLE (extrapolation says the threshold is out of reach)
+% info.statusMsg   human-readable form of the status
+% info.h           harmonic order the solution was accepted at
+% info.resnorm     absolute residual norm
+% info.resrelnorm  relative residual norm
+% info.residualPhasor
+% info.h_history info.res_history info.resrel_history
+% info.time_history info.regime_history
+% info.s_alg_history info.s_exp_history
 ```
+
+Plus two fields the adaptive driver computes for every solver:
+
+```matlab
+% info.hForTargetResidual  order a near-zero residual would need, extrapolated
+% info.targetResidual      the residual that extrapolation aimed at
+%                          (both NaN when the solver ran at a fixed order)
+% info.solskewnorm         ||(X - X')/2||_F — how far a solution that should be
+%                          Hermitian actually is. A norm, so it compares
+%                          directly with resnorm. NaN when X is not square.
+```
+
+**The contract is defined once**, in
+`pArrayBasicOperations/packSolverInfo.m`. Every solver calls it — including the
+fixed-order branches, which pass the values they have and let the helper fill
+the rest with the documented defaults, so the field set never varies. Add a
+guaranteed field there and every solver gains it; a field only one solver
+reports goes through the `extra` argument, which refuses to overwrite a
+guaranteed one.
+
+`testInfoContractIsIdenticalAcrossSolvers` (in `tests/PhasorArraySolversTest.m`)
+asserts the exact field set for all six solver entry points.
 
 ### Error / Warning Policy
 
-Use `warning('PhasorArray:...')` with toolbox-specific IDs — **not** `fprintf` or `disp` for diagnostics. See `docs/audit/disp_warning_audit.md` for migration status.
+Use `warning('PhasorArray:...')` with toolbox-specific IDs — **not** `fprintf` or `disp` for diagnostics.
 
 ### Harmonic Order `h`
 
@@ -145,7 +195,6 @@ Use `warning('PhasorArray:...')` with toolbox-specific IDs — **not** `fprintf`
 
 ### MATLAB Style
 
-Follow `.agents/matlab-guidelines.md` for:
 - `arguments` blocks for all public functions
 - `mustBe*` validators for input validation
 - No global variables
@@ -167,8 +216,14 @@ Follow `.agents/matlab-guidelines.md` for:
 
 ## Agent Instructions
 
-- **Before refactoring `@PhasorArray`**: run `audit-matlab` to map dependencies — the class has 150+ methods with non-obvious interdependencies.
-- **Tests are custom structs**, not `matlab.unittest` — do not migrate without discussion.
-- **`scratch/` is an untracked dev sandbox** — if the user creates one locally, do not clean it up autonomously.
+- **Before refactoring `@PhasorArray`**: map the dependencies first — 223 methods with non-obvious interdependencies. If the repo carries a `.codegraph*/` index, `codegraph impact <symbol>` answers this in one call.
+- **Tests are `matlab.unittest`** — add them to `tests/`, as methods of the relevant `TestCase` class. Do not add to the legacy `Fonctions/test_PhasorArray_*.m` runners.
+- **`LyapHarmonic.m` is superseded and unused** — the Lyapunov path is `@PhasorArray/lyap.m` → `SylvHarmonic`, which handles truncation properly (`'rectangle'` vs `'square'`); `LyapHarmonic` has no such notion and its Riccati mode is an `error(...)` stub. Do not build on it. Slated for removal.
+- **Untracked directories are the developer's own** — if a working sandbox exists locally, do not clean it up autonomously.
 - **Do not add `Signal Processing Toolbox` calls** — it was intentionally removed.
-- **CI/CD workflows are absent** — `.github/` is tracked and reserved for public GitHub config (PR template today, `workflows/` when CI lands); agent instruction modules live in the untracked `.agents/`.
+- **CI/CD workflows are absent** — `.github/` is tracked and reserved for public GitHub config (PR template today, `workflows/` when CI lands).
+
+- **This file is committed.** It must stand on its own for anyone who clones the
+  repository: never cite an audit report, a working note, or any path that is
+  gitignored or untracked. If a fact only lives in a local document, state the
+  fact here instead of pointing at the document.
