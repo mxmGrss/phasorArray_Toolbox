@@ -1313,8 +1313,8 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         end
         r=PhasorArray(ReduceArray(pA1,htrunc,"reduceMethod", nvp.reduceMethod,"reduceThreshold", nvp.reduceThreshold,"exclude0Phasor", nvp.exclude0Phasor,"hardThresholdPhasors", nvp.hardThresholdPhasors));
     end
-    function r = neglect(pA1, reduceThreshold, nvp)
-        %NEGLECT Set to zero all phasors below a given threshold in a PhasorArray.
+    function [r, info] = neglect(pA1, reduceThreshold, nvp)
+        %NEGLECT Zero small harmonic contributions within an energy budget.
         %
         %   This function filters out low-magnitude phasors in a PhasorArray `pA1`,
         %   setting them to zero based on a specified threshold and reduction method.
@@ -1322,20 +1322,22 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %
         %   Syntax:
         %   r = NEGLECT(pA1, reduceThreshold)
-        %       Sets to zero all phasors in `pA1` with magnitude below `reduceThreshold`,
-        %       using the default 'relative' thresholding method.
+        %       Uses an energy budget per matrix entry, including DC.
+        %       NEGLECT(pA1) uses reduceThreshold=1e-6 (relative L2 <= 0.1%).
         %
         %   r = NEGLECT(pA1, reduceThreshold, 'reduceMethod', method, 'exclude0Phasor', exclude, 'h', h)
         %       Applies phasor filtering with additional options.
         %
         %   Input Arguments:
         %   - pA1 (PhasorArray) : The PhasorArray object whose small phasors should be neglected.
-        %   - reduceThreshold (double) : The magnitude threshold below which phasors are set to zero.
+        %   - reduceThreshold (double) : Energy fraction by default; magnitude
+        %       threshold for explicit absolute/relative modes. Default: 1e-6.
         %
         %   Name-Value Pair Arguments:
         %   - 'reduceMethod' (char, optional) : Defines how the threshold is applied.
         %       - 'absolute' : A phasor is set to zero if its magnitude is below `reduceThreshold`.
-        %       - 'relative' (default) : A phasor is set to zero if its magnitude is below
+        %       - 'energy' (default) : See ENERGY MODE below.
+        %       - 'relative' : A phasor is set to zero if its magnitude is below
         %         `reduceThreshold * max(magnitude)` (where the reference maximum can exclude the 0th phasor).
         %
         %   - 'exclude0Phasor' (logical, optional) :
@@ -1350,8 +1352,8 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %   - r (PhasorArray) : The filtered PhasorArray, with phasors below the threshold set to zero.
         %
         %   Example:
-        %   % Set to zero all phasors with magnitude below 1e-15 using default relative method
-        %   r = neglect(pA1, 1e-15);
+        %   % Clean numeric coefficients using the default energy budget
+        %   r = neglect(pA1);
         %
         %   % Apply absolute thresholding (removes all phasors with magnitude < 1e-15)
         %   r = neglect(pA1, 1e-15, 'reduceMethod', 'absolute');
@@ -1360,15 +1362,46 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %   r = neglect(pA1, 1e-15, 'reduceMethod', 'relative', 'exclude0Phasor', true);
         %
         %   % Apply thresholding and then truncate to at most 5 harmonics
-        %   r = neglect(pA1, 1e-12, 'h', 5);
+        %   r = neglect(pA1, 1e-12, 'reduceMethod', 'relative', 'h', 5);
         %
-        %   See also: REDUCE, TRUNC, ReduceArray
+        %   ENERGY MODE
+        %   [r, info] = neglect(A, 1e-6, reduceMethod="energy")
+        %   keeps the fewest harmonic groups needed to discard at most 1e-6
+        %   of the energy (relative L2 error <= 1e-3). A group is DC
+        %   or the pair {-h,+h}; pairs are never split, including for complex A.
+        %   mode="elementwise" gives each matrix entry its own budget and mask.
+        %   exclude0Phasor=true preserves DC and normalizes by AC energy only.
+        %   The h option is refused: use trunc explicitly if a band limit is wanted.
+        %   Only exact outer zeros are trimmed; internal gaps remain zero.
+        %   Input must be finite numeric data. Equal energies favor lower h.
+        %   No pointwise, positivity, stability or Toeplitz-size guarantee is given.
+        %
+        %   info.harmonics: group orders considered (0:H, or 1:H for AC only).
+        %   info.keptMask: logical mask in that order, one row per matrix entry
+        %       (MATLAB column-major order), or one row in matrixwise mode.
+        %       Energy mode defaults to elementwise; DC is included by default.
+        %   info.rankedHarmonics: the same group orders sorted by energy.
+        %   info.tailEnergyFraction(:,m+1): fraction left after keeping m groups.
+        %   info.discardedEnergyFraction: actual removed fraction per entry or matrix.
+        %   info is [] for the existing absolute/relative modes.
+        %
+        %   See also: REDUCE, TRUNC, ReduceArray, pageEnergy
         arguments
             pA1
-            reduceThreshold {mustBeNumeric,mustBeReal} = 1e-15
-            nvp.reduceMethod {mustBeMember(nvp.reduceMethod,{'absolute','relative'})}  = 'relative'
+            reduceThreshold {mustBeNumeric,mustBeReal} = 1e-6
+            nvp.reduceMethod {mustBeMember(nvp.reduceMethod,{'absolute','relative','energy'})}  = 'energy'
+            nvp.mode {mustBeMember(nvp.mode,{'matrixwise','elementwise'})} = 'elementwise'
             nvp.exclude0Phasor (1,1) logical = false
             nvp.h=[]
+        end
+        info = []; % Diagnostics are returned by the energy mode only.
+        if strcmp(nvp.reduceMethod, 'energy')
+            if ~isempty(nvp.h)
+                error('PhasorArray:neglect:energyOrder', ...
+                    'Energy mode cannot impose h: a subsequent truncation may exceed the energy budget.');
+            end
+            [r, info] = neglectByEnergy(pA1, reduceThreshold, nvp.mode, nvp.exclude0Phasor);
+            return
         end
         val=pA1.value;
         h=pA1.h;
@@ -5075,5 +5108,60 @@ try
     tf = all(c(:));
 catch
     tf = false;
+end
+end
+
+function [r, info] = neglectByEnergy(A, threshold, mode, keepDC)
+%NEGLECTBYENERGY Retain the largest +/-h groups within a squared-L2 budget.
+validateattributes(threshold,{'numeric'},{'scalar','real','finite','>=',0,'<=',1});
+v=pvalue(A);
+if ~isnumeric(v) || isempty(v) || any(~isfinite(v(:)))
+    error('PhasorArray:neglect:energyPayload','Energy selection requires nonempty finite numeric coefficients.');
+end
+H=A.h; nr=size(v,1); nc=size(v,2);
+% Scale before squaring to avoid overflow; each entry gets its own scale
+% in elementwise mode. DC is excluded from the scale for an AC-only budget.
+w=v;
+if keepDC, w(:,:,H+1)=0; end
+if strcmp(mode,'elementwise'), scale=max(abs(w),[],3); else, scale=max(abs(w(:))); end
+scale(scale==0)=1;
+[Eew,E]=pageEnergy(PhasorArray(w./scale));
+if strcmp(mode,'elementwise'), e=reshape(Eew,nr*nc,H+1); else, e=reshape(E,1,H+1); end
+orders=double(keepDC):H;
+e=e(:,orders+1);
+[sorted, rank]=sort(e,2,'descend');
+tail=[fliplr(cumsum(fliplr(sorted),2)),zeros(size(e,1),1)];
+denominator=tail(:,1); denominator(denominator==0)=1;
+tail=tail./denominator;
+mask=false(size(e)); discarded=zeros(size(e,1),1);
+for row=1:size(e,1)
+    count=find(tail(row,:)<=threshold,1)-1;
+    mask(row,rank(row,1:count))=true;
+    discarded(row)=sum(e(row,~mask(row,:)))/denominator(row);
+end
+% At a zero budget preserve every nonzero coefficient, including terms
+% whose squared magnitude underflows after scaling.
+if threshold==0
+    nonzero=(v(:,:,H+1:end)~=0);
+    if H>0, nonzero(:,:,2:end)=nonzero(:,:,2:end) | flip(v(:,:,1:H)~=0,3); end
+    if strcmp(mode,'elementwise')
+        nonzero=reshape(nonzero,nr*nc,H+1);
+    else
+        nonzero=reshape(any(any(nonzero,1),2),1,H+1);
+    end
+    mask=nonzero(:,orders+1); discarded(:)=0;
+end
+fullMask=false(size(e,1),H+1); fullMask(:,orders+1)=mask;
+if keepDC, fullMask(:,1)=true; end
+if strcmp(mode,'matrixwise'), fullMask=repmat(fullMask,nr*nc,1); end
+paired=[fliplr(fullMask(:,2:end)),fullMask];
+v(~reshape(paired,nr,nc,2*H+1))=0;
+r=PhasorArray(v);
+r=r.reduce([],reduceMethod="absolute",reduceThreshold=0);
+info=struct('mode',mode,'harmonics',orders,'keptMask',mask, ...
+    'rankedHarmonics',reshape(orders(rank),size(rank)), ...
+    'tailEnergyFraction',tail,'discardedEnergyFraction',discarded);
+if strcmp(mode,'elementwise')
+    info.discardedEnergyFraction=reshape(discarded,nr,nc);
 end
 end

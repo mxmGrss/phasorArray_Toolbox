@@ -252,6 +252,7 @@ classdef PhasorArrayCalculusTest < matlab.unittest.TestCase
         end
 
         function testNdsdpvarDetleibniz(testCase)
+            testCase.assumeTrue(exist('sdpvar', 'file') == 2, 'YALMIP required');
             P = PhasorArray.ndsdpvar(2, 2, 3, "symmetry", "real");
             d = detLeibnizHmc(P);
             testCase.verifyTrue(isa(d, 'PhasorArray'), 'det should return PhasorArray');

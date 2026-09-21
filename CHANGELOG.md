@@ -8,7 +8,49 @@ the reasoning is kept inline rather than in a separate decision record.
 
 ## [Unreleased]
 
+### Fixed
+
+- Angular SFT uses the first complete revolution even when its antecedent
+  lies between the first two samples. Partial windows remain explicit in
+  metadata. Non-decreasing phase plateaus are supported; reversals are rejected.
+  Input dimensions are checked before computation, and hiding startup samples
+  now applies the same mask to the plotted speed and horizontal coordinates.
+
+- Optional YALMIP tests now skip explicitly when it is absent. Numeric
+  PhasorSS assertions no longer require YALMIP's `value(double)` overload.
+  The test runner distinguishes skipped tests from failures.
+- The ECC example documents its submitted-paper reference, corrects the
+  third triangle coefficient's sign, reports the singular division's residual,
+  and checks Lyapunov/Riccati convergence, closed-loop exponents and LMI status.
+  The paper's time-domain model and control parameters are unchanged.
+
+### Added
+
+- `stem` and `bar` accept `order=[0 1 3]` to display selected signed
+  harmonics at their actual positions. A nonempty selection overrides `side`,
+  sorts and deduplicates orders, and displays zero outside stored support.
+  `order=[]` preserves the usual display. Data are not modified.
+
+- `bar(A,B,layout="grouped")` compares aligned harmonic coefficients, with
+  one panel per matrix entry. Stacked bars and explicit axes are supported.
+- `neglect(A,tol,reduceMethod="energy",mode="matrixwise")` selects the
+  largest paired harmonic contributions using a discarded squared-L2 energy
+  budget. The default `mode="elementwise"` applies a separate budget to each entry;
+  `exclude0Phasor=true` preserves DC and normalizes against AC energy only.
+  Its optional second output reports ranks, masks and residual energy.
+  See `Exemples/CompareHarmonicReduction.m` for a visual comparison.
+
 ### Breaking
+
+- `neglect(A)` now uses `reduceMethod="energy"`, a discarded energy budget
+  of `1e-6`, `mode="elementwise"` and `exclude0Phasor=false`. The positional
+  threshold in `neglect(A,tol)` is now an energy fraction, not an amplitude
+  ratio. To recover the old behavior use
+  `neglect(A,1e-15,reduceMethod="relative")` (or your previous threshold).
+  Explicit absolute/relative modes remain available. The `h` option requires
+  one of those modes. `PhasorSS.neglect` applies the same energy default to
+  A/B/C/D. Internal LFT inversion cleanup keeps its explicit numerical
+  tolerance rather than silently adopting an approximation budget.
 
 - **Random generators and `ndsdpvar` take a single `symmetry` argument.** It replaces
   `time_structure` on `rand_phasor` / `PhasorArray.random` and the `PhasorType`/`real`

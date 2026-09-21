@@ -120,7 +120,7 @@ if sum(plotTAPRI)>0
     if nvp.plotDebut
         IDXp=ones(size(IDX))*2;
     else
-        IDXp=IDX;
+        IDXp=1+double(theta>=theta(1)+2*pi);
     end
     switch nvp.xAxes
         case 'time'
@@ -171,17 +171,17 @@ if sum(plotTAPRI)>0
             nexttile(T,ii)
             switch nvp.plotOmega
                 case 1
-                    plot(xAx,omega)
+                    plot(xAx,omega(IDXp>1))
                     title('\omega(t) (rad/s)')
                     xlabel('time (sec)')
                     grid on
                 case 2
-                    plot(xAx,omega/2/pi)
+                    plot(xAx,omega(IDXp>1)/2/pi)
                     title('f(t) (Hz)')
                     grid on
                     xlabel('time (sec)')
             end
-            % grid minor
+            grid minor
         end
 
         for iter_i=1:numel(plotTAPRI)
@@ -204,7 +204,7 @@ if sum(plotTAPRI)>0
                 
                 hold off
                 grid on
-                % grid minor
+                grid minor
 
                 if iter_i>1
                 legend(legendStr+string(nvp.Hm2plot{ii}))
@@ -245,14 +245,13 @@ end
 
 % Define a custom update function that displays the legend name
 function output_txt = myupdatefcn(~, event)
-    % Extract the data index and the x and y values
-    idx = event.DataIndex;
+    % Extract the x and y values
     x = event.Position(1);
     y = event.Position(2);
     % Extract the legend name for the corresponding series
     leg = event.Target.DisplayName;
     % Create a cell array with custom display text
-    output_txt = {[leg], ['time:', num2str(x)], ['value:', num2str(y)]};
+    output_txt = {leg, ['time:', num2str(x)], ['value:', num2str(y)]};
 end
 
     function transposeTiledLayout(TL)
@@ -293,13 +292,13 @@ end
 
             [col, row] = ind2sub([ nplot_hor2,nplot_vert2], npos);
             newIndex = sub2ind([nplot_vert2,nplot_hor2], row, col);
-            [npos row col newIndex];
 
             % Set the new position for the copied child
             TL2.Children(1).Layout.Tile = newIndex; % New children are always in position 1
             try
-            legend(TL2.Children(1),Axe_i.Legend.String{:});
-            legend('Location','best')
+                legend(TL2.Children(1),Axe_i.Legend.String{:});
+                legend('Location','best')
+            catch
             end
         end
 
@@ -328,7 +327,7 @@ end
         % Loop through each axis and delete the x-label
         for i = 1:(numTiles)
             pos = axesHandles(i).Layout.Tile;
-            [col, row] = ind2sub([ nplot_hor2,nplot_vert2], pos);
+            [~, row] = ind2sub([ nplot_hor2,nplot_vert2], pos);
             if row == nplot_vert2
                 axesHandles(i).XLabel.String = xlabelStr;
                 % set(axesHandles(i),'Xticklabel',get(axesHandles(i),'Xtick'))

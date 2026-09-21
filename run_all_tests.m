@@ -46,6 +46,9 @@ if all([results.Passed])
     if mode == "install"
         fprintf('The installation is functional. Run run_all_tests() for the full suite.\n');
     end
+elseif ~any([results.Failed])
+    fprintf('NO FAILURES: %d passed, %d incomplete of %d (%.1f s).\n', ...
+        sum([results.Passed]), sum([results.Incomplete]), numel(results), sum([results.Duration]));
 else
     fprintf('FAILURE: %d of %d failed.\n', sum([results.Failed]), numel(results));
     fprintf('%s\n', results([results.Failed]).Name);

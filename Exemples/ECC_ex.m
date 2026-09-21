@@ -1,8 +1,12 @@
+% Reproduce the submitted ECC paper: ECC_PhasorArray.tex (V2, March 2026).
+% See docs/ECC-reproduction.md for the erratum and numerical acceptance checks.
+% Requires YALMIP and an SDP solver for the LMI section.
 % Define harmonic coefficients
 A_0 = [1.5 1; 1 -0.5];
 A_1 = [-4/pi^2 1/2; 0 1/(pi*1i)];
 A_2 = [0 0; 1i/2 0];
-A_3 = [4/(3*pi)^2 0; 0 1/(pi*3*1i)];
+% Erratum: the triangle in At has a NEGATIVE third Fourier coefficient.
+A_3 = [-4/(3*pi)^2 0; 0 1/(pi*3*1i)];
 
 % Create PhasorArray with all harmonics (negative to positive)
 A = PhasorArray(cat(3,conj(A_3), conj(A_2), conj(A_1), A_0, A_1, A_2, A_3));
@@ -49,13 +53,22 @@ legend('PhasorArray', 'Neglected Phasors', 'TruncatedPhasors', 'Original Signal'
 title('Square wave'), xlabel('Time (s)'), ylabel('Amplitude')
 %%
 % Generate random periodic matrix
+rng(0); % reproducible algebra example; the paper does not specify a seed
 B = PhasorArray.random(2, 2, 2) % 2x2 with 2 harmonics
 % Algebraic operations (computed in harmonic domain)
 % Equivalence in the time domain
 C = A + B; % Addition: C(t) = A(t) + B(t)
 D = A * B; % Multiplication: D(t) = A(t)*B(t)
 Ainv = inv(A); % Inversion: Ainv(t) = A(t)^{-1}
-E = A\B; % Least-square A(t)X(t) = B(t)
+% A(t) is singular at t=T/8; its Fourier reconstruction also has singularities.
+% This illustrates least squares, NOT a converged regular inverse.
+% Use the method underlying A\B to retain its numerical diagnostics.
+[E, divisionInfo] = mlHmcDivide(A,B,autoUpdateh=true);
+if divisionInfo.status~=0
+    warning('PhasorArray:ECC:divisionNotConverged', ...
+        'Paper A is singular: division status %d, relative residual %.3g at h=%d.', ...
+        divisionInfo.status,divisionInfo.resrelnorm,divisionInfo.h);
+end
 At = A.'; % Transpose
 Ah = A'; % Transpose conjugate
 %%
@@ -81,7 +94,8 @@ lambda = A.HmqNEig(h,T,'fundamental')
 
 %%
 Q = PhasorArray.eye(2); % Positive definite Q(t)
-P = lyap(A,Q,'T',T);
+[P, lyapunovInfo] = lyap(A,Q,'T',T);
+assert(lyapunovInfo.status==0,'ECC:Lyapunov','Lyapunov solve did not converge.');
 
 %%
 t=0:0.1:T;
@@ -94,9 +108,14 @@ R = PhasorArray.eye(1);
 K0 = PhasorArray([10,10]);
 htrunc = 6; %initial truncation order for Riccati solution
 [K_final, S_final, info] = hare(A, B, Q, R, "K0", K0, "T", T, "autoUpdateh", true, "maxIter", 50, "thresholdResidual", 1e-6, "h", htrunc, "maxh", 500, "verbose", 2)
+assert(info.status==0 && info.resRicnorm<=1e-6,'ECC:Riccati','Riccati acceptance failed.');
 
 %%
 eig_closedloop=HmqNEig(A-B*K_final,20,T,'fundamental')
+paperPoles=sort([-3.4466;-2.3234]);
+poleError=max(abs(sort(real(eig_closedloop(:)))-paperPoles));
+assert(all(real(eig_closedloop)<0) && poleError<1e-3, ...
+    'ECC:ClosedLoop','Closed-loop exponents differ from the paper by >=1e-3.');
 
 %%
 % TBLMI LQR Optimization Problem
@@ -117,6 +136,7 @@ LMI_tb = [T_tb(LMIvar11, hlmi) , T_tb(LMIvar12, hlmi);
 Constraints = [P_tb >= 0, LMI_tb >= 0];
 Objective = -trace(P{:,:,0});%use P{i,j,k} to access kth phasor of P_{i,j}
 sol = optimize(Constraints, Objective);
+assert(sol.problem==0,'ECC:LMI','LMI solve failed: %s',sol.info);
 
 %%
 Psol = sdpval(P); % Extract solution as PhasorArray

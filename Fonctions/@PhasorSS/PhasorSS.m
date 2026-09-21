@@ -1976,14 +1976,14 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 delta2 = -part2.D11*part1.D22+eye(ny2);
 
                 %compute the inverse
-                if h(neglect(delta1))>0
+                if h(neglect(delta1,1e-15,reduceMethod="relative"))>0
                     warning('PhasorSS:feedback:periodicDeltaInversion', 'delta1 is periodic; inversion may introduce inaccuracies.')
                 end
-                if h(neglect(delta2))>0
+                if h(neglect(delta2,1e-15,reduceMethod="relative"))>0
                     warning('PhasorSS:feedback:periodicDeltaInversion', 'delta2 is periodic; inversion may introduce inaccuracies.')
                 end
-                invDelta1 = reduce(inv(neglect(delta1)));
-                invDelta2 = reduce(inv(neglect(delta2)));
+                invDelta1 = reduce(inv(neglect(delta1,1e-15,reduceMethod="relative")));
+                invDelta2 = reduce(inv(neglect(delta2,1e-15,reduceMethod="relative")));
 
                 %compute the new system
                 newA11 = part1.A+part1.B2*invDelta2*part2.D11*part1.C2;
@@ -2092,23 +2092,27 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
         end
 
         function out = neglect(obj,threshold)
-            %NEGLECT Neglect the PhasorSS object below a threshold
-            %   NEGLECT(obj,threshold) neglects the PhasorSS object below a threshold, ie in each matrix A,B,C,D
-            %   phasors below the threshold are set to zero.
+            %NEGLECT Apply an elementwise energy budget to A, B, C and D.
+            %   NEGLECT(obj,threshold) uses a discarded energy fraction per entry.
+            %   NEGLECT(obj) uses 1e-6, includes DC and groups +/- harmonics.
             %
             %   Inputs:
             %       obj - Instance of the PhasorSS class
-            %       threshold - Threshold to neglect (double)
+            %       threshold - Discarded energy fraction (double), default 1e-6
             %
             %   Outputs:
             %       out - Neglected PhasorSS object
             %
 
+            arguments
+                obj PhasorSS
+                threshold (1,1) double {mustBeReal,mustBeFinite,mustBeGreaterThanOrEqual(threshold,0),mustBeLessThanOrEqual(threshold,1)} = 1e-6
+            end
             out = obj;
-            out.A = obj.A.neglect(threshold);
-            out.B = obj.B.neglect(threshold);
-            out.C = obj.C.neglect(threshold);
-            out.D = obj.D.neglect(threshold);
+            if ~isempty(obj.A), out.A = obj.A.neglect(threshold); end
+            if ~isempty(obj.B), out.B = obj.B.neglect(threshold); end
+            if ~isempty(obj.C), out.C = obj.C.neglect(threshold); end
+            if ~isempty(obj.D), out.D = obj.D.neglect(threshold); end
         end
 
         function plot(obj,linkrow)

@@ -240,6 +240,7 @@ classdef PhasorArrayCoreTest < matlab.unittest.TestCase
 
 
         function testNdsdpvarAdd(testCase)
+            testCase.assumeTrue(exist('sdpvar', 'file') == 2, 'YALMIP required');
             P = PhasorArray.ndsdpvar(2, 2, 1, "symmetry", "real");
             Q = PhasorArray.ndsdpvar(2, 2, 1, "symmetry", "real");
             R = P + Q;
@@ -284,6 +285,7 @@ classdef PhasorArrayCoreTest < matlab.unittest.TestCase
         end
 
         function testNdsdpvarConstruct(testCase)
+            testCase.assumeTrue(exist('sdpvar', 'file') == 2, 'YALMIP required');
             P = PhasorArray.ndsdpvar(3, 3, 2);
             testCase.verifyTrue(isa(P, 'PhasorArray'), 'Should be PhasorArray');
             testCase.verifyTrue(P.h == 2, 'Harmonic order should be 2');
@@ -291,6 +293,7 @@ classdef PhasorArrayCoreTest < matlab.unittest.TestCase
         end
 
         function testNdsdpvarDiag(testCase)
+            testCase.assumeTrue(exist('sdpvar', 'file') == 2, 'YALMIP required');
             P = PhasorArray.ndsdpvar(3, 3, 1);
             d = diag(P);
             testCase.verifyTrue(size(d, 1) == 3 && size(d, 2) == 1, 'diag should extract 3x1 vector');

@@ -285,6 +285,7 @@ classdef PhasorArraySolversTest < matlab.unittest.TestCase
         end
 
         function testRiccatiLmiVsKleinman(testCase)
+            testCase.assumeTrue(exist('sdpvar', 'file') == 2, 'YALMIP required');
         % Verifies that RicHarmonicKlein converges to the same LQR gain as the
         % direct Schur-complement Riccati LMI (YALMIP).
         %
@@ -351,6 +352,7 @@ classdef PhasorArraySolversTest < matlab.unittest.TestCase
         end
 
         function testYalmipLmi(testCase)
+            testCase.assumeTrue(exist('sdpvar', 'file') == 2, 'YALMIP required');
             % TEST_YALMIP_LMI Checks LMI stability condition: P > 0, \dot{P} + A'P + PA < 0
             % For a simple constant stable system A = -I.
     
@@ -411,6 +413,7 @@ classdef PhasorArraySolversTest < matlab.unittest.TestCase
         end
 
         function testYalmipLmiVsLyap(testCase)
+            testCase.assumeTrue(exist('sdpvar', 'file') == 2, 'YALMIP required');
             % TEST_YALMIP_LMI_VS_LYAP Compares X from lyap(A,Q) with X from LMI.
             % Solves A'X + XA + dX/dt + Q = 0.
     

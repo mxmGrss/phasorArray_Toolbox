@@ -28,6 +28,10 @@ function Tout = stem(pA1,nvp)
     %     'parent'    - (graphics handle) Parent figure or axes for the plot.
     %                     - Default: gcf (current figure).
     %
+    %   order=[0 1 3] selects signed harmonic orders, overriding side.
+    %   [] keeps the usual display; duplicates are removed and orders sorted.
+    %   Orders outside the stored range have zero coefficients.
+    %
     %   Outputs:
     %     Tout        - (tiledlayout object) Handle to the tiled layout used for the plot.
     %
@@ -65,6 +69,7 @@ function Tout = stem(pA1,nvp)
         nvp.side {mustBeMember(nvp.side,{'both','oneSided'})} = 'oneSided'
         nvp.parent = gcf
         nvp.uniformYLim logical = false;
+        nvp.order {mustBeNumeric,mustBeReal,mustBeFinite,mustBeInteger} = []
     end
 
 
@@ -114,7 +119,7 @@ function Tout = stem(pA1,nvp)
         nvp.marker = {nvp.marker};
     end
     varhold = ishold;
-    T = stemPhasor(pA1{1}, "scale", nvp.scale, "hold", varhold, "explosed", nvp.explosed, "display", nvp.display, "marker", nvp.marker{1}, "side", nvp.side, "parent", nvp.parent, "uniformYLim", nvp.uniformYLim);
+    T = stemPhasor(pA1{1}, "scale", nvp.scale, "hold", varhold, "explosed", nvp.explosed, "display", nvp.display, "marker", nvp.marker{1}, "side", nvp.side, "parent", nvp.parent, "uniformYLim", nvp.uniformYLim, "order", nvp.order);
     n = numel(pA1);
     nmarker = numel(nvp.marker);
     for n_iter = 2:n
@@ -122,7 +127,7 @@ function Tout = stem(pA1,nvp)
         ni = mod(n_iter - 1, nmarker) + 1;   % 1-based cyclic index
         hold on
         stemPhasor(oi, "scale", nvp.scale, "hold", true, "explosed", nvp.explosed, ...
-            marker=nvp.marker{ni}, display=nvp.display, parent=gca, uniformYLim=nvp.uniformYLim);
+            marker=nvp.marker{ni}, display=nvp.display, parent=gca, uniformYLim=nvp.uniformYLim, side=nvp.side, order=nvp.order);
     end
     hold off
     if varhold

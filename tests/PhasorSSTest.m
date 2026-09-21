@@ -18,6 +18,18 @@ classdef PhasorSSTest < matlab.unittest.TestCase
 
     methods (Test)
 
+        function testNeglectDefaultsAndStaticSystem(testCase)
+            A=PhasorArray(1,reshape([1e-4 1e-5],1,1,[]),isreal=true);
+            P=PhasorSS(A,A,A,A,1);
+            Q=neglect(P);
+            for field={'A','B','C','D'}
+                testCase.verifyEqual(pvalue(Q.(field{1})),1);
+            end
+            S=neglect(PhasorSS([],[],[],A,1));
+            testCase.verifyTrue(isempty(S.A));
+            testCase.verifyEqual(pvalue(S.D),1);
+        end
+
         function testNxNuNyMatchTheMatrices(testCase)
             % nx/nu/ny read off size(A), size(B,2), size(C,1) -- a 2-state,
             % 1-input, 1-output system pins all three independently, so a
@@ -112,10 +124,10 @@ classdef PhasorSSTest < matlab.unittest.TestCase
             testCase.verifyEqual(P2.ny, P.ny + 1, 'ny must grow by the number of new rows');
             testCase.verifyEqual(value(P2.A), value(P.A), 'A must be untouched');
             testCase.verifyEqual(value(P2.B), value(P.B), 'B must be untouched');
-            testCase.verifyEqual(value(P2.C(1:P.ny,:)), value(P.C), 'the old rows of C must be preserved exactly');
-            testCase.verifyEqual(value(P2.D(1:P.ny,:)), value(P.D), 'the old rows of D must be preserved exactly');
-            testCase.verifyEqual(value(P2.C(P.ny+1:end,:)), [0 1], 'the new row of C');
-            testCase.verifyEqual(value(P2.D(P.ny+1:end,:)), [0 0], 'the new row of D');
+            testCase.verifyEqual(P2.C(1:P.ny,:), value(P.C), 'the old rows of C must be preserved exactly');
+            testCase.verifyEqual(P2.D(1:P.ny,:), value(P.D), 'the old rows of D must be preserved exactly');
+            testCase.verifyEqual(P2.C(P.ny+1:end,:), [0 1], 'the new row of C');
+            testCase.verifyEqual(P2.D(P.ny+1:end,:), [0 0], 'the new row of D');
         end
 
         function testAddInputAppendsColumnsWithoutTouchingTheExisting(testCase)
@@ -131,10 +143,10 @@ classdef PhasorSSTest < matlab.unittest.TestCase
             testCase.verifyEqual(P2.nu, P.nu + 1, 'nu must grow by the number of new columns');
             testCase.verifyEqual(value(P2.A), value(P.A), 'A must be untouched');
             testCase.verifyEqual(value(P2.C), value(P.C), 'C must be untouched');
-            testCase.verifyEqual(value(P2.B(:,1:P.nu)), value(P.B), 'the old columns of B must be preserved exactly');
-            testCase.verifyEqual(value(P2.D(:,1:P.nu)), value(P.D), 'the old columns of D must be preserved exactly');
-            testCase.verifyEqual(value(P2.B(:,P.nu+1:end)), [0;1], 'the new column of B');
-            testCase.verifyEqual(value(P2.D(:,P.nu+1:end)), [0;0], 'the new column of D');
+            testCase.verifyEqual(P2.B(:,1:P.nu), value(P.B), 'the old columns of B must be preserved exactly');
+            testCase.verifyEqual(P2.D(:,1:P.nu), value(P.D), 'the old columns of D must be preserved exactly');
+            testCase.verifyEqual(P2.B(:,P.nu+1:end), [0;1], 'the new column of B');
+            testCase.verifyEqual(P2.D(:,P.nu+1:end), [0;0], 'the new column of D');
         end
 
         function testHmqDcGainMatchesTheClassicFormula(testCase)

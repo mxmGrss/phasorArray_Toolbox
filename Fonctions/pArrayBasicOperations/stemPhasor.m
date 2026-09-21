@@ -73,6 +73,7 @@ arguments
     nvp.side {mustBeMember(nvp.side,{'both','oneSided'})} = 'oneSided'
     nvp.parent = []
     nvp.uniformYLim = false;
+    nvp.order {mustBeNumeric,mustBeReal,mustBeFinite,mustBeInteger} = []
 end
 
 if ishold
@@ -104,6 +105,15 @@ end
 
 
 
+if ~isempty(nvp.order)
+    validateattributes(nvp.order,{'numeric'},{'vector'});
+    axe_x=unique(double(nvp.order(:).'));
+    selected=zeros(nx,ny,numel(axe_x),'like',Aph);
+    valid=abs(axe_x)<=nh;
+    selected(:,:,valid)=Aph(:,:,nh+1+axe_x(valid));
+    Aph=selected;
+    phas_index=1:numel(axe_x);
+end
 % parent = nvp.parent;
 % ff = ancestor(parent, 'figure'); % Get the figure handle of the parent
 % set(ff, 'Visible', 'off'); % Make the current figure invisible
@@ -129,17 +139,17 @@ if nvp.explosed
             end
             switch nvp.display
                 case 'real'
-                    stem(phas_index-nh-1,squeeze(real(toto)),nvp.marker)
+                    stem(axe_x,squeeze(real(toto)),nvp.marker)
                     set(gca,"yscale",nvp.scale)
                 case 'imag'
-                    stem(phas_index-nh-1,squeeze(imag(toto)),nvp.marker)
+                    stem(axe_x,squeeze(imag(toto)),nvp.marker)
                     set(gca,"yscale",nvp.scale)
                 case 'both'
-                    stem(phas_index-nh-1,squeeze(real(toto)),nvp.marker)
+                    stem(axe_x,squeeze(real(toto)),nvp.marker)
                     yyaxis right
-                    stem(squeeze(imag(toto)),nvp.marker)
+                    stem(axe_x,squeeze(imag(toto)),nvp.marker)
                 case 'abs'
-                    stem(phas_index-nh-1,squeeze(abs(toto)),nvp.marker)
+                    stem(axe_x,squeeze(abs(toto)),nvp.marker)
                     set(gca,"yscale",nvp.scale)
                     grid on
                     % yyaxis right
@@ -147,19 +157,19 @@ if nvp.explosed
                     % ylim([-pi-0.1 pi+0.1])
                     % yyaxis left
                 case 'absangle'
-                    stem(phas_index-nh-1,squeeze(abs(toto)),nvp.marker)
+                    stem(axe_x,squeeze(abs(toto)),nvp.marker)
                     set(gca,"yscale",nvp.scale)
                     grid on
                     ylabel('Abs')
                     yyaxis right
-                    stem(phas_index-nh-1,squeeze(angle(toto)),nvp.marker)
+                    stem(axe_x,squeeze(angle(toto)),nvp.marker)
                     ylim([-pi-0.1 pi+0.1])
                     ylabel('angle')
                     yyaxis left
             end
             xlim(gca,"padded")
             toto = xlim;
-            xticks(gca,(ceil(toto(1)):1:floor(toto(2))))
+            if isempty(nvp.order), xticks(gca,(ceil(toto(1)):1:floor(toto(2)))); else, xticks(gca,axe_x); end
             grid minor
             if nvp.hold
                 hold off
@@ -186,19 +196,19 @@ if nvp.explosed
     catch
     end
 else
-    toto=reshape(Aph,[nx*ny 2*nh+1]);
+    toto=reshape(Aph,nx*ny,[]);
     toto=toto(:,phas_index);
     nexttile(T,1)
     if nvp.hold
         hold on
     end
-    stem(phas_index-nh-1,abs(toto)',nvp.marker)
+    stem(axe_x,abs(toto)',nvp.marker)
     if nvp.hold
         hold off
     end
     xlim(gca,"padded")
     toto = xlim;
-    xticks(gca,(ceil(toto(1)):1:floor(toto(2))))
+    if isempty(nvp.order), xticks(gca,(ceil(toto(1)):1:floor(toto(2)))); else, xticks(gca,axe_x); end
     grid on
     grid minor
     set(gca,"yscale",nvp.scale)

@@ -400,4 +400,130 @@ classdef PhasorArrayTimeDomainTest < matlab.unittest.TestCase
             testCase.verifyTrue(abs(evalp(c, pi/2)) < testCase.tol, 'cos(pi/2)');
         end
     end
+    methods (Test)
+        function testNeglectEnergyRankAndTimeDomainBudget(testCase)
+            % Pair energies: DC=0, h1=0.01, h2=9, h3=1. A band cutoff
+            % cannot make the same selection as the energy ranking.
+            A=PhasorArray(0,reshape(sqrt([0.01 9 1]/2),1,1,[]),isreal=true);
+            [B,info]=neglect(A,0.002,reduceMethod="energy");
+            testCase.verifyEqual(info.keptMask,[false false true true]);
+            testCase.verifyEqual(info.rankedHarmonics,[2 3 1 0]);
+            testCase.verifyTrue(all(diff(info.tailEnergyFraction)<=0));
+            testCase.verifyLessThanOrEqual(info.discardedEnergyFraction,0.002);
+            testCase.verifyGreaterThan(info.tailEnergyFraction(2),0.002);
+            testCase.verifyTrue(isreal(B));
+            th=(0:255)*2*pi/256;
+            x=evalp(A,th); dx=x-evalp(B,th);
+            fraction=sum(abs(dx(:)).^2)/sum(abs(x(:)).^2);
+            testCase.verifyEqual(fraction,info.discardedEnergyFraction,'AbsTol',1e-14);
+            testCase.verifyEqual(B.h,3); % high-order content is retained
+        end
+        function testBarAndStemSelectedOrders(testCase)
+            f=figure('Visible','off'); cleanup=onCleanup(@()close(f));
+            A=PhasorArray(reshape(1:7,1,1,[]));
+            for plotter={@bar,@stem}
+                clf(f); figure(f);
+                T=plotter{1}(A,A,order=[3;-2;3;9],scale="linear",parent=f);
+                objects=findobj(T,'Type',func2str(plotter{1}));
+                testCase.verifyEqual(numel(objects),2);
+                for obj=reshape(objects,1,[])
+                    testCase.verifyEqual(obj.XData,[-2 3 9]);
+                    testCase.verifyEqual(obj.YData,[2 7 0]);
+                end
+                clf(f); figure(f);
+                T=plotter{1}(A,order=0,scale="linear",parent=f);
+                obj=findobj(T,'Type',func2str(plotter{1}));
+                testCase.verifyEqual(obj.XData(1),0);
+                testCase.verifyEqual(obj.YData(1),4);
+                clf(f); figure(f);
+                R=PhasorArray(1,reshape([.5 .25 .1],1,1,[]),isreal=true);
+                T=plotter{1}(R,order=[-3 1],scale="linear",parent=f);
+                obj=findobj(T,'Type',func2str(plotter{1}));
+                testCase.verifyEqual(obj.XData,[-3 1]);
+                testCase.verifyEqual(obj.YData,[.1 .5]);
+            end
+        end
+        function testNeglectEnergyElementwiseProtectsSmallEntries(testCase)
+            v=zeros(1,2,5); v(1,1,3)=100; v(1,2,[1 5])=1;
+            A=PhasorArray(v);
+            M=neglect(A,1e-3,reduceMethod="energy",mode="matrixwise");
+            [E,info]=neglect(A,1e-3,reduceMethod="energy",mode="elementwise");
+            testCase.verifyEqual(M.h,0);
+            testCase.verifyEqual(pvalue(E),v);
+            testCase.verifyEqual(info.discardedEnergyFraction,[0 0]);
+            testCase.verifyEqual(info.keptMask,[true false false;false false true]);
+            [D,defaults]=neglect(A);
+            explicit=neglect(A,1e-6,reduceMethod="energy",mode="elementwise",exclude0Phasor=false);
+            testCase.verifyEqual(pvalue(D),pvalue(explicit));
+            testCase.verifyEqual(defaults.mode,'elementwise');
+        end
+        function testNeglectEnergyAcZeroAndEndpoints(testCase)
+            A=PhasorArray(1000,reshape([1 0.01],1,1,[]),isreal=true);
+            B=neglect(A,1,reduceMethod="energy",exclude0Phasor=true);
+            testCase.verifyEqual(pvalue(B),1000);
+            B=neglect(A,0,reduceMethod="energy");
+            testCase.verifyEqual(pvalue(B),pvalue(A));
+            B=neglect(A,1,reduceMethod="energy");
+            testCase.verifyEqual(pvalue(B),0);
+            [B,info]=neglect(PhasorArray(3),0.1,reduceMethod="energy",exclude0Phasor=true);
+            testCase.verifyEqual(pvalue(B),3);
+            testCase.verifyEqual(info.discardedEnergyFraction,0);
+            [B,info]=neglect(PhasorArray.zeros(2),0,reduceMethod="energy",mode="elementwise");
+            testCase.verifyEqual(pvalue(B),zeros(2));
+            testCase.verifyEqual(info.discardedEnergyFraction,zeros(2));
+        end
+        function testNeglectEnergyScalingComplexPairsAndTies(testCase)
+            A=PhasorArray(reshape([2i 1 3 0.01 0.1],1,1,[]));
+            [B,info]=neglect(A,0.1,reduceMethod="energy");
+            C=neglect(PhasorArray(pvalue(A)*1e150),0.1,reduceMethod="energy");
+            testCase.verifyEqual(pvalue(C)/1e150,pvalue(B),'AbsTol',1e-14);
+            v=pvalue(B); testCase.verifyEqual(v~=0,flip(v~=0,3));
+            testCase.verifyLessThanOrEqual(info.discardedEnergyFraction,0.1);
+            A=PhasorArray(0,reshape([1 1 1],1,1,[]),isreal=true);
+            [~,info]=neglect(A,1/3,reduceMethod="energy");
+            testCase.verifyEqual(info.keptMask,[false true true false]);
+            tiny=PhasorArray(reshape([1e-200 1 1e-200],1,1,[]));
+            testCase.verifyEqual(pvalue(neglect(tiny,0,reduceMethod="energy")),pvalue(tiny));
+        end
+        function testNeglectEnergyValidationAndLegacy(testCase)
+            A=PhasorArray.cos();
+            testCase.verifyError(@()neglect(A,0.1,reduceMethod="energy",h=1),'PhasorArray:neglect:energyOrder');
+            testCase.verifyError(@()neglect(PhasorArray(NaN),0.1,reduceMethod="energy"),'PhasorArray:neglect:energyPayload');
+            [B,info]=neglect(A,0.6,reduceMethod="absolute");
+            testCase.verifyEqual(pvalue(B),0); testCase.verifyEmpty(info);
+            testCase.verifyEqual(pvalue(neglect(A,0.5,reduceMethod="relative")),pvalue(A));
+            noisy=PhasorArray(1,reshape([1e-4 1e-5],1,1,[]),isreal=true);
+            testCase.verifyEqual(pvalue(neglect(noisy)),1);
+        end
+        function testBarGroupsAlignOrdersAndKeepDcSeries(testCase)
+            f=figure('Visible','off'); cleanup=onCleanup(@()close(f));
+            ax=axes(f);
+            A=PhasorArray(2,reshape([0.5 0.25],1,1,[]),isreal=true);
+            T=bar(A,PhasorArray(3),parent=ax,scale="linear",labels=["A","DC"]);
+            testCase.verifyEqual(T,ax);
+            a=findobj(ax,'Type','bar','DisplayName','A');
+            b=findobj(ax,'Type','bar','DisplayName','DC');
+            testCase.verifyEqual(a.XData,0:2); testCase.verifyEqual(a.YData,[2 0.5 0.25]);
+            testCase.verifyEqual(b.YData,[3 0 0]);
+            cla(ax); bar(PhasorArray(2),PhasorArray(3),parent=ax,scale="linear",labels=["A","B"]);
+            a=findobj(ax,'Type','bar','DisplayName','A'); b=findobj(ax,'Type','bar','DisplayName','B');
+            testCase.verifyEqual(a.YData(1),2); testCase.verifyEqual(b.YData(1),3);
+            testCase.verifyEqual(numel(findobj(ax,'Type','bar')),2);
+        end
+        function testBarMatrixComplexAndValidation(testCase)
+            f=figure('Visible','off'); cleanup=onCleanup(@()close(f));
+            A=PhasorArray(cat(3,[1i 2;3 4],[1 2;3 4],[2i 3;4 5]));
+            T=bar(A,A,parent=f,scale="linear",display="both",labels=["A","B"],uniformYLim=true);
+            ax=findobj(T,'Type','axes'); testCase.verifyEqual(numel(ax),4);
+            for k=1:4
+                b=findobj(ax(k),'Type','bar'); testCase.verifyEqual(numel(b),4);
+                testCase.verifyEqual(b(1).XData,-1:1);
+            end
+            testCase.verifyError(@()bar(A,PhasorArray(1)),'PhasorArray:bar:dimensions');
+            testCase.verifyError(@()bar(A,display="real"),'PhasorArray:bar:signedLog');
+            testCase.verifyError(@()bar(A,labels=["a","b"]),'PhasorArray:bar:labels');
+            testCase.verifyError(@()bar(PhasorArray(Inf)),'PhasorArray:bar:payload');
+        end
+    end
+
 end
