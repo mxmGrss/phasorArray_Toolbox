@@ -24,11 +24,10 @@ the reasoning is kept inline rather than in a separate decision record.
 - Optional YALMIP tests now skip explicitly when it is absent. Numeric
   PhasorSS assertions no longer require YALMIP's `value(double)` overload.
   The test runner distinguishes skipped tests from failures.
-- The ECC example documents its submitted-paper reference, corrects the
-  third triangle coefficient's sign, reports the singular division's residual,
-  and checks Lyapunov/Riccati convergence, closed-loop exponents and LMI status.
-  The paper's time-domain model and control parameters are unchanged.
-
+- `ECC_ex.m` preserves all 18 published MATLAB listing bodies verbatim.
+  `ECCpaperAsOfV2_0.m` separately provides the v2.0.0 adaptation, with the
+  coefficient erratum, reproducible random data and numerical diagnostics.
+  The different Riccati warm-start settings are documented explicitly.
 ### Added
 
 - `stem` and `bar` accept `order=[0 1 3]` to display selected signed
