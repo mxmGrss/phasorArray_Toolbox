@@ -26,8 +26,10 @@ the reasoning is kept inline rather than in a separate decision record.
   The test runner distinguishes skipped tests from failures.
 - `ECC_ex.m` preserves all 18 published MATLAB listing bodies verbatim.
   `ECCpaperAsOfV2_0.m` separately provides the v2.0.0 adaptation, with the
-  coefficient erratum, reproducible random data and numerical diagnostics.
+  coefficient erratum, grouped harmonic bars and a separate uniformly
+  invertible algebra example with reproducible random data and residual checks.
   The different Riccati warm-start settings are documented explicitly.
+
 ### Added
 
 - `stem` and `bar` accept `order=[0 1 3]` to display selected signed

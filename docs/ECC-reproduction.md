@@ -30,9 +30,14 @@ Intentional differences from the published source are:
 - Correct A_3(1,1) to -4/(3*pi)^2, consistent with the specified triangle.
   The next construction overwrites A from the unchanged time function, so
   this correction does not alter subsequent control calculations.
-- Set rng(0) for the random algebra illustration; the paper specifies no seed.
-- Replace A\B with its underlying mlHmcDivide call to retain diagnostics and
-  explicitly report nonconvergence.
+- Use harmonic bars, grouped in one call for the reduction comparison.
+- Use a separate regular algebra model
+  `A_alg = [2,0.2;0.2,1.5] + 0.25*cos(theta)*I` and a random B_alg with rng(0).
+  A_alg is symmetric with smallest eigenvalue at least 1.05 for every phase.
+  The paper's A remains unchanged for the operators, control and simulation.
+- Use mlHmcDivide on this regular pair and require convergence with relative
+  residual at most 1e-8. Also check the harmonic residual of sampled inversion
+  against the identity, normalized by its Frobenius norm, at the same tolerance.
 - Use the public hare entry point. Its warmStartFraction is the current
   solver default 1.0, whereas the published call explicitly uses 0.95.
   This is an algorithmic adaptation, not identical solver parametrization.
@@ -42,7 +47,7 @@ Intentional differences from the published source are:
 
 ## Known numerical limitations
 
-A(t) is singular at t=1/8. The algebra illustration therefore does not
+The published A(t) is singular at t=1/8. Its algebra illustration therefore does not
 establish a regular inverse; inv(A) is sampled inversion and does not certify
 invertibility between samples. The harmonic-division residual must not be
 interpreted as successful convergence merely because the script completes.

@@ -19,10 +19,10 @@ N = 6; %2^N points used for FFT
 At = @(t) [1+sawtooth(2*pi*t/T,0.5)+0.5, 1+cos(2*pi*t/T); 1-sin(2*2*pi*t/T), -0.5 + square(2*pi*t/T)/2];
 A = PhasorArray.funcToPhasorArray(At,T,N)
 
-% Harmonic spectrum visualization (stem plot)
+% Harmonic spectrum visualization
 figure
-stem(A,'scale','linear','uniformYLim',0)
-sgtitle('stemplot of phasor of A(t)')
+bar(A,scale="linear",uniformYLim=false)
+sgtitle('Harmonic coefficients of A(t)')
 % Time-domain reconstruction over multiple periods
 figure
 plot(A)
@@ -34,11 +34,8 @@ A_neglect = neglect(A{2,2}, 2.e-2, 'reduceMethod', 'absolute');
 % Truncate to fixed harmonic order
 A_trunc = trunc(A{2,2}, 5);
 figure
-stem(A{2,2}, 'scale', 'log')
-hold on
-stem(A_neglect, 'Marker', 'x')
-stem(A_trunc, 'Marker', '<')
-legend('PhasorArray','Neglected Phasors','TruncatedPhasors')
+bar(A{2,2}, A_neglect, A_trunc, layout="grouped", scale="log", ...
+    labels=["Original", "Neglected", "Truncated"])
 title('Harmonic content (log scale)')
 xlabel('Harmonic'), ylabel('Magnitude')
 figure
@@ -53,25 +50,24 @@ plot(t, squeeze(catA_eval(2,2,:)), 'k--')
 legend('PhasorArray', 'Neglected Phasors', 'TruncatedPhasors', 'Original Signal')
 title('Square wave'), xlabel('Time (s)'), ylabel('Amplitude')
 %%
-% Generate random periodic matrix
-rng(0); % reproducible algebra example; the paper does not specify a seed
-B = PhasorArray.random(2, 2, 2) % 2x2 with 2 harmonics
-% Algebraic operations (computed in harmonic domain)
-% Equivalence in the time domain
-C = A + B; % Addition: C(t) = A(t) + B(t)
-D = A * B; % Multiplication: D(t) = A(t)*B(t)
-Ainv = inv(A); % Inversion: Ainv(t) = A(t)^{-1}
-% A(t) is singular at t=T/8; its Fourier reconstruction also has singularities.
-% This illustrates least squares, NOT a converged regular inverse.
-% Use the method underlying A\B to retain its numerical diagnostics.
-[E, divisionInfo] = mlHmcDivide(A,B,autoUpdateh=true);
-if divisionInfo.status~=0
-    warning('PhasorArray:ECC:divisionNotConverged', ...
-        'Paper A is singular: division status %d, relative residual %.3g at h=%d.', ...
-        divisionInfo.status,divisionInfo.resrelnorm,divisionInfo.h);
-end
-At = A.'; % Transpose
-Ah = A'; % Transpose conjugate
+% Separate, uniformly invertible algebra example. The paper's A stays intact
+% for the operator and control sections below. For every phase, A_alg is real
+% symmetric with lambda_min >= 1.5 - 0.25 - 0.2 = 1.05 (Gershgorin bound).
+A_alg = PhasorArray([2, 0.2; 0.2, 1.5]) ...
+    + 0.25*PhasorArray.cos()*PhasorArray.eye(2);
+rng(0); % reproducible right-hand side; no seed can repair a singular A
+B_alg = PhasorArray.random(2, 2, 2);
+C_alg = A_alg + B_alg; % Addition
+D_alg = A_alg * B_alg; % Multiplication
+Ainv_alg = inv(A_alg); % Sampled inversion, checked in harmonic norm below
+[E_alg, divisionInfo] = mlHmcDivide(A_alg,B_alg,autoUpdateh=true, ...
+    thresholdResidual=1e-8);
+assert(divisionInfo.status==0 && divisionInfo.resrelnorm<=1e-8, ...
+    'ECC:Division','The regular algebra example did not converge.');
+inverseResidual = norm(reshape(pvalue(A_alg*Ainv_alg-PhasorArray.eye(2)),[],1))/sqrt(2);
+assert(inverseResidual<=1e-8,'ECC:Inverse','Inverse residual exceeds 1e-8.');
+At_alg = A_alg.'; % Transpose
+Ah_alg = A_alg'; % Conjugate transpose
 %%
 % Create Toeplitz-Block form truncated to h=8 harmonics
 h = 8;
