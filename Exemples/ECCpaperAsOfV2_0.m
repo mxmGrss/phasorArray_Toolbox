@@ -12,26 +12,27 @@ T = 1; %period
 N = 6; %2^N points used for FFT 
 At = @(t) [1+sawtooth(2*pi*t/T,0.5)+0.5, 1+cos(2*pi*t/T); 1-sin(2*2*pi*t/T), -0.5 + square(2*pi*t/T)/2];
 A = PhasorArray.funcToPhasorArray(At,T,N)
-figure
+figure(Name="ECC v2 - Harmonic coefficients")
 bar(A,scale="linear",uniformYLim=false)
 sgtitle('Harmonic coefficients of A(t)')
-figure
+figure(Name="ECC v2 - Phase reconstruction")
 plot(A)
 sgtitle('time evolution of A(t) over one period')
 
 %% Harmonic reduction
-A_neglect = neglect(A{2,2}, 2.e-2, 'reduceMethod', 'absolute');
-A_trunc = trunc(A{2,2}, 5);
-figure
-bar(A{2,2}, A_neglect, A_trunc, layout="grouped", scale="log", ...
+a22 = A{2,2};
+a22_neglect = neglect(a22, 2.e-2, 'reduceMethod', 'absolute');
+a22_trunc = trunc(a22, 5);
+figure(Name="ECC v2 - a22 harmonic reduction")
+bar(a22, a22_neglect, a22_trunc, layout="grouped", scale="log", ...
     labels=["Original", "Neglected", "Truncated"])
 title('Harmonic content (log scale)')
 xlabel('Harmonic'), ylabel('Magnitude')
-figure
-plot(A{2,2}, T, [0, 2*T])
+figure(Name="ECC v2 - a22 time reconstruction")
+plot(a22, T, [0, 2*T])
 hold on
-plot(A_neglect, T, [0, 2*T])
-plot(A_trunc, T, [0, 2*T])
+plot(a22_neglect, T, [0, 2*T])
+plot(a22_trunc, T, [0, 2*T])
 t=0:.01:2*T;
 A_eval = arrayfun(@(t) At(t), t, 'UniformOutput', false);
 catA_eval = cat(3, A_eval{:});
@@ -59,7 +60,7 @@ Ah_alg = A_alg'; % Conjugate transpose
 %% Harmonic operators
 h = 8;
 A_tb = A.T_tb(h); % Toeplitz-Block form (full matrix)
-figure
+figure(Name="ECC v2 - Toeplitz operator")
 barsurf(abs(A_tb),1e-3);
 title('T(A)_8');
 A_four = F_tb(A,h) % Fourier form of PhasorArray A
@@ -106,11 +107,11 @@ sol = optimize(Constraints, Objective);
 assert(sol.problem==0,'ECC:LMI','LMI solve failed: %s',sol.info);
 Psol = sdpval(P); % Extract solution as PhasorArray
 K=inv(R)*B'*Psol % Optimal feedback
-figure
+figure(Name="ECC v2 - Riccati and LMI solutions")
 plot(Psol, T, 0:T/100:T);
 hold on;
 plot(S_final, T, 0:T/100:T)
-figure
+figure(Name="ECC v2 - LMI feedback gain")
 plot(K, T, 0:T/100:T)
 
 %% Closed-loop simulation
@@ -118,14 +119,14 @@ C = PhasorArray.eye(2);
 D = PhasorArray.zeros(2, 2);
 sys = PhasorSS(A, B, C, D, T);
 sys_cl = feedback(sys, K_final);
-figure
+figure(Name="ECC v2 - Closed-loop model")
 plot(sys_cl) %plot of matrix [A-BK,B;C,-DK]
 x0 = [1; 1];
 t_sim = 0:T/100:5*T;
-figure
+figure(Name="ECC v2 - Initial-condition response")
 initial(sys_cl, x0, t_sim);
 title('Closed-loop response (initial condition)')
-figure
+figure(Name="ECC v2 - Forced response")
 u= [1+PhasorArray.cos];
 [y,t]=lsim(sys_cl,t_sim,u,x0);
 plot(t,y);
