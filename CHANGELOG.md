@@ -8,7 +8,12 @@ the reasoning is kept inline rather than in a separate decision record.
 
 ## [Unreleased]
 
+## [v2.0.0] - 2026-09-25
+
 ### Fixed
+- `plot(A)` labels the default abscissa as `Phase (rad)`. An explicitly
+  supplied scalar period retains the time axis, including `T=2*pi`.
+  Superposed real/imaginary plots now display the abscissa label.
 
 - Angular SFT uses the first complete revolution even when its antecedent
   lies between the first two samples. Partial windows remain explicit in

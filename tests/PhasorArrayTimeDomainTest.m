@@ -38,6 +38,33 @@ classdef PhasorArrayTimeDomainTest < matlab.unittest.TestCase
     end
 
     methods (Test)
+        function testPlotDistinguishesPhaseFromExplicitPeriod(testCase)
+            f = figure('Visible', 'off');
+            cleanup = onCleanup(@() close(f)); %#ok<NASGU>
+            A = PhasorArray.cos();
+            [phaseValues, theta] = plot(A);
+            testCase.verifyEqual(get(get(gca, 'XLabel'), 'String'), 'Phase (rad)');
+            clf(f);
+            [timeValues, t] = plot(A, 2*pi);
+            testCase.verifyEqual(get(get(gca, 'XLabel'), 'String'), 'time (sec)');
+            testCase.verifyEqual(timeValues, phaseValues);
+            testCase.verifyEqual(t, theta);
+            clf(f);
+            plot(A, 1);
+            testCase.verifyEqual(get(get(gca, 'XLabel'), 'String'), 'time (sec)');
+            for exploded = [false true]
+                clf(f);
+                plot([A, 1i*A], explosed=exploded);
+                ax = findall(f, 'Type', 'axes');
+                for k = 1:numel(ax)
+                    testCase.verifyEqual(ax(k).XLabel.String, 'Phase (rad)');
+                end
+            end
+            [noPlotValues, noPlotTheta] = plot(A, plot=false);
+            testCase.verifyEqual(noPlotValues, phaseValues);
+            testCase.verifyEqual(noPlotTheta, theta);
+        end
+
         function testAbsFoldsANegativeSignal(testCase)
             % |cos| has a corner, so the truncated series converges as 1/k^2 and
             % the tolerance is loose on purpose; the point is the folding.

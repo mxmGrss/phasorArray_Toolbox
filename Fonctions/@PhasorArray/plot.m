@@ -12,7 +12,7 @@ function [r,t] = plot(pA1,T,t,nvp)
     %   Inputs:
     %     pA1  - (PhasorArray) The `PhasorArray` object to be evaluated and plotted.
     %     T   - (double, optional) Period of the `PhasorArray`.
-    %              - Default: `2*pi`.
+    %              - Default: `2*pi`, with a Phase (rad) axis when omitted.
     %     t   - (vector or scalar, optional) Time instants for evaluation.
     %              - If `t = []`: A default time grid is generated as `0:dt:T-dt`, where `dt = T/(20*h)`, with `h` the highest harmonic.
     %              - If `t = [tmin tmax]`: Uses `t = tmin:dt:tmax` with `dt` computed as above.
@@ -59,7 +59,7 @@ function [r,t] = plot(pA1,T,t,nvp)
     %   See also: PhasorArray2time.
     arguments
         pA1
-        T=2*pi
+        T=[]
         t=[]
         nvp.plot logical =true
         nvp.explosed logical =true
@@ -73,6 +73,13 @@ function [r,t] = plot(pA1,T,t,nvp)
         nvp.linkaxes='x'
         nvp.forceReal = false
         nvp.grid = 'on'
+    end
+
+    % An omitted period denotes phase; an explicit scalar denotes time.
+    xlabelStr = '';
+    if isempty(T)
+        T = 2*pi;
+        xlabelStr = 'Phase (rad)';
     end
 
     if isscalar(pA1)
@@ -103,7 +110,7 @@ function [r,t] = plot(pA1,T,t,nvp)
     end
     [rr,tt]=PhasorArray2time(pA1,T,t,"plot", nvp.plot, "DispImag", nvp.DispImag, ...
         DispReal=nvp.DispReal,explosed=nvp.explosed,hold=nvp.hold,ZeroCentered=nvp.ZeroCentered, ...
-        title=nvp.title,LineStyle=nvp.LineStyle,GlobalYLim=nvp.GlobalYLim,linkaxes=nvp.linkaxes,forceReal=nvp.forceReal,grid = nvp.grid);
+        title=nvp.title,LineStyle=nvp.LineStyle,GlobalYLim=nvp.GlobalYLim,linkaxes=nvp.linkaxes,forceReal=nvp.forceReal,grid = nvp.grid,xlabelStr=xlabelStr);
 
     if nargout>0
         r=rr;

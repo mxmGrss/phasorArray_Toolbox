@@ -160,6 +160,7 @@ else
             if isempty(title_str), title(ax, 'M(t), real part'); else, title(ax, title_str); end
         end
 
+        if ~plot3D, xlabel(ax, xlabelStr); end
         ylim(ax, 'auto');
         if zero_centered
             ylim(ax, max(abs(ylim(ax))).*[-1 1]);
@@ -176,6 +177,7 @@ else
         if zero_centered
             ylim(ax1, max(abs(ylim(ax1))).*[-1 1]);
         end
+        xlabel(ax1, xlabelStr);
         title(ax1, 'M(t), real part');
         grid(ax1, 'off'); grid(ax1, grid_opt);
 
@@ -186,6 +188,7 @@ else
         if zero_centered
             ylim(ax2, max(abs(ylim(ax2))).*[-1 1]);
         end
+        xlabel(ax2, xlabelStr);
         title(ax2, 'M(t), imag part');
         grid(ax2, 'off'); grid(ax2, grid_opt);
     end

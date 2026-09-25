@@ -3,8 +3,8 @@ message: "If you use this software, please cite it as below."
 type: software
 title: "The PhasorArray Toolbox"
 abstract: "A Matlab toolbox dedicated to harmonic modelling and control of Linear Time-Periodic systems."
-version: "v1.3"
-date-released: "2026-03-16"
+version: "v2.0.0"
+date-released: "2026-09-25"
 license: MIT
 repository-code: "https://github.com/mxmGrss/phasorArray_Toolbox"
 doi: "10.5281/zenodo.17560958"

@@ -98,6 +98,7 @@ arguments
     nvp.parent               = [];
     nvp.grid {mustBeMember(nvp.grid,["off","on","minor"])}                = 'on'
     nvp.squeeze logical      = false
+    nvp.xlabelStr            = ''
 end
 
 % No release gate here any more: methods 1 and 2 went through tensorprod, which
@@ -146,14 +147,14 @@ end
     h_len = size(Mph_val, 3);
     h = (h_len - 1) / 2;
 
-% An empty t means T carries the phase samples, so the abscissa is an angle.
-% Decided here because t is resolved just below and the distinction is lost.
-if isempty(t)
-    nvp.xlabelStr = 'angle (rad)';
-else
-    nvp.xlabelStr = 'time (sec)';
+% A vector without time samples represents phase; a scalar is a period.
+if isempty(nvp.xlabelStr)
+    if isempty(t) && numel(T) > 1
+        nvp.xlabelStr = 'Phase (rad)';
+    else
+        nvp.xlabelStr = 'time (sec)';
+    end
 end
-
 % Compute the time vector if not provided
 if and(numel(t) < 3 , numel(T) == 1)
     dt = computeTimeStep(T, h);
