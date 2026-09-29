@@ -82,8 +82,8 @@ function [Xph,M,M1,M2,colQ,colX] = SylvHarmonic(Ahmad, Bhmad, Chmad, h, omega, m
     colQ = squeeze(reshape(dQraw, [], 1));
 
     % Build operator matrix M = -M1 - M2 - N with rectangular sizes.
-    tmp = repmat({A_tb}, nxB, 1);
-    M1 = sparse(blkdiag(tmp{:}));
+    tmp = repmat({sparse(A_tb)}, nxB, 1);
+    M1 = blkdiag(tmp{:});
 
     % Right-multiplication operator for vec convention used in this file.
     % Keep exact legacy path for square truncation.
