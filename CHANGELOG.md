@@ -8,6 +8,16 @@ the reasoning is kept inline rather than in a separate decision record.
 
 ## [Unreleased]
 
+### Changed
+- Harmonic Sylvester systems are assembled directly from sparse coefficient
+  shifts, avoiding dense intermediate Toeplitz matrices and repeated sparse
+  block insertion. Left/right operators are built only when requested;
+  solution and diagnostic output ordering is preserved.
+
+### Fixed
+- Square harmonic Sylvester systems use the nonconjugating transpose for
+  right multiplication, including genuinely complex-valued temporal data.
+
 ## [v2.0.0] - 2026-09-25
 
 ### Fixed
