@@ -127,7 +127,9 @@ function [K, S, info] = RicHarmonicKlein(A, B, Q, R, K0, T, nvp)
 %           Control: u = -K*x. Observation: Kalman gain L = K'.
 %     S     Final Riccati solution (PhasorArray).
 %           Control: cost-to-go. Observation: error covariance Y.
-%     info  Diagnostics struct — see spec-algorithm-ric-harmonic-klein-v2.md
+%     info  resRicnorm, relChange and h describe the returned iterate.
+%           iter and histories retain all iterations, including after the best.
+%           See spec-algorithm-ric-harmonic-klein-v2.md.
 %
 %   See also: lyap, SylvHarmonic, RicHarmonicKlein (v1)
 
@@ -456,7 +458,6 @@ for kk = 1:maxIter
                 'Stagnated at iter %d (%.1f%% improvement over %d steps). Best: iter %d, resRic=%.2e.', ...
                 kk, rel_improv*100, nvp.stagnationWindow, kk_best, resRic_best);
             note = 'stagnated';
-            Sk = S_best;  Kk = K_best;
         end
     end
 
@@ -470,8 +471,8 @@ for kk = 1:maxIter
             kk, h_used, resRicAbs, resRicnorm, relChange, dt_step, note)
     end
 
-    if status ~= -1, break, end
     Kk = Kk_next;
+    if status ~= -1, break, end
 end
 
 %% --- Finalise ---
@@ -480,12 +481,16 @@ if status == -1
     status    = 3;
     statusMsg = sprintf('Reached maxIter=%d. Best: iter %d, resRic=%.2e.', ...
         maxIter, kk_best, resRic_best);
-    Sk = S_best;  Kk = K_best;
     if nvp.verbose >= 1
         fprintf('  → maxIter reached. Returning best solution (iter %d).\n', kk_best)
     end
 end
 
+returnedIter = kk;
+if status == 2 || status == 3
+    Sk = S_best; Kk = K_best;
+    returnedIter = kk_best;
+end
 K = Kk;
 S = Sk;
 
@@ -494,10 +499,10 @@ S = Sk;
 nIter = kk;
 info.status            = status;
 info.statusMsg         = statusMsg;
-info.resRicnorm        = resRicnorm;
-info.relChange         = relChange;
+info.resRicnorm        = resRic_history(returnedIter);
+info.relChange         = relChange_history(returnedIter);
 info.iter              = nIter;
-info.h                 = h_history(nIter);
+info.h                 = h_history(returnedIter);
 info.resRicAbs_history = resRicAbs_history(1:nIter);
 info.resRic_history    = resRic_history(1:nIter);
 info.relChange_history = relChange_history(1:nIter);

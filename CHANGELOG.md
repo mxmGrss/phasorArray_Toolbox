@@ -15,6 +15,9 @@ the reasoning is kept inline rather than in a separate decision record.
   solution and diagnostic output ordering is preserved.
 
 ### Fixed
+- Kleinman returns the gain associated with the returned Riccati iterate on
+  convergence and frozen exits. Scalar diagnostics now describe the returned
+  best iterate on stagnation or iteration-limit exits; histories retain all steps.
 - Square harmonic Sylvester systems use the nonconjugating transpose for
   right multiplication, including genuinely complex-valued temporal data.
 - Adaptive harmonic solvers test stagnation only after the whole residual
