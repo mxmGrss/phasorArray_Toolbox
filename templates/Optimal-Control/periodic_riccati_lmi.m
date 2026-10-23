@@ -19,24 +19,26 @@ R_ric = PhasorArray(eye(nu));
 N_ric = PhasorArray(zeros(nu, nx));     % cross-term (often zero)
 
 %% 1. Decision variable
-P  = PhasorArray.ndsdpvar(nx, nx, hP);
-PT = P.T_tb(h);
-N  = N_tb(nx, h, T);
+P = PhasorArray.ndsdpvar(nx, nx, hP);
 
-%% 2. Schur form of the Riccati inequality (products before lifting)
-AP    = T_tb((A' * P + P * A),h);    % T_tb(A^H P + P A)
-Pdot  = N * PT - PT * N;              % lifted d/dt P(t)
-PB_Nc = T_tb((P * B),h) + N_ric.T_tb(h)';   % T_tb(PB) + N_c^H
+%% 2. Riccati inequality in Schur form, on the symbols (products are exact)
+%   M(t) = [dP/dt + A'P + PA + Q,  PB + N';  (PB + N')',  R] >= 0  for all t.
+%   gramConstraint imposes it exactly, whatever the degree of M; a finite
+%   section T_tb(M,h) >= 0 would only be a necessary condition.
+PB_N = P * B + N_ric';
+M = [P.d(T) + A' * P + P * A + Q_ric, PB_N; PB_N', R_ric];
 
-F11 = AP + Pdot + Q_ric.T_tb(h);
-F12 = PB_Nc;
-F22 = R_ric.T_tb(h);
+[F1, G1, c1] = M.gramConstraint(0);
+[F2, G2, c2] = P.gramConstraint(0);
 
-F = [PT >= 0, ...
-     [F11, F12; F12', F22] >= 0];
+%% 3. Solve: maximise the average trace of P (lower bound of the Riccati solution)
+sol = optimize([F1, F2], -trace(phas(P, 0)), sdpsettings('solver', 'mosek', 'verbose', 1));
 
-%% 4. Solve
-sol = optimize(F, -trace(PT), sdpsettings('solver', 'mosek', 'verbose', 1));
+%% 4. Validate the numerical certificate (Proposition 4 of the TBLMI paper)
+if sol.problem == 0
+    report = sdpval(M).checkGramCertificate(0, value(G1), c1);
+    fprintf('min_t lambda_min(M(t)) >= %.2e\n', report.lower);
+end
 
 %% 5. Extract gain
 if sol.problem == 0

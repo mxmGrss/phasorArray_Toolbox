@@ -24,6 +24,10 @@ the reasoning is kept inline rather than in a separate decision record.
   stores the report in `info.certificate`; Kleinman itself is unchanged.
 
 ### Changed
+- The Riccati LMI template imposes its Schur-form inequality and P >= 0 by
+  Gram certificates on the symbols; its optimum now matches `hare`. The other
+  LMI templates state that their finite-section constraints are necessary
+  conditions only.
 - Harmonic Sylvester systems are assembled directly from sparse coefficient
   shifts, avoiding dense intermediate Toeplitz matrices and repeated sparse
   block insertion. Left/right operators are built only when requested;
