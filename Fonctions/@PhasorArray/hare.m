@@ -31,6 +31,9 @@ function [K, X, info] = hare(A, B, Q, R, nvp)
 %     skipValidate    Skip the Floquet check of a provided K0 (default true).
 %                     Set false to re-check it and fall back if it fails.
 %     verbose         Iteration print level (default 0).
+%     certify         Certify the returned X a posteriori with CERTIFYHARE
+%                     (default false); the report is info.certificate.
+%                     Base backward HARE only (no E).
 %
 %   Deeper solver tuning — updateMethod, stagnationWindow, warmStartFraction,
 %   reduceThreshold — stays on RicHarmonicKlein, which this forwards to.
@@ -43,7 +46,7 @@ function [K, X, info] = hare(A, B, Q, R, nvp)
 %   All cases route to RicHarmonicKlein, which takes the mass matrix as
 %   name-value 'E' and branches internally where the formulations differ.
 %
-%   See also: lyap, RicHarmonicKlein, RicHarmonicKleinGen, KalHarmonicKleinGen.
+%   See also: certifyHare, lyap, RicHarmonicKlein, RicHarmonicKleinGen, KalHarmonicKleinGen.
 
 arguments
     A
@@ -62,6 +65,12 @@ arguments
     nvp.thresholdResidual (1,1) double      = 1e-8
     nvp.skipValidate   (1,1) logical        = true
     nvp.verbose        (1,1) {mustBeInteger, mustBeNonnegative} = 0
+    nvp.certify        (1,1) logical        = false
+end
+
+if nvp.certify && (~isempty(nvp.E) || strcmp(nvp.direction, 'forward'))
+    error('PhasorArray:hare:certifyUnsupported', ...
+        'certify is implemented for the base backward HARE only (no E).');
 end
 
 common = {'maxIter', nvp.maxIter, 'h', nvp.h, 'maxh', nvp.maxh, ...
@@ -80,4 +89,10 @@ end
 
 [K, X, info] = RicHarmonicKlein(A, B, Q, R, nvp.K0, nvp.T, common{:}, ...
     'direction', nvp.direction, 'derivativeForm', nvp.derivativeForm, mass{:});
+
+% Step 2 of Algorithm 1: the iteration only produces a candidate; accept or
+% reject it independently of how it was obtained.
+if nvp.certify
+    info.certificate = certifyHare(PhasorArray(A), PhasorArray(B), PhasorArray(Q), R, X, T=nvp.T);
+end
 end

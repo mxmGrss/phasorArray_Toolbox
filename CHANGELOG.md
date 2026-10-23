@@ -8,6 +8,15 @@ the reasoning is kept inline rather than in a separate decision record.
 
 ## [Unreleased]
 
+### Added
+- `certifyHare` certifies a harmonic Riccati candidate a posteriori (step 2 of
+  Algorithm 1 in the corrected Riedinger-Daafouz Lyapunov/Riccati paper):
+  two least-squares Lyapunov solves of the closed loop give the majorants
+  beta and delta, and `theta = 4*beta*s*delta < 1` bounds `sup_t |P - P+|`.
+  Stability is established by `W > 0` and `rW < 1` instead of the monodromy
+  test of the paper, which is unreliable on stiff systems. `hare(...,certify=true)`
+  stores the report in `info.certificate`; Kleinman itself is unchanged.
+
 ### Changed
 - Harmonic Sylvester systems are assembled directly from sparse coefficient
   shifts, avoiding dense intermediate Toeplitz matrices and repeated sparse
