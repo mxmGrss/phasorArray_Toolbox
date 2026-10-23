@@ -446,6 +446,20 @@ classdef PhasorArrayCoreTest < matlab.unittest.TestCase
             testCase.verifyEqual(Pv.h, P.h, 'sdpval changed the harmonic order');
         end
 
+        function testCtransposeOfSdpvarPayloadConjugates(testCase)
+            testCase.needYalmip();
+            % A(t)' must conjugate the coefficients for a YALMIP payload too:
+            % MATLAB's pagectranspose silently drops conj on an ndsdpvar.
+            P = PhasorArray.ndsdpvar(2, 2, 1, "symmetry", "real");
+            rng(3); values = randn(2, 2, 3); values = (values + flip(values, 3))/2;
+            assign(P.value, values);
+            B = PhasorArray(cat(3, [1i; 2], [1; 0], [-1i; 2]));
+            X = P * B;
+            Xn = sdpval(P) * B;
+            testCase.verifyEqual(value(sdpval(X')), value(Xn'), 'AbsTol', 1e-12);
+            testCase.verifyEqual(value(sdpval(pagectranspose(X))), value(pagectranspose(Xn)), 'AbsTol', 1e-12);
+        end
+
         function testSdpvarSurvivesToeplitzOperators(testCase)
             testCase.needYalmip();
             % T_tb and F_tb feed every LMI in the toolbox: they must return

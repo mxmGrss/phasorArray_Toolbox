@@ -30,6 +30,11 @@ the reasoning is kept inline rather than in a separate decision record.
   solution and diagnostic output ordering is preserved.
 
 ### Fixed
+- `A'` and `pagectranspose(A)` conjugate the coefficients of a YALMIP payload.
+  MATLAB's `pagectranspose` drops the conjugation on an `ndsdpvar`, so `X'`
+  of an optimisation variable with complex coefficients (e.g. `P*B` in a
+  Schur-form LMI) silently returned `X(-t).'` instead of `X(t)'`. Numeric and
+  symbolic payloads were not affected.
 - `place` tests the invertibility of P on its symbol, `min_t sigma_min(P(t))`,
   instead of the eigenvalues of a finite section, which do not decide it
   (pole placement paper, corrected, Theorems 3 and 7). `poles` may also be a
