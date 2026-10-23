@@ -203,7 +203,7 @@ L_pa = PhasorArray(L_full);   % 7×7 PhasorArray (constant)
 
 %% 5c. Solve harmonic Sylvester equation  (O = 0)
 %   -N M - M (A + A(D^e) - N) + L C = 0
-%   ⟹ Sylv_harmonique(O=0, A_err, L*C, h, T)
+%   ⟹ lyap(O=0, A_err, L*C, "h", h, "T", T)   (Sylvester mode)
 
 O_pa = PhasorArray(zeros(nz));   % O = 0: no oscillator!
 
