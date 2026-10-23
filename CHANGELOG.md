@@ -30,6 +30,11 @@ the reasoning is kept inline rather than in a separate decision record.
   solution and diagnostic output ordering is preserved.
 
 ### Fixed
+- `place` tests the invertibility of P on its symbol, `min_t sigma_min(P(t))`,
+  instead of the eigenvalues of a finite section, which do not decide it
+  (pole placement paper, corrected, Theorems 3 and 7). `poles` may also be a
+  constant n x n closed-loop matrix, e.g. `-J - alpha*I` from a Floquet
+  factorization (Theorem 5).
 - Kleinman returns the gain associated with the returned Riccati iterate on
   convergence and frozen exits. Scalar diagnostics now describe the returned
   best iterate on stagnation or iteration-limit exits; histories retain all steps.

@@ -242,6 +242,34 @@ classdef PhasorArraySolversTest < matlab.unittest.TestCase
             end
         end
 
+        function testPlaceAcceptsAClosedLoopMatrix(testCase)
+            % Lambda may be a non-diagonal constant matrix (Theorem 5 of the
+            % pole placement paper uses -J - alpha*I); its eigenvalues are placed.
+            A0 = [0 1; -2 -3];
+            A1 = [0.05 0; 0 0.05];
+            A  = PhasorArray(cat(3, conj(A1), A0, A1));
+            B  = PhasorArray([0; 1]);
+            Lambda = [-4 1.5; -1.5 -4];          % eigenvalues -4 +/- 1.5j
+            K = place(A, B, Lambda, 'G', PhasorArray([1 0.5]));
+            Acl = A - B * K;
+            h = 20;
+            e = eig(Acl.T_tb(h) - N_tb(2, h, 2*pi));
+            err = max(arrayfun(@(m) min(abs(e - m)), eig(Lambda)));
+            testCase.verifyLessThan(err, 1e-6, ...
+                sprintf('placed exponents are off by %.2e', err));
+            % A diagonal matrix and the pole list give the same gain.
+            G = PhasorArray([1 0.5]);
+            testCase.verifyEqual(value(place(A, B, diag([-4 -5]), 'G', G)), ...
+                value(place(A, B, [-4; -5], 'G', G)), 'AbsTol', 1e-12);
+        end
+
+        function testPlaceRejectsASingularSymbol(testCase)
+            % G = 0 gives P = 0: invertibility is tested on P(t), not on a section.
+            A = PhasorArray([0 1; -2 -3]); B = PhasorArray([0; 1]);
+            testCase.verifyError(@() place(A, B, [-4; -5], 'G', PhasorArray([0 0])), ...
+                'PhasorArray:place:singularP');
+        end
+
         function testRandomSpdRespectsTheLowerBound(testCase)
             alpha = 0.5;
             P = PhasorArray.randomSPD(3, 4, 'alphaMin', alpha, 'seed', 1);
