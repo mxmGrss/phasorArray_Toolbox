@@ -1839,7 +1839,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
     function r = pagectranspose(pA1)
         %PAGECTRANSPOSE overloading for PhasorArray
         %PAGECTRANSPOSE(A) apply ctranspose to each page of A resulting in A(-t)'
-        r = PhasorArray(pagectranspose(pvalue(pA1)));
+        r = PhasorArray(pagectransposePayload(pvalue(pA1)));
     end
     function r = pagetranspose(pA1)
         %PAGETRANSPOSE overloading for PhasorArray
@@ -1852,7 +1852,7 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
     end
     function r = mctranspose(pA1)
         % mctranspose(A(t))
-        r=PhasorArray(flip(pagectranspose(pA1.value),3));
+        r=PhasorArray(flip(pagectransposePayload(pA1.value),3));
     end
 
     function r = pmax(pA1,pA2,nvp)
@@ -5164,4 +5164,20 @@ info=struct('mode',mode,'harmonics',orders,'keptMask',mask, ...
 if strcmp(mode,'elementwise')
     info.discardedEnergyFraction=reshape(discarded,nr,nc);
 end
+end
+
+function V = pagectransposePayload(V)
+% Conjugate transpose of every page. MATLAB's pagectranspose drops the
+% conjugation on a YALMIP ndsdpvar (conj is not defined for it), which would
+% turn A(t)' into A(-t).' for complex coefficients; sdpvar pages are
+% conjugate-transposed one at a time instead.
+if isnumeric(V) || isa(V, 'sym')
+    V = pagectranspose(V);
+    return
+end
+pages = cell(1, size(V, 3));
+for k = 1:numel(pages)
+    pages{k} = V(:,:,k)';
+end
+V = cat(3, pages{:});
 end
