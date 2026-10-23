@@ -8,6 +8,22 @@ the reasoning is kept inline rather than in a separate decision record.
 
 ## [Unreleased]
 
+### Changed
+- Harmonic Sylvester systems are assembled directly from sparse coefficient
+  shifts, avoiding dense intermediate Toeplitz matrices and repeated sparse
+  block insertion. Left/right operators are built only when requested;
+  solution and diagnostic output ordering is preserved.
+
+### Fixed
+- Square harmonic Sylvester systems use the nonconjugating transpose for
+  right multiplication, including genuinely complex-valued temporal data.
+- Adaptive harmonic solvers test stagnation only after the whole residual
+  window resolves the operator bandwidth. Inner Lyapunov solves in Kleinman
+  no longer stop on a plateau below that bandwidth. Algebraic unreachable-target
+  detection also requires post-band samples, even during forced extrapolation.
+- Kleinman status 1 is reported as a frozen iterate without residual
+  convergence; it does not certify the residual target or Floquet stability.
+
 ## [v2.0.0] - 2026-09-25
 
 ### Fixed

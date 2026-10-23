@@ -16,7 +16,8 @@ function [K, S, info] = RicHarmonicKlein(A, B, Q, R, K0, T, nvp)
 %   Returns:
 %       K : optimal state feedback,  u = -K(t)*x,  K = R^-1*B'*S
 %       S : periodic cost-to-go matrix,  J*(x0,t0) = x0'*S(t0)*x0
-%   Closed loop A - B*K is Floquet-stable on exit (status 0/1).
+%   Status 0 meets the residual target. Status 1 denotes a frozen iterate
+%   and does not certify residual convergence or closed-loop Floquet stability.
 %
 %   ======================================================================
 %   RECIPE 2 — Optimal observation (periodic Kalman filter)
@@ -103,15 +104,11 @@ function [K, S, info] = RicHarmonicKlein(A, B, Q, R, K0, T, nvp)
 %     updateMethod          'adaptive' (default) or 'incremental'
 %     thresholdResidual     Convergence on relative Riccati residual (default: 1e-6)
 %     relChangeThreshold    Exit when ‖Kk-Kk-1‖/‖Kk‖ < thr (solution frozen); keep
-%                           >> thresholdResidual to avoid premature exit (default: 1e-7)
+%                           much smaller than thresholdResidual (default: 1e-14)
 %                           Prefer stagnation detection for early stopping in most cases.
 %     reduceThreshold       Relative threshold for reduce() before lyap; 0 → τ_ric/100
 %     warmStartFraction     h_next = max(h0, floor(h_prev*f)); f∈(0,1] (default: 1.0).
-%                           f<1 steps back to look for a smaller h. Measured 1.5x to
-%                           4x slower on five problems for a gain that trunc gives
-%                           free afterwards: truncating K from h=94 to h=40 costs
-%                           0.4 ms, leaves the closed loop at -0.72071 unchanged and
-%                           discards 1.1e-06 of its energy.
+%                           f=1 retains the acquired order; f<1 restarts lower.
 %     stagnationWindow      Sliding window for stagnation (default: 5)
 %     stagnationRatio       Min relative improvement to avoid stagnation (default: 0.05)
 %     verbose               0=silent, 1/2=iteration table with Lyap summary,
@@ -355,7 +352,6 @@ for kk = 1:maxIter
         [Sk, lyap_info] = lyapG(Ak_r, QY_r, E, lyapArgs{:}, ...
             'derivativeForm', nvp.derivativeForm);
     else
-        % Base inner solve keeps the specialised (blkdiag) Toeplitz path.
         [Sk, lyap_info] = lyap(Ak_r, QY_r, lyapArgs{:});
     end
 
@@ -446,8 +442,8 @@ for kk = 1:maxIter
         note      = 'converged (Ric Res)';
     elseif relChange < nvp.relChangeThreshold
         status    = 1;
-        statusMsg = sprintf('Converged (sol relChg) at iter %d: ||Kk-Kk-1||/||Kk|| = %.2e.', kk, relChange);
-        note      = 'converged (sol relChg)';
+        statusMsg = sprintf('Solution frozen without residual convergence at iter %d: sol relChg = %.2e, Ric relRes = %.2e.', kk, relChange, resRicnorm);
+        note      = 'frozen (residual target unmet)';
     end
 
     %% Stagnation
