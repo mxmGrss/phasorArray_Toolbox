@@ -900,14 +900,9 @@ fprintf('%s\n', repmat('-', 1, 80))
 fprintf('SECTION 18: LMI Formulation for Stability, LQR, and Kalman\n')
 fprintf('%s\n\n', repmat('-', 1, 80))
 
-% Check if YALMIP is in path
+% YALMIP must be installed and added to the MATLAB path to run this section.
 if exist('sdpvar', 'file') ~= 2
-    fprintf('YALMIP not found. Attempting to add default path...\n');
-    addpath(genpath('C:\Users\mgrosso\OneDrive\Documents\MATLAB\yalmip'));
-end
-
-if exist('sdpvar', 'file') ~= 2
-    fprintf('YALMIP is still not available. Skipping LMI section.\n\n');
+    fprintf('YALMIP is not available. Install it and add it to the MATLAB path to run the LMI section.\n\n');
 else
     h_lmi = 3; % Use a small harmonic truncation for LMI speed
     
@@ -980,12 +975,6 @@ else
         fprintf('   ✗ LMI Kalman failed: %s\n\n', sol_kal.info);
     end
 end
-
-%% ═══════════════════════════════════════════════════════════════════════════
-%  MISSING - TODO - WIP
-%  ═══════════════════════════════════════════════════════════════════════════
-
-% chercher via harmonic balance une traj perriodique à l'équilibre
 
 %% ═══════════════════════════════════════════════════════════════════════════
 %  LOCAL FUNCTIONS  (must sit at the end of the script — required before R2024a)

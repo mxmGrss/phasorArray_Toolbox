@@ -377,8 +377,7 @@ title('Fractional interpolation factor');
 
 ## Further Reading
 
-- **Theory**: See thesis manuscript Section 3.2 "Transformée de Fourier Glissante Angulaire"
-- **Applications**: `Fvar.m` example in `Soutenance_These_Maxime/MatlabGen/FVariable/`
+- **Theory and examples**: See the mathematical description and executable examples above.
 - **Related functions**: `find2piAntecedant`, `shift2pi`, `epsHAPV`, `plotAngularSFT`
 
 ---
@@ -387,6 +386,6 @@ title('Fractional interpolation factor');
 
 **Author**: Maxime Grosso  
 **Version**: 2.0 (November 2025)  
-**License**: (specify if needed)
+**License**: See the repository [license](../../LICENSE).
 
 For bug reports or feature requests, please contact the author or open an issue in the repository.
