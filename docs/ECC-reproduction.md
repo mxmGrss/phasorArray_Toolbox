@@ -1,8 +1,7 @@
 # Reproducing the ECC paper
 
-The published-paper reference is `ECC_PhasorArray.tex` at the root of the
-Overleaf archive confirmed by the author (submitted V2, late March 2026).
-The presentation and later unpublished local changes are separate works.
+The reference is the ECC paper, submitted version V2 (March 2026),
+with MATLAB listings from `ECC_PhasorArray.tex`.
 Reference TeX SHA256: `050539dd0f072abefeb632bb18cc03dbeecb5879fcac9f0d2a5d3aded4f84ef0`.
 
 ## Published listings: ECC_ex.m

@@ -91,8 +91,7 @@ classdef PhasorSSTest < matlab.unittest.TestCase
             % off A. Each is also given a nonzero cosine coefficient so none
             % gets silently reduced to h=0 by the constructor -- when that
             % happens, evalAngle's harmonicCombine degenerates into a scalar
-            % broadcast and returns the wrong shape (see the flagged defect
-            % in TODO-architecture.md); testing that path is out of scope
+            % broadcast and returns the wrong shape; testing that path is out of scope
             % here, this test only pins the case where h truly matches.
             A = PhasorArray(cat(3,[0 1;-2 -3],[1/2 0;0 0]),   "isreal", true);
             B = PhasorArray(cat(3,[0;1],[0.01;0]),            "isreal", true);
@@ -156,7 +155,7 @@ classdef PhasorSSTest < matlab.unittest.TestCase
             % numeric linear algebra, not against the toolbox's own
             % dcgain/toeplitzSS machinery.
             %
-            % h_compute=0 exercises a real defect fixed the same session:
+            % h_compute=0 exercises the zero-order regression:
             % extractBlocksAndLabels used to reject h=0 outright
             % (mustBePositive instead of mustBeNonnegative), even though it
             % is the simplest valid case -- a single-harmonic block.
