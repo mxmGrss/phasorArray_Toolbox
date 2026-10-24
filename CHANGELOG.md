@@ -271,9 +271,8 @@ the reasoning is kept inline rather than in a separate decision record.
   **period**. At 50 Hz that is 0.02 against 314, a factor of 15700. Its `P` therefore left a
   residual of **1.4e-03** where the correct pulsation gives **4.2e-17**.
 
-  The audit had passed it throughout, because it checks that `P` is positive definite — which
-  it is, `min eig 2.31e-05` either way — not that it solves anything. A certificate that
-  satisfies no equation certifies nothing.
+  Positive definiteness alone does not detect this error: `min eig 2.31e-05`
+  in both cases. The equation residual must also be checked.
 
   Migrating to `lyap`, which takes the period by name, fixes it by construction: residual
   `1.1e-15`.
@@ -794,7 +793,7 @@ the reasoning is kept inline rather than in a separate decision record.
 
 ### Internal
 
-No behaviour change; listed for reviewers.
+No behaviour change.
 
 - The phasor operands are named `pA1`..`pA5` rather than `o1`..`o5`, in the 19
   files that used the old names: 1423 occurrences, none outside `Fonctions/`.

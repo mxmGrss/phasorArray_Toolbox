@@ -1622,7 +1622,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             %       obj2 - Instance of the PhasorSS , or PhasorArray class, or matrix
             %
 
-            %PhasorSS by PhasorSS product is still WIP :
+            % Cascaded PhasorSS multiplication is not implemented.
                 %- if phasorSS is only a D matrix (static input output, A,B,C are empty) and phasorSS2 is a full phasorSS, it should be possible
                 %- the reverse should be possible too
                 %- if both are full phasorSS, it should be possible to multiply them, but still and undefined yet

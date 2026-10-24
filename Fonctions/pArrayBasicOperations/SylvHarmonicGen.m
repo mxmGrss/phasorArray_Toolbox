@@ -27,7 +27,7 @@ function [Xph, M, colQ, colX] = SylvHarmonicGen(Ahmad, Bhmad, Chmad, Ea, Eb, h, 
 %   With Ea = Eb = I both reduce to the standard Sylvester equation solved
 %   by SylvHarmonic:  dX/dt + Ahmad*X + X*Bhmad + Chmad = 0.
 %
-%   MATHEMATICAL STRATEGY (validated in scratch/wip_lyapunov_generalized):
+%   MATHEMATICAL STRATEGY:
 %   Time-domain vectorisation via vec(U*V*W) = (W.' kron U) vec(V):
 %       d/dt[ M_E(t) p ] + M_S(t) p + vec(C) = 0
 %       M_E = Eb.' kron Ea
