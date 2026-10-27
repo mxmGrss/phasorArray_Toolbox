@@ -1,5 +1,4 @@
-% Variable-frequency PMSM: plant, output conventions and augmented vertices.
-% No workspace inputs. Outputs: A, Bu, Cpositive, Cnegative, vertexPositive, vertexNegative.
+% Build a variable-speed PMSM and its output-integrator augmentation.
 %[text] # Variable-frequency PMSM model
 clear;
 r = 0.5; L = 1.5e-3; psi = 0.14; J = 0.03; Bf = 0.02; p = 4;
@@ -24,5 +23,4 @@ Baug = [Bu;zeros(10,3)]; Qfull = eye(14); Qintegrators = diag([zeros(1,4),ones(1
 assert(isequal(size(A,[1 2]),[4 4]) && isequal(size(Cnegative,[1 2]),[10 4]),'Paper:PMSM','Unexpected dimensions.');
 disp(struct('plantOrder',h(A),'outputOrder',h(Cnegative),'states',size(vertexNegative{1},1),'omegaMechanical',omega))
 % At vertex omega(j): operator = T(vertex{j})-omega(j)*N, N uses period 2*pi.
-% Model construction only; controller synthesis and closed-loop simulation are not included.
 %[appendix]{"version":"1.0"}

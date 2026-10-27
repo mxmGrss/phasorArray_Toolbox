@@ -1,5 +1,5 @@
 function [residual,xe,se,Ae] = blinRectifierResidual(coefficients)
-%BLINRECTIFIERRESIDUAL Weighted equilibrium problem, corrected paper Sec.6.1.
+%BLINRECTIFIERRESIDUAL Weighted periodic equilibrium residual for a single-phase rectifier.
 % INPUT: DC, real and imaginary positive Fourier coefficients of s, h=5.
 % OUTPUT: real weighted residual, equilibrium, control and state matrix.
 % EXAMPLE: residual = blinRectifierResidual([0;zeros(5,1);-0.25;zeros(4,1)]);

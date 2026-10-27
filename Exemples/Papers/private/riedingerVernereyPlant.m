@@ -1,12 +1,11 @@
 function [A, B, T] = riedingerVernereyPlant(p, inputHarmonic, triangleFactor)
-%RIEDINGERVERNEREYPLANT Analytic Fourier coefficients of the paper plant.
+%RIEDINGERVERNEREYPLANT Fourier model of a two-state, single-input periodic plant.
 %   [A,B,T] = riedingerVernereyPlant(p,inputHarmonic) retains |k| <= p in A.
-%   INPUTS: p >= 5; inputHarmonic = 3 for the corrected paper examples.
+%   INPUTS: p >= 5; inputHarmonic selects the sine term in B (3 or 6).
 %   OUTPUTS: real-valued PhasorArrays A (2x2), B (2x1), period T = 1.
 %   EXAMPLE: [A,B,T] = riedingerVernereyPlant(20,3);
-%   Corrected manuscripts: Lyapunov/Riccati Eq.35; TBLMI Eq.43.
-%   Corrected papers use inputHarmonic=3 and no phase offset in a21.
-%   triangleFactor=0.5 for Pole Placement Eq.21 (8/pi^2, not 16/pi^2).
+%   triangleFactor scales the nonconstant coefficients of A(1,2); default 1.
+%   The pole-placement example uses triangleFactor=0.5.
 arguments
     p (1,1) double {mustBeInteger,mustBeGreaterThanOrEqual(p,5)}
     inputHarmonic (1,1) double {mustBeMember(inputHarmonic,[3 6])}

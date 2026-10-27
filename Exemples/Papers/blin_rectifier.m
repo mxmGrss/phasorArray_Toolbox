@@ -1,4 +1,4 @@
-% Blin et al., corrected formulation, Sec.6.1-6.2, Eqs.49 and 35.
+% Fit a periodic rectifier operating point and simulate saturated feedback.
 % Requires Optimization Toolbox. Outputs: xe, se, P and feedback law s(t,x).
 %[text] # Blin: single-phase rectifier equilibrium and Lyapunov feedback
 clear;
@@ -14,5 +14,4 @@ feedback = @(t,x) min(1,max(-1,real(evalp(se,2*pi*t/T)-gamma*(g*x)'*evalp(P,2*pi
 equilibriumResidual = sqrt(energy(xe.d(T)-Ae*xe-[1e5*PhasorArray.sin();0]));
 assert(info.resrelnorm<1e-6,'Paper:Rectifier','Lyapunov residual too large.');
 disp(struct('meanVoltage',real(phas(xe{2,1},0)),'objective',norm(objectiveResidual)^2,'equilibriumResidual',equilibriumResidual,'lyapunovResidual',info.resrelnorm,'startupFinalVoltage',x(end,2)))
-% h=5 square equilibrium reproduces the paper truncation; report its full residual.
 %[appendix]{"version":"1.0"}

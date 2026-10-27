@@ -1,4 +1,4 @@
-% Riedinger-Daafouz, Harmonic Pole Placement, corrected formulation, Sec.IV-A, Eq.21.
+% Assign closed-loop Floquet exponents with periodic feedback u=-K*x.
 % Requires Symbolic Math Toolbox (FloquetDec). Outputs: K, P, info, poles.
 %[text] # Riedinger: harmonic pole placement
 clear;

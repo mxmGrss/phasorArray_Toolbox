@@ -1,5 +1,4 @@
-% Riedinger-Daafouz, Lyapunov/Riccati, corrected formulation, Sec.5.3.
-% No workspace inputs. Outputs: P, full residuals matching Table 1.
+% Solve a scalar periodic Lyapunov equation and measure its full residual.
 %[text] # Riedinger: scalar least-squares Lyapunov
 clear;
 T = 2*pi; orders = [2 4 6 8 10 12 14 16 18 20 24];

@@ -1,62 +1,50 @@
-# Reproducing the ECC paper
+# ECC harmonic-control example
 
-The reference is the ECC paper, submitted version V2 (March 2026),
-with MATLAB listings from `ECC_PhasorArray.tex`.
-Reference TeX SHA256: `050539dd0f072abefeb632bb18cc03dbeecb5879fcac9f0d2a5d3aded4f84ef0`.
+Run the example from the toolbox root:
 
-## Published listings: ECC_ex.m
+```matlab
+run('Exemples/ECCpaperAsOfV2_0.m')
+```
 
-`Exemples/ECC_ex.m` concatenates the 18 MATLAB listing bodies verbatim and
-in order, including the commented listing. Only a provenance header and
-section separators are added. It retains the printed third coefficient,
-`A\B`, the unseeded random matrix and the direct `RicHarmonicKlein` call with
-`warmStartFraction=0.95`. No correction or acceptance assertion is inserted.
+The script covers Fourier construction, harmonic arithmetic, state-space modeling, Lyapunov and Riccati equations, feedback design and simulation on a two-state periodic system.
 
-This preserves the published source, not the historical toolbox runtime:
-random draws, unspecified defaults and adaptive solver implementations can
-change across versions. In particular, execution without exceptions is not
-proof that every numerical operation converges.
+## Model and solver settings
 
-## Adaptation to toolbox v2.0.0: ECCpaperAsOfV2_0.m
+| Parameter | Value |
+|---|---|
+| Period | `T=1` |
+| Fourier sampling | `N=6` |
+| Control input | `B=[1;sin(2*pi*t/T)]` |
+| LQR weights | `Q=10*eye(2)`, `R=1` |
+| Initial gain | `K0=[10,10]` |
+| Riccati solve | Initial order 6, maximum order 500, maximum 50 iterations, residual tolerance `1e-6` |
+| Finite LMI orders | 20/10/10 |
 
-`Exemples/ECCpaperAsOfV2_0.m` is the separate, instrumented adaptation.
-The underscore makes the version suffix a valid MATLAB script name.
-It preserves the time-domain A(t), T=1, FFT N=6, control B=[1;sin], Q=10I,
-R=1, K0=[10,10], Riccati h=6/maxh=500/maxIter=50/threshold=1e-6,
-LMI orders 20/10/10, and simulation initial condition and grid.
-Intentional differences from the published source are:
+The triangle and square waves are expressed with base MATLAB formulas. The state-space model has two outputs, one input and a 2-by-1 feedthrough matrix.
 
-- Express the same triangle and square waves with base MATLAB formulas, removing the Signal Processing Toolbox dependency.
-- Use a 2-by-1 feedthrough matrix D, matching two outputs and one control input.
+## Harmonic arithmetic
 
-- Correct A_3(1,1) to -4/(3*pi)^2, consistent with the specified triangle.
-  The next construction overwrites A from the unchanged time function, so
-  this correction does not alter subsequent control calculations.
-- Use harmonic bars, grouped in one call for the reduction comparison.
-- Use a separate regular algebra model
-  `A_alg = [2,0.2;0.2,1.5] + 0.25*cos(theta)*I` and a random B_alg with rng(0).
-  A_alg is symmetric with smallest eigenvalue at least 1.05 for every phase.
-  The paper's A remains unchanged for the operators, control and simulation.
-- Use mlHmcDivide on this regular pair and require convergence with relative
-  residual at most 1e-8. Also check the harmonic residual of sampled inversion
-  against the identity, normalized by its Frobenius norm, at the same tolerance.
-- Use the public hare entry point. Its warmStartFraction is the current
-  solver default 1.0, whereas the published call explicitly uses 0.95.
-  This is an algorithmic adaptation, not identical solver parametrization.
-- Add Lyapunov/Riccati convergence checks, a Riccati residual bound of 1e-6,
-  a closed-loop exponent comparison within 1e-3 of [-3.4466,-2.3234] at h=20,
-  and a YALMIP problem=0 check for the finite LMI.
+Inversion and division use the regular matrix
 
-## Known numerical limitations
+$$A_{\mathrm{alg}}(\theta)=\begin{bmatrix}2&0.2\\0.2&1.5\end{bmatrix}+0.25\cos(\theta)I.$$
 
-The published A(t) is singular at t=1/8. Its algebra illustration therefore does not
-establish a regular inverse; inv(A) is sampled inversion and does not certify
-invertibility between samples. The harmonic-division residual must not be
-interpreted as successful convergence merely because the script completes.
-The LMI status concerns the finite problem, not an additional certificate
-for the infinite-dimensional operator.
+Its smallest eigenvalue is at least 1.05 at every phase. A seeded random right-hand side (`rng(0)`) makes the division example reproducible. Both the harmonic-division residual and the inverse residual must be below `1e-8`.
 
-The earlier execution of the published listings on R2025b yielded Riccati
-relative residual 3.59e-8, S/K orders 73/74 and closed-loop exponents near
--3.4465 and -2.3237. The printed orders 60/61 are historical results, not
-fixed acceptance criteria for a newer adaptive solver.
+## Control results
+
+The Riccati solve uses `hare` with adaptive harmonic order. The script checks a relative residual below `1e-6` and closed-loop exponents within `1e-3` of `[-3.4466,-2.3234]` at analysis order 20.
+
+The LMI calculation checks successful solution of the finite section with YALMIP. For pointwise periodic positivity, follow the [Gram certificate example](https://github.com/mxmGrss/phasorArray_Toolbox/wiki/Interfacing-with-YALMIP).
+
+## Correspondence with the article
+
+| File | Contents |
+|---|---|
+| [ECCpaperAsOfV2_0.m](../Exemples/ECCpaperAsOfV2_0.m) | Executable example for toolbox v2, including residual and convergence checks |
+| [ECC_ex.m](../Exemples/ECC_ex.m) | The article's 18 MATLAB listings in their published order |
+
+The executable example retains the time-domain plant, control weights, initial condition and simulation grid. It uses a corrected third Fourier coefficient `A_3(1,1)=-4/(3*pi)^2`, dimensionally consistent feedthrough, and the regular matrix above for arithmetic. The control plant is singular at `t=1/8`, so its pointwise inverse is undefined there.
+
+The published Riccati call uses `RicHarmonicKlein` with `warmStartFraction=0.95`; the executable example uses `hare` with its default `1.0`. Adaptive orders depend on solver settings and are reported with the residuals.
+
+The listing archive corresponds to `ECC_PhasorArray.tex`, submitted version V2, March 2026 (SHA256 `050539dd0f072abefeb632bb18cc03dbeecb5879fcac9f0d2a5d3aded4f84ef0`).

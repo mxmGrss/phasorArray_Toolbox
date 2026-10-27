@@ -1,4 +1,4 @@
-% Corrected TBLMI paper, Sec.VI-B, Eq.30: suboptimal gamma=24.922.
+% Bound the disturbance-to-output L2 gain with feedback u=K*x.
 % Requires YALMIP/MOSEK. Outputs: P, Y, K (u=K*x), certificates.
 %[text] # Vernerey: H-infinity synthesis with real Gram constraints
 clear;
@@ -16,5 +16,4 @@ assert(all([certificates.accepted]),'Paper:Hinf','Gram validation failed; increa
 P = sdpval(P); Y = sdpval(Y);
 K = @(theta) evalp(Y,theta)/evalp(P,theta)*D; % exact rational gain, u=K(theta)*x
 disp(struct('gamma',gamma,'lowerBounds',[certificates.lower],'gainAtZero',K(0)))
-% Short case q=20; the article uses q=60. No claim for infinite-series A.
 %[appendix]{"version":"1.0"}

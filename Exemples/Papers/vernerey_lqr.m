@@ -1,4 +1,4 @@
-% Vernerey-Riedinger-Daafouz, TBLMI, corrected formulation, Sec.VI-A, LMI1 Eq.44.
+% Solve a periodic Riccati inequality with real Gram constraints.
 % Requires YALMIP/MOSEK. Outputs: P, K (u=-K*x), certificates, meanTrace.
 %[text] # Vernerey: direct-P LQR with real Gram constraints
 clear;
@@ -15,5 +15,4 @@ certificates = [sdpval(M).checkGramCertificate(margin,value(G1),c1), sdpval(P).c
 assert(all([certificates.accepted]),'Paper:LQR','Gram validation failed; increase margin.');
 P = D'*sdpval(P)*D; [~,B] = riedingerVernereyPlant(p,3); K = B'*P;
 meanTrace = real(trace(phas(P,0))); disp(struct('q',q,'meanTrace',meanTrace,'lowerBounds',[certificates.lower]))
-% q=40 is a short design case, not the q=200 row of Table I.
 %[appendix]{"version":"1.0"}
