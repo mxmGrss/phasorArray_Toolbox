@@ -2,6 +2,8 @@
 
 **Harmonic Modeling, Analysis, and Control of Periodic Systems.**
 
+> The current wiki documents the unreleased `dev` branch, including `gramConstraint` and `certifyHare`. Select `dev` to run those examples; `main` and the published v2.0.0 release do not yet include these APIs.
+
 [![MATLAB](https://img.shields.io/badge/MATLAB-R2021b%2B-blue.svg)](https://www.mathworks.com/products/matlab.html)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17560958.svg)](https://doi.org/10.5281/zenodo.17560958)
@@ -167,6 +169,10 @@ The toolbox extends to **LPV (Linear Parameter-Varying)** models using **Dynamic
 ---
 
 ## 📚 Documentation
+
+[Paper examples](Exemples/Papers/README.md) provide short executable listings
+for the corrected Riedinger, Vernerey and Blin manuscripts, with checked results
+and explicit reproduction limits.
 
 Detailed documentation for all classes and functions is available directly within MATLAB:
 

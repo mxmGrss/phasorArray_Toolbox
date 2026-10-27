@@ -9,6 +9,13 @@ the reasoning is kept inline rather than in a separate decision record.
 ## [Unreleased]
 
 ### Added
+- Compact paper-data examples for Riedinger--Daafouz (Lyapunov, Riccati,
+  pole placement) and Vernerey--Riedinger--Daafouz (LQR, H-infinity), under
+  `Exemples/Papers`, aligned with the corrected manuscripts of 12–16 October 2026.
+  Gram examples validate numerical certificates separately from SDP status.
+- Single-phase Blin rectifier equilibrium/startup example, and a
+  variable-frequency PMSM model with explicit Park and cost conventions
+  (model construction only; reproduction scope is documented with the examples).
 - `gramConstraint` imposes `M(t) >= margin*I` for all t exactly, by a Gram
   certificate (matrix Fejer-Riesz), with no section order: TBLMI paper,
   corrected version, Theorem 9 and Proposition 3 (`basis="real"` halves the
@@ -34,6 +41,15 @@ the reasoning is kept inline rather than in a separate decision record.
   solution and diagnostic output ordering is preserved.
 
 ### Fixed
+- `place` bounds the minimum singular value between grid points and refines
+  inconclusive checks; `maxCheckPoints` limits the cost. A sampled positive
+  minimum alone no longer accepts a singular periodic change of coordinates.
+- The iterative observer uses the forward Riccati direction. The direct
+  Lyapunov/BRL examples use +dP/dt. The Gram Riccati template independently
+  certifies its candidate before extracting a gain.
+- Wiki examples match the current API and AC/DC source; installation explicitly
+  selects dev for unreleased APIs. Basic and adapted ECC examples generate
+  triangle/square waves without Signal Processing Toolbox.
 - `A'` and `pagectranspose(A)` conjugate the coefficients of a YALMIP payload.
   MATLAB's `pagectranspose` drops the conjugation on an `ndsdpvar`, so `X'`
   of an optimisation variable with complex coefficients (e.g. `P*B` in a
