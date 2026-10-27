@@ -270,6 +270,33 @@ classdef PhasorArraySolversTest < matlab.unittest.TestCase
                 'PhasorArray:place:singularP');
         end
 
+        function testPlaceRejectsAZeroBetweenInitialGridPoints(testCase)
+            P = 1 - PhasorArray.cos(-pi/512);
+            A = PhasorArray(-2);
+            B = -P.d(2*pi) - P;
+            testCase.verifyError(@() place(A, B, -1, 'G', PhasorArray(1), ...
+                'hLyap', 1, 'autoUpdateh', false), 'PhasorArray:place:singularP');
+        end
+
+        function testPlaceBoundsAUnitaryTimeVaryingSymbol(testCase)
+            c = PhasorArray.cos(); s = PhasorArray.sin();
+            P = [c -s; s c];
+            A = PhasorArray(-2*eye(2));
+            B = -P.d(2*pi) - P;
+            [K, recovered] = place(A, B, -eye(2), 'G', PhasorArray(eye(2)), ...
+                'hLyap', 1, 'autoUpdateh', false);
+            testCase.verifyLessThan(sqrt(energy(recovered - P)), 1e-12);
+            testCase.verifyLessThan(sqrt(energy(K*P - eye(2))), 1e-10);
+        end
+
+        function testPlaceRejectsAnUnresolvedInvertibilityCheck(testCase)
+            P = 1 - PhasorArray.cos(-pi/512);
+            A = PhasorArray(-2); B = -P.d(2*pi) - P;
+            testCase.verifyError(@() place(A, B, -1, 'G', PhasorArray(1), ...
+                'hLyap', 1, 'autoUpdateh', false, 'maxCheckPoints', 512), ...
+                'PhasorArray:place:invertibilityNotEstablished');
+        end
+
         function testRandomSpdRespectsTheLowerBound(testCase)
             alpha = 0.5;
             P = PhasorArray.randomSPD(3, 4, 'alphaMin', alpha, 'seed', 1);

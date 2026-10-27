@@ -27,6 +27,10 @@ function [K,P,res,info] = place(A,B,poles,nvp)
     %                     (Theorems 3 and 7 of the paper above), not on the
     %                     eigenvalues of a finite section.
     %         'tolCheckP' (double, default: 1e-8)     - Tolerance for that check.
+    %         'maxCheckPoints' (integer, default: 8192) - Maximum phase-grid size.
+    %                     Interpolation bounds cover the gaps between samples;
+    %                     an inconclusive bound raises invertibilityNotEstablished.
+    %                     Bounds use floating point, without interval enclosure.
     %         'autoUpdateh' (logical, default: true)  - Refine the order until the
     %                     Sylvester residual converges.
     %         'thresholdResidual' (double, default: 1e-10) - Target residual for
@@ -50,7 +54,7 @@ function [K,P,res,info] = place(A,B,poles,nvp)
     %
     %   Method:
     %     - Constructs La = diag(poles), or La = poles when a matrix is given.
-    %     - Solves a harmonic Sylvester equation for P : -A*P + P*La + B*G = 0.
+    %     - Solves a harmonic Sylvester equation for P : dP/dt - A*P + P*La + B*G = 0.
     %     - Computes K as K = G/P.
     %     - Optionally checks if P is near singular and issues an error if necessary.
     %
@@ -75,7 +79,8 @@ arguments
     nvp.G = []
     nvp.T = 2*pi
     nvp.checkP = true
-    nvp.tolCheckP = 1e-8
+    nvp.tolCheckP (1,1) double {mustBePositive, mustBeFinite} = 1e-8
+    nvp.maxCheckPoints (1,1) double {mustBeInteger, mustBePositive} = 8192
     % On by default. hLyap = 4*A.h is enough for a mild perturbation but not for
     % a strong one: measured, the placed exponents land at 4.7e-05 instead of
     % 3.9e-14, and the Sylvester residual reports it faithfully (5.4e-04 against
@@ -111,7 +116,7 @@ if isempty(nvp.G)
 end
 
 
-% Solve -A*P + P*La + B*G = 0 at a given order, and report how well it holds.
+% Solve dP/dt - A*P + P*La + B*G = 0 at a given order, and report how well it holds.
 BG    = B * nvp.G;
 omega = 2*pi/nvp.T;
 scale = sqrt(energy(BG)) + eps;
@@ -154,21 +159,51 @@ else
 end
 
 if nvp.checkP
-    % P = T(P) is invertible iff sigma_min(P(t)) stays away from zero; the
-    % eigenvalues of a finite section of T(P) do not decide it. Sampled on a
-    % grid fine enough to resolve the harmonics of P.
-    nSamples = max(512, 16*P.h + 1);
-    samples = evalp(P, (0:nSamples-1)*2*pi/nSamples);
-    sigmaMin = Inf;
-    for k = 1:nSamples
-        sigmaMin = min(sigmaMin, min(svd(samples(:,:,k))));
-    end
-    if sigmaMin < nvp.tolCheckP
-        error('PhasorArray:place:singularP', 'P(t) is nearly singular (min_t sigma_min(P(t))=%e < tol). Modify gain matrix G or relax the pole placement constraints.', sigmaMin)
-    end
+    checkSymbolInvertibility(P, nvp.tolCheckP, nvp.maxCheckPoints);
 end
 
 K = nvp.G/P;
 
 end
 
+function checkSymbolInvertibility(P, tolerance, maxPoints)
+% Bound sigma_min(P(theta)) between samples, not only on the grid.
+% Weyl's inequality gives min_grid(sigma_min(P)) - pi/N*sum |k| ||P_k||.
+% For H = P'*P, linear interpolation and a second derivative bound give
+% lambda_min(H(theta)) >= min_grid(sigma_min(P)^2) - pi^2/(2*N^2)*sum k^2 ||H_k||.
+% Either lower bound can establish invertibility; refine inconclusive grids.
+C = value(P);
+slope = 0;
+for k = -P.h:P.h
+    slope = slope + abs(k)*norm(C(:,:,P.h + 1 + k), 2);
+end
+H = P'*P;
+HC = value(H);
+curvature = 0;
+for k = -H.h:H.h
+    curvature = curvature + k^2*norm(HC(:,:,H.h + 1 + k), 2);
+end
+nSamples = min(maxPoints, max(512, 16*P.h + 1));
+while true
+    samples = evalp(P, (0:nSamples-1)*2*pi/nSamples);
+    sigmaMin = Inf;
+    for k = 1:nSamples
+        sigmaMin = min(sigmaMin, min(svd(samples(:,:,k))));
+    end
+    if ~isfinite(sigmaMin) || sigmaMin < tolerance
+        error('PhasorArray:place:singularP', ...
+            'P(t) is nearly singular: sampled min sigma_min = %e. Modify G or the target poles.', sigmaMin);
+    end
+    lower = max(sigmaMin - pi/nSamples*slope, ...
+        sqrt(max(0, sigmaMin^2 - pi^2/(2*nSamples^2)*curvature)));
+    if lower >= tolerance
+        return
+    end
+    if nSamples >= maxPoints
+        error('PhasorArray:place:invertibilityNotEstablished', ...
+            ['Cannot establish min_t sigma_min(P(t)) >= %e with %d points. ' ...
+             'Increase maxCheckPoints or modify G; the grid alone is not a certificate.'], tolerance, nSamples);
+    end
+    nSamples = min(2*nSamples, maxPoints);
+end
+end
