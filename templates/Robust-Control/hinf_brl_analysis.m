@@ -1,7 +1,6 @@
 % TEMPLATE-HEADER-BEGIN
 % This script is the source of truth for the wiki template.
-% Edit this file and run: python scripts/inject_templates.py
-% The tag <template/...> in the wiki will be replaced by this content.
+% Keep the corresponding wiki MATLAB block synchronized with this script.
 % TEMPLATE-HEADER-END
 
 % Note: a finite section T_tb(M,h) >= 0 is a necessary condition only; it does
@@ -34,11 +33,11 @@ PT = P.T_tb(h);
 N  = N_tb(nx, h, T);
 
 %% 2. Build BRL LMI
-% [ A'P + PA - dP/dt + Cz'Cz,  P Bw + Cz'Dz ]
+% [ A'P + PA + dP/dt + Cz'Cz,  P Bw + Cz'Dz ]
 % [          *              ,   -gam^2 I + Dz'Dz ]  < 0
 %
 % By Schur complement on gam^2 (since gam > 0), a linear form in gam is:
-% [ A'P + PA - dP/dt,  P Bw,     Cz' ]
+% [ A'P + PA + dP/dt,  P Bw,     Cz' ]
 % [      *          , -gam I,    Dz' ] < 0
 % [      *          ,    *  , -gam I ]
 
@@ -46,7 +45,7 @@ AP   = T_tb(A' * P + P * A,h);
 Pdot = N * PT - PT * N;
 PBw  = T_tb(P * Bw,h);
 
-F11 = AP - Pdot;
+F11 = AP + Pdot;
 F12 = PBw;
 F13 = Cz.T_tb(h)';
 F23 = Dz.T_tb(h)';
@@ -64,7 +63,7 @@ sol = optimize(F, gam, sdpsettings('solver', 'mosek', 'verbose', 1));
 %% 5. Extract result
 if sol.problem == 0
     gamma_opt = value(gam);
-    fprintf('Optimal H-infinity norm (γ): %.4f\n', gamma_opt);
+    fprintf('Finite-section H-infinity estimate (γ, not a certificate): %.4f\n', gamma_opt);
     
     P_val = PhasorArray(value(P.value));
     figure('Name','hinf_brl — Lyapunov P(t)'); plot(P_val); sgtitle('Lyapunov Matrix P(t)');

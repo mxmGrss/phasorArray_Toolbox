@@ -1,7 +1,6 @@
 % TEMPLATE-HEADER-BEGIN
 % This script is the source of truth for the wiki template.
-% Edit this file and run: python scripts/inject_templates.py
-% The tag <template/...> in the wiki will be replaced by this content.
+% Keep the corresponding wiki MATLAB blocks synchronized with this script.
 % TEMPLATE-HEADER-END HERE. Edit the wiki or regenerate.
 
 %% 1a. Converter parameters
@@ -68,7 +67,7 @@ Cout = [PhasorArray(zeros(1,3)),  PhasorArray(1);          % v_dc
         T2,                       PhasorArray(zeros(2,1)); % i_{dq_2}
         T4,                       PhasorArray(zeros(2,1))];% i_{dq_4}
 
-nz = size(Cout, 1);   % = 7 integrator states
+nz = size(Cout, 1);   % = 6 integrator states
 
 plot(Cout);   sgtitle('Output matrix C(t) — multi-frequency selection');
 stem(Cout);   sgtitle('C(t) — harmonic content');
@@ -186,8 +185,8 @@ fprintf('Stabilizing gain H1 = %.4f\n', H1);
 
 %% 5a. Reuse C(t) from §2 (multi-frequency output matrix)
 %   Cout already defined in §2:
-%     y = [v_dc;  i_q;  i_{dq_2};  i_{dq_4}]   (7×1)
-%     Cout = [0, 1;  T1_q, 0;  T2, 0;  T4, 0]   (7×4 PhasorArray)
+%     y = [v_dc;  i_q;  i_{dq_2};  i_{dq_4}]   (6×1)
+%     Cout = [0, 1;  T1_q, 0;  T2, 0;  T4, 0]   (6×4 PhasorArray)
 %
 %   No oscillator matrix needed: O = 0.
 
@@ -199,7 +198,7 @@ ell_2   = 0.1143;         % i_{dq_2} integrator gain
 ell_4   = 0.1143;         % i_{dq_4} integrator gain
 
 L_full = blkdiag(ell_vdc, ell_iq, ell_2*eye(2), ell_4*eye(2));
-L_pa = PhasorArray(L_full);   % 7×7 PhasorArray (constant)
+L_pa = PhasorArray(L_full);   % 6×6 PhasorArray (constant)
 
 %% 5c. Solve harmonic Sylvester equation  (O = 0)
 %   -N M - M (A + A(D^e) - N) + L C = 0
@@ -238,12 +237,12 @@ fprintf('Implementation truncation: h_max = %d\n', h_max);
 
 %% 6b. Simulation setup
 T_sim = 10*T;                          % simulation time [s]
-t_sim = linspace(0, T_sim, 50*4000);    % 4 kHz sampling
+t_sim = linspace(0, T_sim, 50*4000);    % optional plotting grid
 
 % Initial condition: diode rectifier equilibrium (uncontrolled)
 % Start from approximate values (can be refined)
 x0 = [0; 0; 0; 0];                    % [i_a; i_b; i_c; v_dc] at t=0
-z0 = zeros(nz, 1);                    % integrator states (7×1)
+z0 = zeros(nz, 1);                    % integrator states (6×1)
 
 %% 6c. ODE integration (time-domain controller)
 odefun = @(t, xz) acdc_dynamics(t, xz, param, ...

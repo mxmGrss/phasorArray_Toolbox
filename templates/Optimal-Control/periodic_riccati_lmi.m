@@ -1,7 +1,6 @@
 % TEMPLATE-HEADER-BEGIN
 % This script is the source of truth for the wiki template.
-% Edit this file and run: python scripts/inject_templates.py
-% The tag <template/...> in the wiki will be replaced by this content.
+% Keep the corresponding wiki MATLAB block synchronized with this script.
 % TEMPLATE-HEADER-END HERE. Edit the wiki or regenerate.
 
 %% ── Riccati LMI (Schur Complement) ─────────────────────────────────────
@@ -38,6 +37,22 @@ sol = optimize([F1, F2], -trace(phas(P, 0)), sdpsettings('solver', 'mosek', 'ver
 if sol.problem == 0
     report = sdpval(M).checkGramCertificate(0, value(G1), c1);
     fprintf('min_t lambda_min(M(t)) >= %.2e\n', report.lower);
+    % The optimum lies on the semidefinite boundary: a slightly negative
+    % Gram lower bound does not establish M >= 0. Certify the Riccati
+    % candidate independently, after completing the square for N_ric.
+    P_report = sdpval(P).checkGramCertificate(0, value(G2), c2);
+    fprintf('Gram strict acceptance: M=%d, P=%d (P lower %.2e)\n', ...
+        report.accepted, P_report.accepted, P_report.lower);
+    PP = sdpval(P);
+    A_cert = A - B*(R_ric \ N_ric);
+    Q_cert = Q_ric - N_ric'*(R_ric \ N_ric);
+    riccatiReport = certifyHare(A_cert, B, Q_cert, R_ric, PP, T=T);
+    if ~riccatiReport.accepted
+        error('PhasorArray:template:uncertifiedRiccati', ...
+            'Riccati candidate not certified: %s. Increase hP.', riccatiReport.status);
+    end
+    fprintf('Certified Riccati error bound: %.2e\n', riccatiReport.errorBound);
+
 end
 
 %% 5. Extract gain

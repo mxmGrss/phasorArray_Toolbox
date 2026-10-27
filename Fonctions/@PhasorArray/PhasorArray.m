@@ -4531,8 +4531,8 @@ methods (Static, Access=public)
         %     out - (PhasorArray) The computed PhasorArray representation of `At`.
         %
         %   Example:
-        %     t = linspace(0, 2*pi, 100);
-        %     At = cat(3, sin(t), cos(t));
+        %     t = (0:99) * (2*pi/100);
+        %     At = reshape([sin(t); cos(t)], 1, 2, []);
         %     Ph = time2Phasor(At, 1, t, 'truncIndex', 5);
         %
         %   See also: PhasorArray, TimeArray2Phasors
@@ -4709,7 +4709,8 @@ methods (Static, Access=public)
         %     out - (ScalarPhasorArray) The extracted and converted phasor representation.
         %
         %   Example:
-        %     cqtA = cqt(rand(10), rand(10)); % Example CQT matrix
+        %     % cqtA must be an external compact quasi-Toeplitz object
+        %     % exposing symbol(cqtA); it is not a Wavelet Toolbox cqt result.
         %     phasorA = cqt2ScalarPhasor(cqtA, 'isReal', true);
         %
         %   See also: ScalarPhasorArray, cqt
