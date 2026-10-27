@@ -26,6 +26,9 @@ R=1, K0=[10,10], Riccati h=6/maxh=500/maxIter=50/threshold=1e-6,
 LMI orders 20/10/10, and simulation initial condition and grid.
 Intentional differences from the published source are:
 
+- Express the same triangle and square waves with base MATLAB formulas, removing the Signal Processing Toolbox dependency.
+- Use a 2-by-1 feedthrough matrix D, matching two outputs and one control input.
+
 - Correct A_3(1,1) to -4/(3*pi)^2, consistent with the specified triangle.
   The next construction overwrites A from the unchanged time function, so
   this correction does not alter subsequent control calculations.

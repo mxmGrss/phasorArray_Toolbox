@@ -10,7 +10,10 @@ A = PhasorArray(cat(3,conj(A_3), conj(A_2), conj(A_1), A_0, A_1, A_2, A_3));
 A = PhasorArray(cat(3, A_0, A_1, A_2, A_3),'isreal',true)
 T = 1; %period
 N = 6; %2^N points used for FFT 
-At = @(t) [1+sawtooth(2*pi*t/T,0.5)+0.5, 1+cos(2*pi*t/T); 1-sin(2*2*pi*t/T), -0.5 + square(2*pi*t/T)/2];
+% Triangle and square waves, using base MATLAB only.
+triangleWave = @(phase) 1 - 4*abs(mod(phase,1) - 0.5);
+squareWave = @(phase) 2*(mod(phase,1) < 0.5) - 1;
+At = @(t) [1.5+triangleWave(t/T), 1+cos(2*pi*t/T); 1-sin(4*pi*t/T), -0.5+squareWave(t/T)/2];
 A = PhasorArray.funcToPhasorArray(At,T,N)
 figure(Name="ECC v2 - Harmonic coefficients")
 bar(A,scale="linear",uniformYLim=false)
@@ -116,7 +119,7 @@ plot(K, T, 0:T/100:T)
 
 %% Closed-loop simulation
 C = PhasorArray.eye(2);
-D = PhasorArray.zeros(2, 2);
+D = PhasorArray.zeros(2, 1);
 sys = PhasorSS(A, B, C, D, T);
 sys_cl = feedback(sys, K_final);
 figure(Name="ECC v2 - Closed-loop model")

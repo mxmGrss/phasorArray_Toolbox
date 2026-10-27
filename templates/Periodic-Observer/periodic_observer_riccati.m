@@ -1,7 +1,6 @@
 % TEMPLATE-HEADER-BEGIN
 % This script is the source of truth for the wiki template.
-% Edit this file and run: python scripts/inject_templates.py
-% The tag <template/...> in the wiki will be replaced by this content.
+% Keep the corresponding wiki MATLAB block synchronized with this script.
 % TEMPLATE-HEADER-END HERE. Edit the wiki or regenerate.
 
 %% ── Periodic Observer via Iterative Riccati ─────────────────────────────
@@ -19,6 +18,7 @@ W = PhasorArray(0.1 * eye(nx));    % process noise covariance
 V = PhasorArray(eye(ny));          % measurement noise covariance
 
 %% 1. Dual Riccati: solve on (A', C', W, V)
+%  Transposition must be combined with direction="forward" for filtering.
 %  A_dual = A'   (transpose of A)
 %  B_dual = C'   (transpose of C)
 %  Q_dual = W    (process noise = "state weight" in dual)
@@ -26,7 +26,7 @@ V = PhasorArray(eye(ny));          % measurement noise covariance
 L0 = PhasorArray(zeros(ny, nx));   % initial dual gain (ny × nx)
 
 [L_dual, Sigma, info_ric] = hare(A.', C.', W, V, "K0", L0, "T", T, ...
-    "maxIter", 100, "thresholdResidual", 1e-3, "autoUpdateh", true);
+    "direction", "forward", "maxIter", 100, "thresholdResidual", 1e-3, "autoUpdateh", true);
 
 %% 2. Observer gain: L = Σ C' V⁻¹
 %  Note: hare returns K = R⁻¹B'S in the control sense

@@ -25,7 +25,7 @@ a_22=ScalarPhasorArray([1,2,-1],'isreal',true) %[output:21a78946]
 A=[a_11,a_12;a_21,a_22] %[output:7b5223bc]
 %[text] #### From a time signal : use inverse FFT to deduce correct Fourier decomposition and build the phasorArray object
 T=2 %[output:864f002b]
-sig = @(t) sawtooth(t/T*2*pi,0.5) %[output:706e0637]
+sig = @(t) 1 - 4*abs(mod(t/T,1) - 0.5) %[output:706e0637]
 figure %[output:25114bd1]
 plot(0:1e-3:4,sig(0:1e-3:4)) %[output:25114bd1]
 
