@@ -18,9 +18,10 @@ the reasoning is kept inline rather than in a separate decision record.
   (model construction only; reproduction scope is documented with the examples).
 - `gramConstraint` imposes `M(t) >= margin*I` for all t exactly, by a Gram
   certificate (matrix Fejer-Riesz), with no section order: TBLMI paper,
-  corrected version, Theorem 9 and Proposition 3 (`basis="real"` halves the
-  cone). `checkGramCertificate` validates a numerical solution a posteriori
-  (Proposition 4). A finite section `T_tb(M,r) >= 0` is only a necessary
+  corrected version, Theorem 8 and Proposition 3; Dumitrescu, *Positive
+  Trigonometric Polynomials and Signal Processing Applications*, 2017,
+  pp. 47-49 (`basis="real"` halves the cone). `checkGramCertificate` validates a numerical
+  solution a posteriori (Proposition 4). A finite section `T_tb(M,r) >= 0` is only a necessary
   condition; prefer `gramConstraint` for periodic LMIs. Requires YALMIP.
 - `certifyHare` certifies a harmonic Riccati candidate a posteriori (step 2 of
   Algorithm 1 in the corrected Riedinger-Daafouz Lyapunov/Riccati paper):

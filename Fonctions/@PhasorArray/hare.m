@@ -90,8 +90,7 @@ end
 [K, X, info] = RicHarmonicKlein(A, B, Q, R, nvp.K0, nvp.T, common{:}, ...
     'direction', nvp.direction, 'derivativeForm', nvp.derivativeForm, mass{:});
 
-% Step 2 of Algorithm 1: the iteration only produces a candidate; accept or
-% reject it independently of how it was obtained.
+% Step 2 of Algorithm 1: certify the returned candidate.
 if nvp.certify
     info.certificate = certifyHare(PhasorArray(A), PhasorArray(B), PhasorArray(Q), R, X, T=nvp.T);
 end

@@ -7,11 +7,12 @@ function [F, G, cert] = gramConstraint(M, margin, basis)
 %       M(t) - margin*I = V(t)' * G * V(t) ,   G >= 0 ,   for all t,
 %
 %   with V(t) = [I; e^{jt} I; ...; e^{jdt} I] and d = M.h (matrix Fejer-Riesz
-%   theorem, Gram form). Unlike a finite Toeplitz section T_tb(M,r) >= 0,
-%   which is only a necessary condition for any r, this is exact and involves
-%   no section order: its size is set by the degree of M. Reference: Vernerey,
-%   Riedinger & Daafouz, "A TBLMI framework for harmonic robust control",
-%   corrected version, Theorem 9 and Proposition 3.
+%   theorem, Gram form). The condition is exact and its size is set by the
+%   degree of M; a finite Toeplitz section T_tb(M,r) >= 0 is only necessary.
+%   References: Vernerey, Riedinger & Daafouz, "A TBLMI framework for
+%   harmonic robust control", corrected version, Theorem 8 and Proposition 3;
+%   B. Dumitrescu, Positive Trigonometric Polynomials and Signal Processing
+%   Applications, 2nd ed., Springer, 2017, pp. 47-49 (real Gram form).
 %
 %   SYNTAX
 %     [F, G, cert] = M.gramConstraint(margin)
@@ -82,7 +83,6 @@ switch basis
     case "hermitian"
         % Coefficient k >= 0 of V'GV is the sum of the blocks of G on block
         % diagonal k: M_k - margin*delta_k0*I = sum_r G(r, r+k).
-        % YALMIP's sdpvar parser needs char type flags, not strings.
         G = sdpvar(gramOrder, gramOrder, 'hermitian', 'complex');
         F = G >= 0;
         for k = 0:d

@@ -23,8 +23,7 @@ function report = certifyHare(A, B, Q, R, P, nvp)
 %        s     = sum_k ||S_k|| ,  theta = 4 beta s delta ;
 %     3. if theta < 1, ||P - P+||_inf <= eps = 2 delta / (1 + sqrt(1 - theta)).
 %
-%   Closed-loop stability (test (c) of the paper) is established without
-%   integrating the monodromy matrix, which is unreliable on stiff systems:
+%   Closed-loop stability (test (c) of the paper) follows from W:
 %   W(t) > 0 together with rW < 1 gives dW/dt + Ac'W + W Ac <= -(1 - rW) I,
 %   since the supremum of RW(t) is bounded by rW. W is then a Lyapunov
 %   function of the closed loop.
