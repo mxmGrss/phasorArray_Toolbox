@@ -15,6 +15,12 @@ the reasoning is kept inline rather than in a separate decision record.
   solution and diagnostic output ordering is preserved.
 
 ### Fixed
+- `place` bounds the minimum singular value between grid points and refines
+  inconclusive checks; `maxCheckPoints` limits the cost. A sampled positive
+  minimum alone no longer accepts a singular periodic change of coordinates.
+- The iterative observer uses the forward Riccati direction. The direct
+  Lyapunov/BRL examples use +dP/dt. Basic and adapted ECC examples generate
+  triangle/square waves without Signal Processing Toolbox.
 - `A'` and `pagectranspose(A)` conjugate the coefficients of a YALMIP payload.
   MATLAB's `pagectranspose` drops the conjugation on an `ndsdpvar`, so `X'`
   of an optimisation variable with complex coefficients (e.g. `P*B` in a

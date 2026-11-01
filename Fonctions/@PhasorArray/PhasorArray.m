@@ -4710,7 +4710,7 @@ methods (Static, Access=public)
         %
         %   Example:
         %     % cqtA must be an external compact quasi-Toeplitz object
-        %     % exposing symbol(cqtA); it is not a Wavelet Toolbox cqt result.
+        %     % exposing symbol(cqtA).
         %     phasorA = cqt2ScalarPhasor(cqtA, 'isReal', true);
         %
         %   See also: ScalarPhasorArray, cqt

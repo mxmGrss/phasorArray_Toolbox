@@ -24,8 +24,7 @@ function [K,P,res,info] = place(A,B,poles,nvp)
     %         'T'         (double, default: 2*pi)     - Period of the system.
     %         'checkP'    (logical, default: true)    - Check P is invertible:
     %                     min_t sigma_min(P(t)) >= tolCheckP, on the symbol
-    %                     (Theorems 3 and 7 of the paper above), not on the
-    %                     eigenvalues of a finite section.
+    %                     (Theorems 3 and 7 of the paper above).
     %         'tolCheckP' (double, default: 1e-8)     - Tolerance for that check.
     %         'maxCheckPoints' (integer, default: 8192) - Maximum phase-grid size.
     %                     Interpolation bounds cover the gaps between samples;
@@ -167,7 +166,7 @@ K = nvp.G/P;
 end
 
 function checkSymbolInvertibility(P, tolerance, maxPoints)
-% Bound sigma_min(P(theta)) between samples, not only on the grid.
+% Bound sigma_min(P(theta)) over the whole period, between samples included.
 % Weyl's inequality gives min_grid(sigma_min(P)) - pi/N*sum |k| ||P_k||.
 % For H = P'*P, linear interpolation and a second derivative bound give
 % lambda_min(H(theta)) >= min_grid(sigma_min(P)^2) - pi^2/(2*N^2)*sum k^2 ||H_k||.

@@ -129,7 +129,6 @@ function [K, S, info] = RicHarmonicKlein(A, B, Q, R, K0, T, nvp)
 %           Control: cost-to-go. Observation: error covariance Y.
 %     info  resRicnorm, relChange and h describe the returned iterate.
 %           iter and histories retain all iterations, including after the best.
-%           See spec-algorithm-ric-harmonic-klein-v2.md.
 %
 %   See also: lyap, SylvHarmonic, RicHarmonicKlein (v1)
 
