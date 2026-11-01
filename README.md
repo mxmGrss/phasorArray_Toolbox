@@ -2,6 +2,8 @@
 
 **Harmonic Modeling, Analysis, and Control of Periodic Systems.**
 
+> The current wiki documents the unreleased `dev` branch, including `gramConstraint` and `certifyHare`. Select `dev` to run those examples; `main` and the published v2.0.0 release do not yet include these APIs.
+
 [![MATLAB](https://img.shields.io/badge/MATLAB-R2021b%2B-blue.svg)](https://www.mathworks.com/products/matlab.html)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17560958.svg)](https://doi.org/10.5281/zenodo.17560958)
@@ -71,7 +73,7 @@ The core of the toolbox. Stores Fourier coefficients in a 3-D array and overload
 
 *   **Eigenvalues**: Compute **Floquet exponents** with `HmqNEig` to determine stability.
 *   **Lyapunov**: Assess stability and compute periodic Gramians with `lyap`.
-*   **Riccati (HARE)**: Synthesis of **LQR** and **$H_{\infin}$** controllers via efficient iterative algorithms (`RicHarmonicKlein`).
+*   **Riccati (HARE)**: Synthesis of **LQR** and **$H_{\infin}$** controllers via efficient iterative algorithms (`hare`, `RicHarmonicKlein`), with a posteriori certification of the result in operator norm (`certifyHare`).
 *   **Sylvester**: Solving observer design and disturbance rejection problems with `sylvester`.
 
 ### 3. Robust Control ([LMI](https://github.com/mxmGrss/phasorArray_Toolbox/wiki/Interfacing-with-YALMIP))
@@ -80,6 +82,7 @@ Direct integration with **YALMIP** for convex optimization over periodic systems
 
 *   **`ndsdpvar`**: Create periodic decision variables as `PhasorArray` objects.
 *   **Toeplitz-Block LMIs**: Formulate and solve $H_2$ or $H_{\infty}$ problems to design controllers that are **robust** across entire operating ranges.
+*   **Gram certificates**: `gramConstraint` imposes $M(t) \succeq \mu I$ for all $t$ exactly, with no truncation order, and `checkGramCertificate` validates the numerical solution.
 
 ---
 
@@ -167,6 +170,10 @@ The toolbox extends to **LPV (Linear Parameter-Varying)** models using **Dynamic
 
 ## 📚 Documentation
 
+[Paper examples](Exemples/Papers/README.md) provide short executable listings
+for the corrected Riedinger, Vernerey and Blin manuscripts, with checked results
+and explicit reproduction limits.
+
 Detailed documentation for all classes and functions is available directly within MATLAB:
 
 ```matlab
@@ -206,6 +213,8 @@ If you use this toolbox in your research, please cite the following work:
 6.  **[TAC 22]** P. Riedinger and J. Daafouz, *"Solving infinite-dimensional harmonic Lyapunov and Riccati equations,"* *IEEE Transactions on Automatic Control*, vol. 68, no. 10, pp. 5938-5953, 2022.
 7.  **[TAC 21]** N. Blin, P. Riedinger, J. Daafouz, L. Grimaud, and P. Feyel, *"Necessary and sufficient conditions for harmonic control in continuous time,"* *IEEE Transactions on Automatic Control*, vol. 67, no. 8, pp. 4013-4028, 2021.
 8.  **[CDC 23]** F. Vernerey, P. Riedinger, and J. Daafouz, *"On solving infinite-dimensional Toeplitz block LMIs,"* in *2023 62nd IEEE Conference on Decision and Control (CDC)*, pp. 4717-4722, 2023.
+
+Corrected versions of [5], [6] and [7], and of the harmonic pole placement paper, are deposited by the authors on HAL and arXiv. The toolbox follows them: least-squares truncation and a posteriori certification for Lyapunov and Riccati equations, Gram certificates instead of finite sections for TBLMIs, and invertibility of the pole placement solution tested on its symbol.
 
 ---
 

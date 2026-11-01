@@ -34,9 +34,11 @@ sgtitle('Harmonic Spectrum of A(t)'); %[output:832dc1b8]
 %% 2. Stability Analysis
 %[text] ## Quadratic Stability Analysis
 %[text] To prove the stability of $\\dot{x}(t) = A(t)x(t)$, we search for a real, symmetric, positive-definite periodic Lyapunov matrix $P(t) \> 0$ such that:
-%[text] $$ A(t)^T P(t) + P(t) A(t) - \\dot{P}(t) \\leq -\\epsilon I $$
+%[text] $$ A(t)^T P(t) + P(t) A(t) + \\dot{P}(t) \\leq -\\epsilon I $$
 %[text] In the frequency domain, applying the block Toeplitz operator $\\mathcal{T}(\\cdot)$, this LMI becomes:
-%[text] $$ \\mathcal{T}(A^T P + P A) - (N \\mathcal{T}(P) - \\mathcal{T}(P) N) \\leq -\\epsilon I $$
+%[text] $$ \\mathcal{T}(A^T P + P A) + (N \\mathcal{T}(P) - \\mathcal{T}(P) N) \\leq -\\epsilon I $$
+
+%[text] The finite-section relaxation below produces a numerical candidate. Solver success alone does not certify the continuous-time inequality; use gramConstraint and checkGramCertificate for a polynomial-symbol certificate.
 
 h_lmi = 10;
 P = PhasorArray.ndsdpvar(nx, nx, h_lmi);
@@ -52,7 +54,7 @@ N_lmi = N_tb(nx, h_lmi, T);
 % 3. Formulate the LMI
 Pdot_T = N_lmi * PT - PT * N_lmi;
 F = [PT >= 1e-6 * eye(size(PT))];
-G1 = ATPpPA_T - Pdot_T;
+G1 = ATPpPA_T + Pdot_T;
 F = [F, G1 <= -10 * eye(size(G1))];
 
 % 4. Solve
@@ -124,11 +126,12 @@ else
     K = sdpval(Y) / Q_opt;
     K = K.reduce('reduceMethod', 'relative', 'reduceThreshold', 1e-4);
 
-    % 5. Certify the gain. The LMI is solved on the TRUNCATED operators, so a
-    %    feasible solve proves nothing by itself. Rebuilding the residual with
-    %    untruncated products does prove it: Q(t) > 0 together with
+    % 5. Evaluate the optimized inequality on a phase grid. A finite-section
+    %    feasible solve alone does not prove the symbol inequality. Rebuild it with
+    %    untruncated products and check samples of Q(t) > 0 together with
     %       R(t) = A Q + Q A' + B Y + Y' B' - dQ/dt  <  0
-    %    is the Lyapunov inequality for A_cl = A + B*K, since B*Y = B*K*Q.
+    %    for the rational gain Y(t)/Q(t). The polynomial K above adds an approximation.
+    %    These grid checks do not bound the gaps between samples.
     tchk = linspace(0, T, 129); tchk(end) = [];
     R    = A*Q_opt + Q_opt*A.' + B*sdpval(Y) + sdpval(Y).'*B.' - d(Q_opt, T);
     Qt   = PhasorArray2time(Q_opt, T, tchk, "plot", false, "forceReal", false);
@@ -138,14 +141,14 @@ else
         minEigQ = min(minEigQ, min(real(eig(0.5*(Qt(:,:,kk) + Qt(:,:,kk)')))));
         maxEigR = max(maxEigR, max(real(eig(0.5*(Rt(:,:,kk) + Rt(:,:,kk)')))));
     end
-    fprintf('  min_t lambda_min(Q(t)) = %+.3e   (certificat, doit etre > 0)\n', minEigQ);
-    fprintf('  max_t lambda_max(R(t)) = %+.3e   (residu exact, doit etre < 0)\n', maxEigR);
+    fprintf('  min_t lambda_min(Q(t)) = %+.3e   (sampled check, should be > 0)\n', minEigQ);
+    fprintf('  max_t lambda_max(R(t)) = %+.3e   (symbol residual on grid, should be < 0)\n', maxEigR);
     if minEigQ <= 0 || maxEigR >= 0
         warning('Exemple_Toolbox_LMI:unusableGain', ...
-            'LMI feasible but the certificate does not hold: minEig(Q)=%.2e, maxEig(R)=%.2e.', ...
+            'LMI feasible but the sampled inequalities fail: minEig(Q)=%.2e, maxEig(R)=%.2e.', ...
             minEigQ, maxEigR);
     else
-        fprintf('  -> boucle fermee exponentiellement stable (certificat de Lyapunov).\n');
+        fprintf('  -> inequalities satisfied on the sampled grid (not a continuous-time certificate).\n');
     end
 
     figure(31); clf; %[output:41c3e663]

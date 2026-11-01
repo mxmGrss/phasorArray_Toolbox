@@ -4,6 +4,11 @@
 % The tag <template/...> in the wiki will be replaced by this content.
 % TEMPLATE-HEADER-END HERE. Edit the wiki or regenerate.
 
+% Note: a finite section T_tb(M,h) >= 0 is a necessary condition only; it does
+% not imply M(t) >= 0 for all t (TBLMI paper, corrected, Sec. V-A). For an exact
+% certificate impose M.gramConstraint(margin) on the symbols instead, as in
+% templates/Optimal-Control/periodic_riccati_lmi.m.
+
 %% ── Periodic LQR via Schur-Complement LMI ──────────────────────────────
 % dx/dt = A(t)x + B(t)u    with A(t), B(t) periodic of period T
 

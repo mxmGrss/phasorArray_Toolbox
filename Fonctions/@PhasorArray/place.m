@@ -9,7 +9,10 @@ function [K,P,res,info] = place(A,B,poles,nvp)
     %   Inputs:
     %     A      - (PhasorArray) The system matrix in phasor form.
     %     B      - (PhasorArray) The input matrix in phasor form.
-    %     poles  - (vector) The desired closed-loop poles.
+    %     poles  - (vector or n x n matrix) The desired closed-loop poles, or a
+    %              constant closed-loop matrix Lambda (e.g. -J - alpha*I with J
+    %              the Jordan form of a Floquet factorization, Theorem 5 of
+    %              Riedinger & Daafouz, "Harmonic pole placement").
     %     nvp   - (Optional) Name-value pair arguments:
     %         'hG'        (integer, default: 0)       - Harmonic order of G. A
     %                     constant G is what places the exponents; see below.
@@ -19,8 +22,14 @@ function [K,P,res,info] = place(A,B,poles,nvp)
     %         'G'         (PhasorArray, default: [])  - Predefined gain matrix G.
     %                     If empty, a random positive definite one is drawn.
     %         'T'         (double, default: 2*pi)     - Period of the system.
-    %         'checkP'    (logical, default: true)    - Check P is invertible.
+    %         'checkP'    (logical, default: true)    - Check P is invertible:
+    %                     min_t sigma_min(P(t)) >= tolCheckP, on the symbol
+    %                     (Theorems 3 and 7 of the paper above).
     %         'tolCheckP' (double, default: 1e-8)     - Tolerance for that check.
+    %         'maxCheckPoints' (integer, default: 8192) - Maximum phase-grid size.
+    %                     Interpolation bounds cover the gaps between samples;
+    %                     an inconclusive bound raises invertibilityNotEstablished.
+    %                     Bounds use floating point, without interval enclosure.
     %         'autoUpdateh' (logical, default: true)  - Refine the order until the
     %                     Sylvester residual converges.
     %         'thresholdResidual' (double, default: 1e-10) - Target residual for
@@ -43,8 +52,8 @@ function [K,P,res,info] = place(A,B,poles,nvp)
     %   h = 12. Turn it off with autoUpdateh = false to keep the old behaviour.
     %
     %   Method:
-    %     - Constructs a diagonal phasor matrix La with the desired pole locations.
-    %     - Solves a harmonic Sylvester equation for P : -A*P + P*La + B*G = 0.
+    %     - Constructs La = diag(poles), or La = poles when a matrix is given.
+    %     - Solves a harmonic Sylvester equation for P : dP/dt - A*P + P*La + B*G = 0.
     %     - Computes K as K = G/P.
     %     - Optionally checks if P is near singular and issues an error if necessary.
     %
@@ -69,7 +78,8 @@ arguments
     nvp.G = []
     nvp.T = 2*pi
     nvp.checkP = true
-    nvp.tolCheckP = 1e-8
+    nvp.tolCheckP (1,1) double {mustBePositive, mustBeFinite} = 1e-8
+    nvp.maxCheckPoints (1,1) double {mustBeInteger, mustBePositive} = 8192
     % On by default. hLyap = 4*A.h is enough for a mild perturbation but not for
     % a strong one: measured, the placed exponents land at 4.7e-05 instead of
     % 3.9e-14, and the Sylvester residual reports it faithfully (5.4e-04 against
@@ -84,14 +94,17 @@ arguments
     nvp.verbose (1,1) double = 0
 end
 
-assert(isvector(poles));
 assert(issquare(A));
-assert(numel(poles) == size(A,1));
-B = PhasorArray(B);
-
-%convert this list into a diagonal phasor array
-La = PhasorArray(diag(poles));
 nx = size(A,1);
+if isvector(poles) && (nx > 1 || isscalar(poles))
+    assert(numel(poles) == nx);
+    La = PhasorArray(diag(poles));      % pole list -> diagonal Lambda
+else
+    assert(ismatrix(poles) && isequal(size(poles), [nx nx]), ...
+        'PhasorArray:place:poles', 'poles must be a vector of %d poles or a %dx%d matrix.', nx, nx, nx);
+    La = PhasorArray(poles);            % constant closed-loop matrix Lambda
+end
+B = PhasorArray(B);
 if isempty(nvp.G)
     if issquare(B)
         nvp.G=PhasorArray.randomSPD(nx, nvp.hG);
@@ -102,7 +115,7 @@ if isempty(nvp.G)
 end
 
 
-% Solve -A*P + P*La + B*G = 0 at a given order, and report how well it holds.
+% Solve dP/dt - A*P + P*La + B*G = 0 at a given order, and report how well it holds.
 BG    = B * nvp.G;
 omega = 2*pi/nvp.T;
 scale = sqrt(energy(BG)) + eps;
@@ -127,7 +140,7 @@ if nvp.autoUpdateh
         'verbose',           nvp.verbose, ...
         'hOp',               hOp, ...
         'hOutFcn',           @(hh) hh, ...
-        'preamble',          sprintf('  place  --  Sylvester for %d poles, hOp=%d\n', numel(poles), hOp), ...
+        'preamble',          sprintf('  place  --  Sylvester for %d poles, hOp=%d\n', nx, hOp), ...
         'label',             'h');
     [best, trace] = adaptiveHSolve(@solveAtH, nvp.hLyap, cfg);
     P    = best.sol;
@@ -145,13 +158,51 @@ else
 end
 
 if nvp.checkP
-    E = P.HmqEig();
-    if nnz(abs(E)<nvp.tolCheckP)>0
-        error('PhasorArray:place:singularP', 'P is nearly singular (min|eig(P)|=%e < tol). Modify gain matrix G or relax the pole placement constraints.', min(abs(E)))
-    end
+    checkSymbolInvertibility(P, nvp.tolCheckP, nvp.maxCheckPoints);
 end
 
 K = nvp.G/P;
 
 end
 
+function checkSymbolInvertibility(P, tolerance, maxPoints)
+% Bound sigma_min(P(theta)) over the whole period, between samples included.
+% Weyl's inequality gives min_grid(sigma_min(P)) - pi/N*sum |k| ||P_k||.
+% For H = P'*P, linear interpolation and a second derivative bound give
+% lambda_min(H(theta)) >= min_grid(sigma_min(P)^2) - pi^2/(2*N^2)*sum k^2 ||H_k||.
+% Either lower bound can establish invertibility; refine inconclusive grids.
+C = value(P);
+slope = 0;
+for k = -P.h:P.h
+    slope = slope + abs(k)*norm(C(:,:,P.h + 1 + k), 2);
+end
+H = P'*P;
+HC = value(H);
+curvature = 0;
+for k = -H.h:H.h
+    curvature = curvature + k^2*norm(HC(:,:,H.h + 1 + k), 2);
+end
+nSamples = min(maxPoints, max(512, 16*P.h + 1));
+while true
+    samples = evalp(P, (0:nSamples-1)*2*pi/nSamples);
+    sigmaMin = Inf;
+    for k = 1:nSamples
+        sigmaMin = min(sigmaMin, min(svd(samples(:,:,k))));
+    end
+    if ~isfinite(sigmaMin) || sigmaMin < tolerance
+        error('PhasorArray:place:singularP', ...
+            'P(t) is nearly singular: sampled min sigma_min = %e. Modify G or the target poles.', sigmaMin);
+    end
+    lower = max(sigmaMin - pi/nSamples*slope, ...
+        sqrt(max(0, sigmaMin^2 - pi^2/(2*nSamples^2)*curvature)));
+    if lower >= tolerance
+        return
+    end
+    if nSamples >= maxPoints
+        error('PhasorArray:place:invertibilityNotEstablished', ...
+            ['Cannot establish min_t sigma_min(P(t)) >= %e with %d points. ' ...
+             'Increase maxCheckPoints or modify G; the grid alone is not a certificate.'], tolerance, nSamples);
+    end
+    nSamples = min(2*nSamples, maxPoints);
+end
+end

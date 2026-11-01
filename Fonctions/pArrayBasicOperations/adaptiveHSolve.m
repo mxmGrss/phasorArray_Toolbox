@@ -1,119 +1,42 @@
 function [best, trace] = adaptiveHSolve(solveAtH, h0, cfg)
-%ADAPTIVEHSOLVE  Adaptive harmonic-order refinement driver for harmonic solvers.
+%ADAPTIVEHSOLVE Refine the harmonic order until convergence or a stopping guard.
+%   [best,trace] = adaptiveHSolve(solveAtH,h0,cfg) calls solveAtH(h), which
+%   returns [sol,resnorm,resrelnorm,resPhasor]. The callback defines residual
+%   normalization; toolbox solvers normalize by the right-hand side.
 %
-%   SYNTAX
-%     [best, trace] = adaptiveHSolve(solveAtH, h0, cfg)
+%   Required cfg fields:
+%     thresholdResidual - Relative residual target.
+%     maxh              - Order ceiling; [] uses max(20*h0,h0+20).
+%     stagnationWindow  - Number of residual samples used to test stagnation.
+%     stagnationRatio   - Minimum relative improvement over that window.
+%     updateMethod      - 'adaptive' or 'incremental'.
+%     hOp               - Spectral width of the harmonic operator.
+%     verbose           - Print refinement diagnostics.
+%     hOutFcn           - @(h) equation order, for the diagnostic table.
+%     preamble, label   - Table heading and order label.
+%   Optional cfg fields:
+%     maxUnitSteps      - Unit steps before forced extrapolation (default 5).
+%     targetResidual    - Target for the final order estimate (default 1e-12).
 %
-%   DESCRIPTION
-%   Repeatedly solves a harmonic equation at increasing truncation order h until
-%   the relative residual falls below cfg.thresholdResidual, the residual
-%   stagnates, or h reaches cfg.maxh. Shared by PhasorArray/lyap,
-%   PhasorArray/lyapG, PhasorArray/mlHmcDivide, PhasorArray/mrHmcDivide and
-%   PhasorArray/place, which differ only in the equation being solved (supplied
-%   as the solveAtH callback) and in the info struct they finally publish.
+%   Adaptive stepping fits exponential or algebraic residual decay:
+%     s_exp = log(e2/e1)/(h2-h1), s_alg = log(e2/e1)/log(h2/h1).
+%   Algebraic fits use -1.5 < s_alg < -0.1; exponential fits use s_exp < -1e-4.
+%   Extrapolated jumps are damped by 0.8 and bounded by min(50,ceil(h/2)).
+%   Otherwise the order increases by one. Fits normally use samples at
+%   h >= 1.1*hOp; maxUnitSteps also permits extrapolation below this band.
+%   Stagnation stopping requires the entire residual window at h >= 1.1*hOp.
 %
-%   STEP-SIZE STRATEGY
-%   The relative residual e(h) of a harmonic truncation typically decays either
-%   exponentially, e ~ exp(s_exp*h), or algebraically, e ~ h^s_alg, depending on
-%   the smoothness of the underlying periodic solution. From the two samples
-%   (h1,e1) and (h2,e2), with h1 the first sample past the operator's spectral
-%   width, the two slopes are estimated as
+%   best contains sol, resnorm, resrelnorm, resPhasor and h. A converged
+%   iterate is returned at the target; other exits return the best residual.
+%   trace contains status/statusMsg, h_history, res_history, resrel_history,
+%   time_history, regime_history, s_alg_history and s_exp_history, together
+%   with hForTargetResidual and targetResidual. The order estimate is an
+%   extrapolation, not an accuracy guarantee.
+%   Status: 0=converged, 1=stagnated, 2=maxh reached, 4=unreachable algebraic
+%   target. Fixed-order status 3 is handled by callers outside this driver.
 %
-%       s_exp = [log(e2) - log(e1)] / (h2 - h1)
-%       s_alg = [log(e2) - log(e1)] / [log(h2) - log(h1)]
-%
-%   and extrapolated to the target residual to give a candidate next order:
-%
-%       h_exp = h2 + [log(thr) - log(e2)] / s_exp
-%       h_alg = h2 * (thr / e2)^(1/s_alg)
-%
-%   An algebraic regime is declared for -1.5 < s_alg < -0.1 (slow decay,
-%   trust the power law); otherwise an exponential regime for s_exp < -1e-4.
-%   Failing both, the step falls back to +1. The jump is damped by 0.8 and
-%   clamped to [1, min(50, ceil(h/2))] so a single extrapolation cannot
-%   overshoot into an intractable problem size. Below h = 1.1*hOp the asymptotic
-%   regime has not started and stepping is +1 — unless cfg.maxUnitSteps of them
-%   have gone by, which a wide operator with a narrow solution would otherwise
-%   never escape.
-%
-%   INPUTS
-%     solveAtH - Function handle, @(h) -> [sol, resnorm, resrelnorm, resPhasor].
-%                Closes over the caller's operands. Called once per order.
-%     h0       - Initial harmonic order (non-negative integer).
-%     cfg      - Configuration struct with fields:
-%                  .thresholdResidual  Target relative residual. The callback
-%                                      owns the normalisation; every solver
-%                                      here divides by the right-hand side,
-%                                      never by the solution. See the note on
-%                                      what it costs, below.
-%                  .maxh               Upper bound on h; [] = max(h0*20, h0+20).
-%                  .stagnationWindow   Look-back length for stagnation detection,
-%                                      which watches the residual and aborts.
-%                                      Unrelated to maxUnitSteps below, which
-%                                      watches the stepper and pushes on.
-%                  .stagnationRatio    Min relative improvement over that window.
-%                  .updateMethod       'adaptive' or 'incremental'.
-%                  .verbose            Print the iteration table.
-%                  .hOp                Spectral width of the harmonic operator.
-%                  .maxUnitSteps       Unit steps tolerated before extrapolation
-%                                      is forced despite the hOp gate. Default 5.
-%                  .hOutFcn            @(h) -> equation order, for the table.
-%                  .preamble           Text printed above the table (verbose).
-%                  .label              Order name used in messages, e.g. "h".
-%
-%   OUTPUTS
-%     best  - Struct with the best iterate found:
-%               .sol .resnorm .resrelnorm .resPhasor .h
-%     trace - Struct with the diagnostics the callers publish:
-%               .status     0=converged, 1=stagnated, 2=maxh reached,
-%                           4=algebraic convergence unreachable
-%               .statusMsg  Human-readable exit message
-%               .h_history .resrel_history .res_history .time_history
-%               .regime_history .s_alg_history .s_exp_history
-%               .hForTargetResidual  Order that would reach .targetResidual
-%                           (1e-12 unless cfg.targetResidual says otherwise),
-%                           extrapolated from the last two samples. NaN when
-%                           there is nothing to fit, Inf when the fit blows up:
-%                           it is an indication, not a guarantee. Measured
-%                           against reality it lands within one order on smooth
-%                           problems and was exact on a slowly decaying one
-%                           (85 predicted from a loose solve, 85 needed).
-%               .targetResidual      The target it was computed for.
-%
-%   Status 3 (fixed h) is never produced here — callers handle the fixed-h path
-%   themselves and do not enter this driver.
-%
-%   WHAT THE THRESHOLD COSTS
-%   It does not buy accuracy alone: it decides where to stop on the accuracy /
-%   order curve, and the order is the size of the answer. How much that costs
-%   depends entirely on how fast the solution's spectrum decays.
-%
-%   Geometric decay — a smooth periodic solution — is cheap. On a 2x2 Lyapunov
-%   problem, ten orders of residual cost a factor of three in h and nothing
-%   measurable in time:
-%
-%       threshold    5e-4   1e-6   1e-8   1e-10   1e-12   1e-14
-%       h (mild)        2      4      5       6       7       8
-%       h (stiff)       6     10     12      14      16      18
-%
-%   Slow decay is not. Dividing by 1 + 0.95*cos(t), whose reciprocal has a wide
-%   spectrum, the same tightening takes h from 5 to 99.
-%
-%   There is no need to guess which case you are in: one solve at a tight
-%   threshold returns the whole curve in trace.h_history against
-%   trace.resrel_history, and the operating point can be read off it.
-%
-%   EXAMPLES
-%     solve = @(hh) solveMyEquation(A, B, hh);
-%     cfg   = struct('thresholdResidual', 1e-8, 'maxh', 40, ...
-%                    'stagnationWindow', 5, 'stagnationRatio', 0.05, ...
-%                    'updateMethod', 'adaptive', 'verbose', true, ...
-%                    'hOp', A.h + B.h, 'hOutFcn', @(hh) hh, ...
-%                    'preamble', "", 'label', "h");
-%     [best, trace] = adaptiveHSolve(solve, 4, cfg);
-%
-%   See also: PhasorArray/lyap, PhasorArray/lyapG, PhasorArray/mlHmcDivide,
-%             PhasorArray/mrHmcDivide, PhasorArray/place, warnIfNotConverged
+%   See also PhasorArray/lyap, PhasorArray/lyapG, PhasorArray/mlHmcDivide,
+%            PhasorArray/mrHmcDivide, PhasorArray/place.
 
 arguments
     solveAtH (1,1) function_handle
@@ -191,9 +114,7 @@ while status == -1 && h < maxh
     %% --- Adaptive step selection ---
     regime = 'initial';
 
-    % The 1.1*hOp gate assumes convergence well above hOp. A wide operator with
-    % a narrow solution never opens it and the loop crawls at +1, so it also
-    % opens after maxUnitSteps unit steps; the jump stays damped and clamped.
+    % Forced extrapolation controls step size, independently of stopping guards.
     forceExtrapolation = nIter - 1 >= cfg.maxUnitSteps && ...
             all(strcmp(regime_history(max(1,nIter-cfg.maxUnitSteps+1):nIter), 'initial'));
 
@@ -239,15 +160,9 @@ while status == -1 && h < maxh
             deltah = min(deltah, ceil(h * 0.5));
             h      = min(h2 + deltah, maxh);
 
-            % Algebraic early exit: the extrapolated target lies beyond maxh.
-            % Two consecutive hits are not enough on their own. A geometric decay
-            % looks algebraic at first: on 1/(1+0.95cos) the slope between h=3 and
-            % h=5 reads -0.91, squarely inside the algebraic band, and predicts a
-            % target of 1e15 -- while the residual actually reaches 1e-15 at
-            % h=160. The loop has to climb far enough for the true regime to show
-            % (there the slope is -18.7, well outside the band), so the exit also
-            % waits for h to have quadrupled since the streak began.
-            if strcmp(regime, 'algebraic') && h_alg > maxh
+            % Require two consecutive post-band fits and a fourfold order
+            % increase before declaring an algebraic target unreachable.
+            if strcmp(regime, 'algebraic') && h_alg > maxh && h2 >= 1.1*hOp
                 algebraic_hit_count = algebraic_hit_count + 1;
                 if algebraic_hit_count == 1
                     algebraic_streak_h0 = h2;
@@ -312,8 +227,9 @@ while status == -1 && h < maxh
         break
     end
 
-    % Stagnation: too little improvement across the look-back window.
-    if nIter >= stagnationWindow
+    % Test stagnation only after the full window resolves the operator band.
+    if nIter >= stagnationWindow && ...
+            h_history(nIter - stagnationWindow + 1) >= 1.1*hOp
         window     = resrel_history(nIter - stagnationWindow + 1 : nIter);
         rel_improv = (window(1) - min(window)) / (window(1) + eps);
         if rel_improv < stagnationRatio

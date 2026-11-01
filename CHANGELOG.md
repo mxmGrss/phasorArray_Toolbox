@@ -8,6 +8,71 @@ the reasoning is kept inline rather than in a separate decision record.
 
 ## [Unreleased]
 
+### Added
+- Compact paper-data examples for Riedinger--Daafouz (Lyapunov, Riccati,
+  pole placement) and Vernerey--Riedinger--Daafouz (LQR, H-infinity), under
+  `Exemples/Papers`, aligned with the corrected manuscripts of 12–16 October 2026.
+  Gram examples validate numerical certificates separately from SDP status.
+- Single-phase Blin rectifier equilibrium/startup example, and a
+  variable-frequency PMSM model with explicit Park and cost conventions
+  (model construction only; reproduction scope is documented with the examples).
+- `gramConstraint` imposes `M(t) >= margin*I` for all t exactly, by a Gram
+  certificate (matrix Fejer-Riesz), with no section order: TBLMI paper,
+  corrected version, Theorem 8 and Proposition 3; Dumitrescu, *Positive
+  Trigonometric Polynomials and Signal Processing Applications*, 2017,
+  pp. 47-49 (`basis="real"` halves the cone). `checkGramCertificate` validates a numerical
+  solution a posteriori (Proposition 4). A finite section `T_tb(M,r) >= 0` is only a necessary
+  condition; prefer `gramConstraint` for periodic LMIs. Requires YALMIP.
+- `certifyHare` certifies a harmonic Riccati candidate a posteriori (step 2 of
+  Algorithm 1 in the corrected Riedinger-Daafouz Lyapunov/Riccati paper):
+  two least-squares Lyapunov solves of the closed loop give the majorants
+  beta and delta, and `theta = 4*beta*s*delta < 1` bounds `sup_t |P - P+|`.
+  Stability is established by `W > 0` and `rW < 1` instead of the monodromy
+  test of the paper, which is unreliable on stiff systems. `hare(...,certify=true)`
+  stores the report in `info.certificate`; Kleinman itself is unchanged.
+
+### Changed
+- The Riccati LMI template imposes its Schur-form inequality and P >= 0 by
+  Gram certificates on the symbols; its optimum now matches `hare`. The other
+  LMI templates state that their finite-section constraints are necessary
+  conditions only.
+- Harmonic Sylvester systems are assembled directly from sparse coefficient
+  shifts, avoiding dense intermediate Toeplitz matrices and repeated sparse
+  block insertion. Left/right operators are built only when requested;
+  solution and diagnostic output ordering is preserved.
+
+### Fixed
+- `place` bounds the minimum singular value between grid points and refines
+  inconclusive checks; `maxCheckPoints` limits the cost. A sampled positive
+  minimum alone no longer accepts a singular periodic change of coordinates.
+- The iterative observer uses the forward Riccati direction. The direct
+  Lyapunov/BRL examples use +dP/dt. The Gram Riccati template independently
+  certifies its candidate before extracting a gain.
+- Wiki examples match the current API and AC/DC source; installation explicitly
+  selects dev for unreleased APIs. Basic and adapted ECC examples generate
+  triangle/square waves without Signal Processing Toolbox.
+- `A'` and `pagectranspose(A)` conjugate the coefficients of a YALMIP payload.
+  MATLAB's `pagectranspose` drops the conjugation on an `ndsdpvar`, so `X'`
+  of an optimisation variable with complex coefficients (e.g. `P*B` in a
+  Schur-form LMI) silently returned `X(-t).'` instead of `X(t)'`. Numeric and
+  symbolic payloads were not affected.
+- `place` tests the invertibility of P on its symbol, `min_t sigma_min(P(t))`,
+  instead of the eigenvalues of a finite section, which do not decide it
+  (pole placement paper, corrected, Theorems 3 and 7). `poles` may also be a
+  constant n x n closed-loop matrix, e.g. `-J - alpha*I` from a Floquet
+  factorization (Theorem 5).
+- Kleinman returns the gain associated with the returned Riccati iterate on
+  convergence and frozen exits. Scalar diagnostics now describe the returned
+  best iterate on stagnation or iteration-limit exits; histories retain all steps.
+- Square harmonic Sylvester systems use the nonconjugating transpose for
+  right multiplication, including genuinely complex-valued temporal data.
+- Adaptive harmonic solvers test stagnation only after the whole residual
+  window resolves the operator bandwidth. Inner Lyapunov solves in Kleinman
+  no longer stop on a plateau below that bandwidth. Algebraic unreachable-target
+  detection also requires post-band samples, even during forced extrapolation.
+- Kleinman status 1 is reported as a frozen iterate without residual
+  convergence; it does not certify the residual target or Floquet stability.
+
 ## [v2.0.0] - 2026-09-25
 
 ### Fixed
