@@ -9,6 +9,13 @@ the reasoning is kept inline rather than in a separate decision record.
 ## [Unreleased]
 
 ### Added
+- `pLMI` collects periodic matrix inequalities written as `A >= B` or
+  `A <= B` between PhasorArray operands holding YALMIP variables, compiles
+  them by Gram certificates (`gram`, hermitian or real Gram form) or by finite
+  sections (`section`, necessary only), and validates the solution with
+  `check`. `pLMI.lyapunov` and `pLMI.riccati` build the standard periodic
+  Lyapunov and Riccati inequalities. Strict comparisons with decision
+  variables now raise `pLMI:strictInequality`. Requires YALMIP.
 - Compact paper-data examples for Riedinger--Daafouz (Lyapunov, Riccati,
   pole placement) and Vernerey--Riedinger--Daafouz (LQR, H-infinity), under
   `Exemples/Papers`, aligned with the corrected manuscripts of 12–16 October 2026.

@@ -1994,24 +1994,46 @@ classdef PhasorArray  < matlab.mixin.indexing.RedefinesParen & matlab.mixin.inde
         %   fraction of the period over which it holds, CRENEL the indicator
         %   over theta, CPH the same as a PhasorArray. A < B takes R alone.
         %   See also gt, le, ge, eq, compareInTime.
+        if pLMI.hasDecisionPayload(pA1,pA2)
+            error('pLMI:strictInequality','Use <= or >= with an explicit margin.');
+        end
         [r, frac, crenel, Cph] = compareInTime(pA1, pA2, @lt);
     end
     function [r, frac, crenel, Cph] = gt(pA1,pA2)
         %GT  A > B, meaning A_ij(t) > B_ij(t) for every t. Returns [n x m].
         %   Extra outputs as in LT.
         %   See also lt, le, ge, eq, compareInTime.
+        if pLMI.hasDecisionPayload(pA1,pA2)
+            error('pLMI:strictInequality','Use <= or >= with an explicit margin.');
+        end
         [r, frac, crenel, Cph] = compareInTime(pA1, pA2, @gt);
     end
     function [r, frac, crenel, Cph] = le(pA1,pA2)
         %LE  A <= B, meaning A_ij(t) <= B_ij(t) for every t. Returns [n x m].
-        %   Extra outputs as in LT.
+        %   Extra outputs as in LT. With YALMIP decision variables, returns the
+        %   matrix inequality B(t) - A(t) >= 0 as a pLMI.
         %   See also lt, gt, ge, eq, compareInTime.
+        if pLMI.hasDecisionPayload(pA1,pA2)
+            if nargout > 1
+                error('pLMI:outputs','Symbolic comparisons return one pLMI object.');
+            end
+            r = pLMI.fromComparison(pA1,pA2,"le");
+            return
+        end
         [r, frac, crenel, Cph] = compareInTime(pA1, pA2, @le);
     end
     function [r, frac, crenel, Cph] = ge(pA1,pA2)
         %GE  A >= B, meaning A_ij(t) >= B_ij(t) for every t. Returns [n x m].
-        %   Extra outputs as in LT.
+        %   Extra outputs as in LT. With YALMIP decision variables, returns the
+        %   matrix inequality A(t) - B(t) >= 0 as a pLMI.
         %   See also lt, gt, le, eq, compareInTime.
+        if pLMI.hasDecisionPayload(pA1,pA2)
+            if nargout > 1
+                error('pLMI:outputs','Symbolic comparisons return one pLMI object.');
+            end
+            r = pLMI.fromComparison(pA1,pA2,"ge");
+            return
+        end
         [r, frac, crenel, Cph] = compareInTime(pA1, pA2, @ge);
     end
     function r = abs(pA1, nvp)

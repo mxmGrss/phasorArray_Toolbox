@@ -707,7 +707,7 @@ classdef PhasorArrayCoreTest < matlab.unittest.TestCase
 
             testCase.verifyError(@() abs(P),   'PhasorArray:abs:unsolvedVariable');
             testCase.verifyError(@() P == D,   'PhasorArray:eq:decisionVariable');
-            testCase.verifyError(@() P < D,    'PhasorArray:compare:symbolicPayload');
+            testCase.verifyError(@() P < D,    'pLMI:strictInequality');
             testCase.verifyError(@() mrdivide(D, P), ...
                 'PhasorArray:mrHmcDivide:unsolvedVariable');
 
