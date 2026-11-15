@@ -1595,11 +1595,11 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
 
 
                 if ~isempty(T)
-                    N = N_tb(A,h,T);
+                    N = N_tb(size(A,1),h,T);
 
                     toeplitzSS = ss(ATB-N,BTB,CTB,DTB,'StateName',hmqStateName,'InputName',hmqInputName,'OutputName',hmqOutputName);
                 else
-                    toeplitzSS = @(T) ss(ATB-N_tb(A,h,T),BTB,CTB,DTB,'StateName',hmqStateName,'InputName',hmqInputName,'OutputName',hmqOutputName);
+                    toeplitzSS = @(T) ss(ATB-N_tb(size(A,1),h,T),BTB,CTB,DTB,'StateName',hmqStateName,'InputName',hmqInputName,'OutputName',hmqOutputName);
                 end
 
         end

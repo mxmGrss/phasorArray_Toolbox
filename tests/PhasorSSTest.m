@@ -242,5 +242,14 @@ classdef PhasorSSTest < matlab.unittest.TestCase
             testCase.verifyEqual(De, evalp(D, 0.7), 'AbsTol', testCase.tol);
         end
 
+        function testToeplitzSSOnASingleStateSystem(testCase)
+            % N_tb reads a scalar first argument as the number of states; a
+            % 1x1 PhasorArray A used to be passed whole and broke the
+            % subtraction ATB - N.
+            P = PhasorSS(PhasorArray(-2),1,1,0,2*pi);
+            s = P.toeplitzSS(2,2*pi);
+            testCase.verifyEqual(s.A, diag(-2 - 1i*(-2:2)), 'AbsTol', 1e-12);
+        end
+
     end
 end
