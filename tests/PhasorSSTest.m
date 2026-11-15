@@ -251,5 +251,154 @@ classdef PhasorSSTest < matlab.unittest.TestCase
             testCase.verifyEqual(s.A, diag(-2 - 1i*(-2:2)), 'AbsTol', 1e-12);
         end
 
+        % ---- frequency-affine systems: M = M0(theta) + omega*M1(theta) ----
+
+        function testAffineCellFormsAndZeroSlots(testCase)
+            [A0,A1,B,C] = affineFixture();
+            P = PhasorSS({A0,A1},B,C,0,1);
+            testCase.verifyTrue(P.isFreqAffine);
+            testCase.verifyEqual(value(P.A1), value(A1));
+            testCase.verifyEmpty(P.B1, 'a plain B has no omega part');
+
+            Q = PhasorSS({0,A1},{B,2*B},C,{0,[0.5]},1);
+            testCase.verifyEqual(value(Q.A), zeros(2), '{0,A1} must give A0 = 0');
+            testCase.verifyEqual(value(Q.B1), 2*value(B));
+            testCase.verifyEqual(value(Q.D1), 0.5);
+
+            R = PhasorSS({A0,0},B,C,0,1);
+            testCase.verifyFalse(R.isFreqAffine, '{A0,0} carries no omega part');
+        end
+
+        function testPlainCallIsUnchanged(testCase)
+            [A0,~,B,C] = affineFixture();
+            P = PhasorSS(A0,B,C,0,1);
+            testCase.verifyFalse(P.isFreqAffine);
+            testCase.verifyEmpty(P.A1); testCase.verifyEmpty(P.B1);
+            testCase.verifyEmpty(P.C1); testCase.verifyEmpty(P.D1);
+            testCase.verifyEmpty(P.omega);
+            testCase.verifyEqual(value(P.A), value(A0));
+            pl = PhasorSS(A0,B,C,0,[],'p',@(t,x,u) t);
+            pf = pl.paramFcn();
+            testCase.verifyEqual(pf(2,[0;0],0), 2, 'a plain LPV system keeps the scalar parameter p');
+        end
+
+        function testAffineSizeErrors(testCase)
+            [A0,~,B,C] = affineFixture();
+            testCase.verifyError(@() PhasorSS({A0,PhasorArray(eye(3))},B,C,0,1), 'PhasorSS:constructor:dimensionMismatch');
+            testCase.verifyError(@() PhasorSS({A0,A0,A0},B,C,0,1), 'PhasorSS:constructor:invalidAffineCell');
+            P = PhasorSS({A0,A0},B,C,0,1);
+            testCase.verifyError(@() P.setA(eye(3)), 'PhasorSS:dimensionMismatch');
+            P2 = P.setA(2*A0);
+            testCase.verifyEqual(value(P2.A1), value(A0), 'setA with a plain matrix keeps A1');
+            P3 = P.setA({A0,0});
+            testCase.verifyFalse(P3.isFreqAffine, 'setA with a cell sets both parts');
+        end
+
+        function testEvalAngleAddsOmegaPart(testCase)
+            [A0,A1,B,C] = affineFixture();
+            B1 = PhasorArray(cat(3,[0.2;0],[0;0.1i]),"isreal",true);
+            P = PhasorSS({A0,A1},{B,B1},C,0,1);
+            for theta = [0 0.7 2.1]
+                [Ae,Be,Ce,De] = P.evalAngle(theta,1.7);
+                testCase.verifyEqual(Ae, evalp(A0,theta)+1.7*evalp(A1,theta), 'AbsTol', testCase.tol);
+                testCase.verifyEqual(Be, evalp(B,theta)+1.7*evalp(B1,theta), 'AbsTol', testCase.tol);
+                testCase.verifyEqual(Ce, evalp(C,theta), 'AbsTol', testCase.tol);
+                testCase.verifyEqual(De, 0, 'AbsTol', testCase.tol);
+            end
+            testCase.verifyError(@() P.evalAngle(0.7), 'PhasorSS:omegaUndefined');
+        end
+
+        function testHarmonicOperatorIsAffineInOmega(testCase)
+            % Scalar LTI pieces a, b: the harmonic state operator at pulsation w
+            % is diag(a + w*b - 1i*w*k), k = -h..h. Reference built by hand.
+            a = -2; b = 0.5; h = 3; w = 4;
+            P = PhasorSS({a,b},1,1,0,2*pi/w);
+            [A0,Aw] = P.toeplitzAffine(h);
+            expected = diag(a + w*b - 1i*w*(-h:h));
+            testCase.verifyEqual(A0 + w*Aw, expected, 'AbsTol', 1e-12);
+            S = P.toeplitzSS(h,2*pi/w);
+            testCase.verifyEqual(S.A, expected, 'AbsTol', 1e-12, 'toeplitzSS freezes omega at 2*pi/T');
+            Sf = P.toeplitzSS(h);
+            testCase.verifyEqual(Sf(2*pi/w).A, expected, 'AbsTol', 1e-12);
+        end
+
+        function testLsimExogenousFrequencyMatchesOde45(testCase)
+            [A0,A1,B,C] = affineFixture();
+            th = @(t) t + 0.25*t.^2;  om = @(t) 1 + 0.5*t;
+            P = PhasorSS({A0,A1},B,C,0,[],'p',@(t,x,u) th(t),'omega',@(t,x,u) om(t));
+            t = (0:1e-3:4)'; u = sin(3*t);
+            [~,~,x] = lsim(P,t,u,[1;0]);
+            Bv = value(B);
+            f = @(tt,xx) (evalp(A0,th(tt)) + om(tt)*evalp(A1,th(tt)))*xx + Bv*sin(3*tt);
+            [~,xr] = ode45(f,t,[1;0],odeset('RelTol',1e-10,'AbsTol',1e-12));
+            testCase.verifyLessThan(max(abs(x-xr),[],'all'), 1e-5);
+        end
+
+        function testLsimEndogenousPmsmAugmentedModel(testCase)
+            % PMSM in the alpha-beta frame, with the phase-weighted integrators
+            % of the speed and d-current errors: dz = omega*C(theta)*x. With
+            % theta as last state and omega = x(3), A0 = [A,0,0;0,0,0;q,0,0]
+            % and A1 = [0,0,0;C,0,0;0,0,0].
+            [A,Bu,C] = pmsmFixture();
+            nx = 3; nz = size(C,1);
+            q = [0 0 1];
+            A0 = [A, PhasorArray(zeros(nx,nz+1)); PhasorArray(zeros(nz,nx+nz+1)); PhasorArray([q zeros(1,nz+1)])];
+            A1 = [PhasorArray(zeros(nx,nx+nz+1)); C, PhasorArray(zeros(nz,nz+1)); PhasorArray(zeros(1,nx+nz+1))];
+            B0 = [Bu; PhasorArray(zeros(nz+1,2))];
+            P = PhasorSS({A0,A1},B0,[],0,[],'p',nx+nz+1,'omega',3);
+            t = (0:2e-6:0.01)'; u = repmat([2 1],numel(t),1);
+            x0 = [0;0;5;zeros(nz,1);0.3];
+            [~,~,x] = lsim(P,t,u,x0);
+            Bv = value(Bu);
+            f = @(tt,s) [evalp(A,s(end))*s(1:nx) + Bv*[2;1]; s(3)*(evalp(C,s(end))*s(1:nx)); s(3)];
+            [~,xr] = ode45(f,t,x0,odeset('RelTol',1e-10,'AbsTol',1e-12));
+            err = max(abs(x-xr),[],1)./max(max(abs(xr),[],1),1e-3);
+            testCase.verifyLessThan(max(err), 1e-3);
+        end
+
+        function testInterconnectionsRefuseOmegaSquared(testCase)
+            [A0,A1,B,C] = affineFixture();
+            P = PhasorSS({A0,A1},B,C,0,1);
+            Q = PhasorSS(A0,B,C,0,1);
+            testCase.verifyError(@() P*P, 'PhasorSS:omegaSquared');
+            testCase.verifyError(@() feedback(P,P), 'PhasorSS:omegaSquared');
+            testCase.verifyError(@() P*Q, 'PhasorSS:freqAffineUnsupported');
+            testCase.verifyError(@() feedback(P,1), 'PhasorSS:freqAffineUnsupported');
+            testCase.verifyError(@() expandBase(P,2), 'PhasorSS:freqAffineUnsupported');
+            Pf = P.atOmega(2);
+            testCase.verifyFalse(Pf.isFreqAffine);
+            testCase.verifyEqual(value(Pf.A), value(A0 + 2*A1), 'AbsTol', testCase.tol);
+        end
+
+        function testIndexingAndAddOutputKeepOmegaParts(testCase)
+            [A0,A1,B,C] = affineFixture();
+            P = PhasorSS({A0,A1},{[B B],[B 0*B]},{[C;C],[C;0*C]},0,1);
+            S = P(2,1);
+            testCase.verifyEqual(value(S.C1), zeros(1,2));
+            testCase.verifyEqual(value(S.B1), value(B));
+            P2 = P.addOutput([1 1],[0 0]);
+            testCase.verifyEqual(P2.C1(3,:), [0 0], 'a new output has no omega part');
+            testCase.verifyEmpty(P2.D1, 'D was given without omega part');
+        end
+
     end
+end
+
+function [A0,A1,B,C] = affineFixture()
+    A0 = PhasorArray(cat(3,[-1 0.2;0 -2],[0.1+0.05i 0;0.2i 0.1]),"isreal",true);
+    A1 = PhasorArray(cat(3,[0 0;0.3 0],[0 0.1;0.05 0]),"isreal",true);
+    B = PhasorArray([0;1]);
+    C = PhasorArray([1 0]);
+end
+
+function [A,Bu,C] = pmsmFixture()
+    r = 0.5; L = 1.5e-3; psi = 0.14; J = 0.03; Bf = 0.02; p = 4;
+    Phi = [PhasorArray.sin(0,p); PhasorArray.sin(-2*pi/3,p); PhasorArray.sin(2*pi/3,p)];
+    A = [-r/L*eye(3), p*psi/L*Phi; -p*psi/J*Phi', -Bf/J];
+    Bu = PhasorArray([eye(3)/L; zeros(1,3)]);
+    Tp = PhasorArray.Park(0,p,false);
+    C = [zeros(1,3),1; Tp{1,:},0];
+    Tu = sqrt(2/3)*[1 -1/2 -1/2; 0 sqrt(3)/2 -sqrt(3)/2];
+    Tx = blkdiag(Tu,1);
+    A = Tx*A*Tx'; Bu = Tx*Bu*Tu'; C = C*Tx';
 end

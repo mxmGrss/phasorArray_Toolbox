@@ -37,6 +37,23 @@ the reasoning is kept inline rather than in a separate decision record.
   Stability is established by `W > 0` and `rW < 1` instead of the monodromy
   test of the paper, which is unreliable on stiff systems. `hare(...,certify=true)`
   stores the report in `info.certificate`; Kleinman itself is unchanged.
+- `PhasorSS` handles systems affine in the pulsation,
+  `M(theta,omega) = M0(theta) + omega*M1(theta)` with `omega = dtheta/dt`.
+  Each of A, B, C, D may be passed as `{M0, M1}`; a plain matrix is `M0`, and
+  a scalar 0 in a slot is a zero matrix of the size of the other (`{0, M1}`
+  is purely linear in omega). The parts are stored in `A1`..`D1`
+  (`isFreqAffine`). In LTV mode omega is `2*pi/T`; in LPV mode it is set by
+  the `omega` option or `setLPV(p,omega)` (state index or `@(t,x,u)`),
+  which covers endogenous and exogenous frequencies. `lsim`, `step`,
+  `initial`, `impulse` and `stepu` simulate it through an `lpvss` with
+  parameters `[phase; omega]` (SinCos coefficients computed once).
+  `toeplitzSS` freezes omega at `2*pi/T`; `toeplitzAffine` returns the
+  harmonic operators with `A0 + omega*(T(A1) - N)`; `atOmega` and
+  `evalAngle(theta,omega)` evaluate the frozen system. `mtimes`, `feedback`
+  and `lft` of two affine systems raise `PhasorSS:omegaSquared`; the other
+  operations that would drop `M1` (`mtimes`, `feedback` and `lft` with one
+  affine operand, `expandBase`, `plot`, `stem`) raise
+  `PhasorSS:freqAffineUnsupported`. Plain calls are unchanged.
 
 ### Changed
 - The Riccati LMI template imposes its Schur-form inequality and P >= 0 by
@@ -49,6 +66,8 @@ the reasoning is kept inline rather than in a separate decision record.
   solution and diagnostic output ordering is preserved.
 
 ### Fixed
+- `PhasorSS.toeplitzSS` failed on a single-state system: the 1x1 A was
+  passed to `N_tb` as if it were the number of states.
 - `place` bounds the minimum singular value between grid points and refines
   inconclusive checks; `maxCheckPoints` limits the cost. A sampled positive
   minimum alone no longer accepts a singular periodic change of coordinates.

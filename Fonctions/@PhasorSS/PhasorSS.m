@@ -93,13 +93,13 @@
 %   C = [1 0];
 %   D = 0;
 %   T = 0.1;
-%   Pss = PhasorSS(A, B, C, D, T, 'isReal', true); 
+%   Pss = PhasorSS(A, B, C, D, T, 'isReal', true);
 %   % Pss is a periodic real-valued state-space system with period 0.1 (A is a PhasorArray that define a cos for its (1,1) element)
 %
 %   % Set the LPV parameter for the phase
 %   p = @(t,x,u) x(2); % LPV parameter for the phase
-%   Pss = Pss.setLPV(p); 
-%   % Pss is a "periodic" real-valued LPV state-space system where 
+%   Pss = Pss.setLPV(p);
+%   % Pss is a "periodic" real-valued LPV state-space system where
 %   % periodic matrix are computed according to the angle defined by the LPV parameter p,
 %   % here the phase is the second state, T is not used anymore.
 %
@@ -108,6 +108,19 @@
 %   [y, tOut, x] = Pss.step(t);
 %   % Plot the output response
 %   plot(tOut, y);
+%
+% Frequency-affine systems:
+%   Each of A, B, C, D may be given as a 2-cell {M0, M1}, meaning
+%       M(theta, omega) = M0(theta) + omega*M1(theta),
+%   with omega = dtheta/dt. A plain matrix is M0 (M1 = 0); a scalar 0 in
+%   either slot stands for a zero matrix of the size of the other slot, so
+%   {0, M1} is purely linear in omega. omega is 2*pi/T in LTV mode; in LPV
+%   mode it is given by the 'omega' option (state index or @(t,x,u)).
+%
+%   A1 = PhasorArray(cat(3,[0 0;1 0],[0 0;0.2 0]),"isreal",true);
+%   Paff = PhasorSS({A,A1}, B, C, D, T);        % omega = 2*pi/T
+%   Pexo = PhasorSS({A,A1}, B, C, D, [], 'p', @(t,x,u) t + 0.25*t^2, ...
+%                   'omega', @(t,x,u) 1 + 0.5*t); % exogenous theta(t), omega(t)
 %
 % See also: PhasorArray
 
@@ -122,6 +135,14 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
         D % Feedthrough matrix (PhasorArray)
         p % LPV parameter for phase used for periodicity
         isLPV % Logical flag indicating if the system is LPV or LTV
+        A1 % Part of A proportional to omega (PhasorArray, empty when zero)
+        B1 % Part of B proportional to omega (PhasorArray, empty when zero)
+        C1 % Part of C proportional to omega (PhasorArray, empty when zero)
+        D1 % Part of D proportional to omega (PhasorArray, empty when zero)
+        omega % Pulsation dtheta/dt in LPV mode, @(t,x,u) (empty: not set)
+    end
+    properties (Dependent)
+        isFreqAffine % True when one of A1, B1, C1, D1 is set
     end
     properties (SetAccess = public )
         T % Period of the system if set to LTV
@@ -171,6 +192,12 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             %           Notes - Cell array of notes (default is empty)
             %           UserData - User-defined data (default is empty struct)
             %           p - LPV parameter for phase used for periodicity (default is empty)
+            %           omega - Pulsation dtheta/dt used by the omega-proportional parts
+            %                   in LPV mode: state index or @(t,x,u) (default is empty)
+            %
+            %   Each of A, B, C, D may be a 2-cell {M0, M1}: the matrix is then
+            %   M0(theta) + omega*M1(theta). A scalar 0 in a slot is a zero matrix
+            %   of the size of the other slot.
             %
             % Example:
             %   % Create a PhasorSS object with specified matrices
@@ -216,8 +243,14 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 nvp.Notes (1,:)  = {}
                 nvp.UserData = [];
                 nvp.p = []
+                nvp.omega = []
                 nvp.verbose (1,1) logical = false
             end
+
+            [A,Aw] = splitAffine(A,'A');
+            [B,Bw] = splitAffine(B,'B');
+            [C,Cw] = splitAffine(C,'C');
+            [D,Dw] = splitAffine(D,'D');
 
             if nargin == 1
                 if isa(A,'PhasorSS')
@@ -230,6 +263,8 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 end
                 D = A;
                 A = [];
+                Dw = Aw;
+                Aw = [];
             end
 
             if D == 0 ; D=[]; end %if D is 0, set it to empty matrix to avoid confusion
@@ -330,11 +365,15 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             obj.Name = nvp.Name;
             obj.Notes = cellstr(nvp.Notes);
             obj.UserData = nvp.UserData;
+            obj.A1 = sizedPart1(Aw, obj.A, 'A');
+            obj.B1 = sizedPart1(Bw, obj.B, 'B');
+            obj.C1 = sizedPart1(Cw, obj.C, 'C');
+            obj.D1 = sizedPart1(Dw, obj.D, 'D');
 
             obj = obj.checkIfReal(1e-12,nvp.verbose);
 
-            if ~isempty(nvp.p)	
-                obj = setLPV(obj,nvp.p);
+            if ~isempty(nvp.p)
+                obj = setLPV(obj,nvp.p,nvp.omega);
             else
                 if isempty(obj.T)
                     obj.T = 2*pi;
@@ -344,14 +383,17 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             end
         end
 
-        function obj = setLPV(obj,p)
+        function obj = setLPV(obj,p,omega)
             %SETLPV Set the LPV parameter of the PhasorSS object
             %   obj = SETLPV(obj,p) sets the LPV parameter of the PhasorSS object.
             %   If the parameter is empty, the system is set as an LTV system.
+            %   obj = SETLPV(obj,p,omega) also sets the pulsation omega = dtheta/dt
+            %   that multiplies A1, B1, C1, D1 in a frequency-affine system.
             %
             %   Inputs:
             %       obj - Instance of the PhasorSS class
             %       p - LPV parameter (can be a function or indices)
+            %       omega - Pulsation, @(t,x,u) or state index (default: keep the current one)
             %
             %   Outputs:
             %       obj - Updated instance of the PhasorSS class
@@ -361,13 +403,17 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             %       set the LPV phase parameter as the first input
             %
             %       obj = obj.setLPV(1);
-            %       set the LPV phase parameter as the first state     
+            %       set the LPV phase parameter as the first state
+            %
+            %       obj = obj.setLPV(4,3);
+            %       phase is the fourth state, omega the third one (endogenous frequency)
             %
             %   See also: SETLTV
 
             arguments
                 obj
                 p = []
+                omega = obj.omega
             end
             if isempty(p)
                 warning('PhasorSS:setLPV:emptyPFallback', 'LPV parameter p is empty; system treated as LTV.')
@@ -378,9 +424,82 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 ind = p;
                 p = @(t,x,u) x(ind);
             end
+            if isnumeric(omega) && ~isempty(omega)
+                indw = omega;
+                omega = @(t,x,u) x(indw);
+            end
             obj.p = p;
+            obj.omega = omega;
             checkp(obj);
             obj.isLPV = true;
+        end
+
+        function out = get.isFreqAffine(obj)
+            out = ~(isempty(obj.A1) && isempty(obj.B1) && isempty(obj.C1) && isempty(obj.D1));
+        end
+
+        function out = atOmega(obj,omega)
+            %ATOMEGA Freeze the pulsation of a frequency-affine PhasorSS
+            %   out = ATOMEGA(obj,omega) returns the PhasorSS with matrices
+            %   M0 + omega*M1, without omega-proportional part. Names, period
+            %   and phase parameter are kept.
+            %
+            %   See also: TOEPLITZSS, TOEPLITZAFFINE
+            arguments
+                obj
+                omega (1,1) double
+            end
+            out = obj;
+            names = {'A','B','C','D'};
+            for k = 1:4
+                M1 = obj.([names{k} '1']);
+                if ~isempty(M1)
+                    out.(names{k}) = obj.(names{k}) + omega*M1;
+                end
+                out.([names{k} '1']) = [];
+            end
+            out.omega = [];
+            out = out.checkIfReal();
+        end
+
+        function [A0,Aw,B0,Bw,C0,Cw,D0,Dw] = toeplitzAffine(obj,h)
+            %TOEPLITZAFFINE Harmonic operators of a frequency-affine PhasorSS
+            %   [A0,Aw,B0,Bw,C0,Cw,D0,Dw] = TOEPLITZAFFINE(obj,h) returns the
+            %   Toeplitz-block matrices, truncated at order h, such that the
+            %   harmonic model at pulsation omega reads
+            %       dX/dt = (A0 + omega*Aw) X + (B0 + omega*Bw) U
+            %       Y     = (C0 + omega*Cw) X + (D0 + omega*Dw) U
+            %   with M0 = T(obj.M), Mw = T(obj.M1), except Aw = T(obj.A1) - N,
+            %   N = diag(1i*k): the phase-derivative term -omega*N enters the
+            %   part proportional to omega. It also holds for a system without
+            %   M1 (Aw = -N, Bw = Cw = Dw = 0).
+            %
+            %   See also: TOEPLITZSS, ATOMEGA
+            arguments
+                obj
+                h (1,1) double {mustBeInteger,mustBeNonnegative} = max([obj.A.h,obj.B.h,obj.C.h,obj.D.h])
+            end
+            A0 = obj.A.T_tb(h);  B0 = obj.B.T_tb(h);
+            C0 = obj.C.T_tb(h);  D0 = obj.D.T_tb(h);
+            Aw = obj.partOmega("A").T_tb(h) - N_tb(size(obj.A,1),h,2*pi);
+            Bw = obj.partOmega("B").T_tb(h);
+            Cw = obj.partOmega("C").T_tb(h);
+            Dw = obj.partOmega("D").T_tb(h);
+        end
+
+        function M1 = partOmega(obj,name)
+            %PARTOMEGA Omega-proportional part of A, B, C or D, zero when not set
+            %   M1 = PARTOMEGA(obj,'A') returns obj.A1, or a zero PhasorArray of
+            %   the size of obj.A when the system has no such part.
+            arguments
+                obj
+                name (1,1) string {mustBeMember(name,["A","B","C","D"])}
+            end
+            M1 = obj.(name+"1");
+            if isempty(M1)
+                M0 = obj.(name);
+                M1 = PhasorArray(zeros(size(M0,1),size(M0,2)));
+            end
         end
         function checkp(obj)
             % CHECKP Check the validity of the function p
@@ -403,6 +522,17 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 end
             catch
                 error('PhasorSS:checkp:invalidPFunction', 'LPV parameter p must be a function handle @(t,x,u) returning a scalar.')
+            end
+            if ~isempty(obj.omega)
+                try
+                    wtest = obj.omega(0,zeros(size(obj.A,1),1),zeros(size(obj.B,2),1));
+                    ok = isscalar(wtest);
+                catch
+                    ok = false;
+                end
+                if ~ok
+                    error('PhasorSS:checkp:invalidOmegaFunction', 'omega must be a state index or a function handle @(t,x,u) returning a scalar.')
+                end
             end
         end
 
@@ -478,8 +608,10 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             [bReal] = isreal(obj.B,tol);
             [cReal] = isreal(obj.C,tol);
             [dReal] = isreal(obj.D,tol);
+            parts1 = {obj.A1,obj.B1,obj.C1,obj.D1};
+            part1Real = all(cellfun(@(M) isempty(M) || isreal(M,tol), parts1));
 
-            if aReal && bReal && cReal && dReal
+            if aReal && bReal && cReal && dReal && part1Real
                 obj.isReal = true;
                 if ~obj.isReal || verbose
                     warning('PhasorSS:appearsToBeReal', 'The PhasorSS object appears real (tolerance=%e). Set isReal=false to force complex-valued computation (longer simulation time).', tol)
@@ -535,6 +667,9 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             objo = objo.setB(mreal(obj.B));
             objo = objo.setC(mreal(obj.C));
             objo = objo.setD(mreal(obj.D));
+            for name = ["A1","B1","C1","D1"]
+                if ~isempty(obj.(name)), objo.(name) = mreal(obj.(name)); end
+            end
             objo = objo.checkIfReal();
         end
 
@@ -557,7 +692,9 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 realTol (1,1) double = 1e-12
             end
             %SETA Set the A matrix of the PhasorSS object and update the isReal property
+            [A,Aw,isCell] = splitAffine(A,'A');
             obj.A = PhasorArray(A);
+            obj.A1 = updatePart1(obj.A1,Aw,isCell,obj.A,'A');
             obj = obj.checkIfReal(realTol);
 
 
@@ -587,7 +724,9 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 nvp.InputGroup (1,:) struct = struct()
             end
             %SETB Set the B matrix of the PhasorSS object and update the isReal property
+            [B,Bw,isCell] = splitAffine(B,'B');
             obj.B = PhasorArray(B);
+            obj.B1 = updatePart1(obj.B1,Bw,isCell,obj.B,'B');
             obj = obj.checkIfReal(realTol);
 
             %auto update D if not provided in case number of input change
@@ -630,6 +769,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 nvp.OutputGroup (1,:) struct = struct()
             end
 
+            [C,Cw,isCell] = splitAffine(C,'C');
             if isempty(C)
                 C=eye(size(obj.A,1));
                 obj.OutputName = obj.StateName;
@@ -639,8 +779,10 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 obj.providedC = C;
             end
             obj.C = PhasorArray(C);
+            obj.C1 = updatePart1(obj.C1,Cw,isCell,obj.C,'C');
             if isempty(obj.providedD)
                 obj.D=PhasorArray(zeros(size(obj.C,1),size(obj.B,2)));
+                obj.D1 = updatePart1(obj.D1,[],false,obj.D,'D');
             end
             obj = obj.checkIfReal(realTol);
 
@@ -676,14 +818,17 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 realTol (1,1) double = 1e-12
             end
 
+            [D,Dw,isCell] = splitAffine(D,'D');
             if isempty(D)
                 obj.D=PhasorArray(zeros(size(obj.C,1),size(obj.B,2)));
+                obj.D1 = updatePart1(obj.D1,Dw,isCell,obj.D,'D');
                 obj.providedD = [];
                 obj = obj.checkIfReal(realTol);
                 return
             end
 
             obj.D = PhasorArray(D);
+            obj.D1 = updatePart1(obj.D1,Dw,isCell,obj.D,'D');
             obj = obj.checkIfReal(realTol);
             obj.providedD = D;
         end
@@ -776,6 +921,9 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
 
             obj.C = [obj.C;PhasorArray(newC)];
             obj.D = [obj.D;PhasorArray(newD)];
+            % the new outputs carry no omega-proportional part
+            if ~isempty(obj.C1), obj.C1 = [obj.C1;PhasorArray(zeros(size(newC,1),size(obj.C1,2)))]; end
+            if ~isempty(obj.D1), obj.D1 = [obj.D1;PhasorArray(zeros(size(newD,1),size(obj.D1,2)))]; end
 
             %update name and unit
             if isempty(nvp.OutputName)
@@ -845,6 +993,9 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
 
             obj.B = [obj.B PhasorArray(newB)];
             obj.D = [obj.D PhasorArray(newD)];
+            % the new inputs carry no omega-proportional part
+            if ~isempty(obj.B1), obj.B1 = [obj.B1 PhasorArray(zeros(size(obj.B1,1),size(newB,2)))]; end
+            if ~isempty(obj.D1), obj.D1 = [obj.D1 PhasorArray(zeros(size(obj.D1,1),size(newD,2)))]; end
 
             %update name and unit
             if isempty(nvp.InputName)
@@ -873,9 +1024,29 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             %       sys = obj.toLPVss();
             %       Convert the PhasorSS object to an LPV state-space system
             %
-            %   See also: TOLTVSS, TOSS
+            %   A frequency-affine system gives an lpvss with two parameters,
+            %   [phase; omega], scheduled by paramFcn(obj).
+            %
+            %   See also: TOLTVSS, TOSS, PARAMFCN
             if nargin <2
                 verbose = false;
+            end
+            if obj.isFreqAffine
+                obj.paramFcn();   % errors if omega is not defined
+                names = {'A','B','C','D'};
+                M0 = cell(1,4); M1 = cell(1,4);
+                for k = 1:4
+                    M0{k} = affineCoeffs(obj.(names{k}),obj.isReal);
+                    M1{k} = affineCoeffs(obj.([names{k} '1']),obj.isReal);
+                end
+                isRealSys = obj.isReal;
+                ltvFun = @(t,p) lpvFunAffine(t,p,M0,M1,isRealSys);
+                sys = lpvss(["phase","omega"],ltvFun, ...
+                    'StateName',obj.StateName,'StateUnit',obj.StateUnit, ...
+                    'InputName',obj.InputName,'InputUnit',obj.InputUnit,'InputGroup',obj.InputGroup, ...
+                    'OutputName',obj.OutputName,'OutputUnit',obj.OutputUnit,'OutputGroup',obj.OutputGroup, ...
+                    'Name',obj.Name,'Notes',obj.Notes,'UserData',obj.UserData);
+                return
             end
             if obj.isReal
                 if verbose; disp('Real valued LPP ss'); end
@@ -917,6 +1088,23 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 C=sincos2time(Ccs,p);
                 D=sincos2time(Dcs,p);
             end
+            function [A,B,C,D,E,dx0,x0,u0,y0,Delays] = lpvFunAffine(~,p,M0,M1,isRealSys)
+                %LPVFUNAFFINE LPV function of a frequency-affine system, p = [phase; omega]
+                E = [];
+                dx0 = [];
+                x0 = [];
+                u0 = [];
+                y0 = [];
+                Delays = [];
+                M = cell(1,4);
+                for kk = 1:4
+                    M{kk} = evalCoeffs(M0{kk},p(1),isRealSys);
+                    if ~isempty(M1{kk})
+                        M{kk} = M{kk} + p(2)*evalCoeffs(M1{kk},p(1),isRealSys);
+                    end
+                end
+                [A,B,C,D] = M{:};
+            end
             function [A,B,C,D,E,dx0,x0,u0,y0,Delays] = lpvFunP(~,p,A,B,C,D)
                 %LPVFUNP LPV function for the PhasorSS object in the PhasorForm
                 E = [];
@@ -955,6 +1143,11 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             end
             if nargin <2
                 verbose = false;
+            end
+            if obj.isFreqAffine
+                % constant pulsation 2*pi/T: the system is the plain LTP atOmega(2*pi/T)
+                sys = obj.atOmega(2*pi/obj.T).toLTVss(verbose);
+                return
             end
 
             if obj.isReal
@@ -1010,6 +1203,33 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
 
         end
 
+        function pf = paramFcn(obj)
+            %PARAMFCN Scheduling function passed to lsim/step/initial in LPV mode
+            %   pf = PARAMFCN(obj) returns obj.p, or @(t,x,u) [p(t,x,u); omega(t,x,u)]
+            %   for a frequency-affine system, matching the parameters of toLPVss.
+            p = obj.p;
+            if ~obj.isFreqAffine
+                pf = p;
+                return
+            end
+            if isempty(obj.omega)
+                error('PhasorSS:omegaUndefined', ['The system is affine in omega but omega is not defined. ' ...
+                    'Set it with setLPV(p,omega), omega being a state index or @(t,x,u).'])
+            end
+            w = obj.omega;
+            pf = @(t,x,u) [p(t,x,u); w(t,x,u)];
+        end
+
+        function p0 = initialParam(obj)
+            %INITIALPARAM Initial parameter value used by step, impulse and stepu
+            if obj.isFreqAffine
+                pf = obj.paramFcn();
+                p0 = pf(0,zeros(obj.nx,1),zeros(obj.nu,1));
+            else
+                p0 = 0;
+            end
+        end
+
         function sys = toSS(obj)
             %TOSS Convert the PhasorSS object to the appropriate ss object (wrapper for TOLPVSS and TOLTVSS)
             %   sys = TOSS(obj) converts the PhasorSS object to the appropriate state-space object in native matlab format.
@@ -1058,7 +1278,8 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             end
             sysltv = sys.toSS();
             if sys.isLPV
-                args = {sysltv,{x0,sys.p(0,x0,0)},t,sys.p};
+                pf = sys.paramFcn();
+                args = {sysltv,{x0,pf(0,x0,0)},t,pf};
             else
                 args = {sysltv,x0,t};
             end
@@ -1086,7 +1307,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             end
             sysltv = sys.toSS();
             if sys.isLPV
-                respOpt = RespConfig("InitialState",  'x0',"InitialParameter", 0);
+                respOpt = RespConfig("InitialState",  'x0',"InitialParameter", sys.initialParam());
                 %merge stepOpt with respOpt
                 if ~isempty(stepOpt)
                     fn = fieldnames(stepOpt);
@@ -1095,9 +1316,9 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                     end                    
                 end
                 if nargout > 0
-                    [y,tOut,x,~,pOut] = step(sysltv,t,sys.p,respOpt);
+                    [y,tOut,x,~,pOut] = step(sysltv,t,sys.paramFcn(),respOpt);
                 else
-                    step(sysltv,t,sys.p,respOpt);
+                    step(sysltv,t,sys.paramFcn(),respOpt);
                 end
             else
                 if nargout > 0
@@ -1131,12 +1352,12 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             end
             sysltv = sys.toSS();
             if sys.isLPV
-                respOpt = RespConfig( "InitialState",  'x0',"InitialParameter", 0);
+                respOpt = RespConfig( "InitialState",  'x0',"InitialParameter", sys.initialParam());
 
                 if nargout > 0
-                [yout,t,x] = impulse(sysltv,t,sys.p,respOpt);
+                [yout,t,x] = impulse(sysltv,t,sys.paramFcn(),respOpt);
                 else
-                impulse(sysltv,t,sys.p,respOpt)
+                impulse(sysltv,t,sys.paramFcn(),respOpt)
                 end
             else
                 if nargout > 0
@@ -1177,8 +1398,8 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             end
             
             if isa(u,"PhasorArray")
-                sys = sys.setB(sys.B*diag(u));
-                sys = sys.setD(sys.D*diag(u));
+                sys = sys.setB(scaleInputs(sys.B,sys.B1,diag(u)));
+                sys = sys.setD(scaleInputs(sys.D,sys.D1,diag(u)));
                 u = ones(size(u,1),numel(t));
             end
 
@@ -1186,14 +1407,14 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             sysltv = sys.toSS();
             if nargout == 0
                 if sys.isLPV
-                    lsim(sysltv,u,t,x0,sys.p)
+                    lsim(sysltv,u,t,x0,sys.paramFcn())
                 else
                     lsim(sysltv,u,t,x0)
                 end
                 return
             end
             if sys.isLPV
-                [y,tOut,x,pOut] = lsim(sysltv,u,t,x0,sys.p);
+                [y,tOut,x,pOut] = lsim(sysltv,u,t,x0,sys.paramFcn());
             else
                 [y,tOut,x] = lsim(sysltv,u,t,x0);
             end
@@ -1231,7 +1452,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             sysltv = sys.toSS();
 
             if sys.isLPV
-                h = lsimplot(sysltv,u,t,x0,sys.p,plotoptions);
+                h = lsimplot(sysltv,u,t,x0,sys.paramFcn(),plotoptions);
             else
                 h = lsimplot(sysltv,u,t,x0,plotoptions);
             end
@@ -1269,7 +1490,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 stepOption = []
             end
             U = PhasorArray(u);
-            BU = sys.B*diag(U);
+            BU = scaleInputs(sys.B,sys.B1,diag(U));
             %avoid the warning check when the system is real
             warning off phasorSS:appearsToBeReal
             %set the B matrix of the system with the periodic input u
@@ -1280,7 +1501,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
 
             sysltv = sysBU.toSS();
             if sys.isLPV
-                respOpt = RespConfig("InitialState",  'x0',"InitialParameter", 0);
+                respOpt = RespConfig("InitialState",  'x0',"InitialParameter", sys.initialParam());
                 %merge stepOption with respOpt
                 if ~isempty(stepOption)
                     fn = fieldnames(stepOption);
@@ -1289,9 +1510,9 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                     end                    
                 end
                 if nargout > 0
-                    [y,tOut,x,~,pOut] = step(sysltv,t,sys.p,respOpt);
+                    [y,tOut,x,~,pOut] = step(sysltv,t,sys.paramFcn(),respOpt);
                 else
-                    step(sysltv,t,sys.p,respOpt)
+                    step(sysltv,t,sys.paramFcn(),respOpt)
                 end
             else
                 if nargout > 0
@@ -1321,6 +1542,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             %       % Expands the base of the PhasorSS object SSp by a factor of 2
             %
             %   See also: REDUCEBASE
+            freqAffineUnsupported(SSp,'expandBase');
             SSo = SSp;
             Ao = SSp.A.expandBase(m);
             SSo=SSo.setA(Ao);
@@ -1554,12 +1776,24 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             %       toeplitzSS = toeplitzSS(pA1,h,T);
             %       Compute the Toeplitz Matrix State-Space object of the PhasorSS object
             %
-            %   See also: HMQDCGAIN, LTVSS, LPVSS
+            %   For a frequency-affine system the pulsation is frozen at 2*pi/T,
+            %   giving T(A0) + omega*(T(A1) - N); without T the result is a
+            %   function of T, as for a plain system.
+            %
+            %   See also: HMQDCGAIN, LTVSS, LPVSS, TOEPLITZAFFINE
             arguments
             pA1
             h (1,1) double = max([pA1.A.h,pA1.B.h,pA1.C.h,pA1.D.h]);
             T  = []
             end
+                if pA1.isFreqAffine
+                    if isempty(T)
+                        toeplitzSS = @(T) pA1.atOmega(2*pi/T).toeplitzSS(h,T);
+                    else
+                        toeplitzSS = pA1.atOmega(2*pi/T).toeplitzSS(h,T);
+                    end
+                    return
+                end
                 %compute Toeplitz Matrix of the system
                 A = pA1.A;
                 B = pA1.B;
@@ -1630,6 +1864,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             % check dimension of D and the phasorSS to be sure they match
             % propagate correctly the input/output name and unit
 
+            interconnectionGuard(obj,obj2,'mtimes');
             if ~isa(obj,'PhasorSS')
                 if isscalar(obj)
                     obj = PhasorArray(obj*eye(size(obj2,1)));
@@ -1774,6 +2009,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 nvp.uIndex = []
                 nvp.yIndex = []
             end
+            interconnectionGuard(obj,obj2,'feedback');
 
             if isa(obj2, 'double') || isa(obj2,'PhasorArray')
                 if isscalar(obj2)
@@ -1912,7 +2148,8 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             %
             % The upper LFT of sys1 and sys2 if sys1 has fewer inputs and outputs than sys2.
             %   This amounts to deleting w1 and z1 in the above diagram.
-            
+
+                interconnectionGuard(sys1,sys2,'lft');
                 nu1_base = sys1.nu;
                 ny1_base = sys1.ny;
                 nu2_base = sys2.nu;
@@ -2033,7 +2270,26 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
 
         end
         
-        function [A,B,C,D] = evalAngle(phasorSSobject,angle)
+        function [A,B,C,D] = evalAngle(phasorSSobject,angle,omega)
+            %EVALANGLE Matrices A, B, C, D at phase angle theta
+            %   [A,B,C,D] = EVALANGLE(sys,theta) evaluates the four matrices at theta.
+            %   [A,B,C,D] = EVALANGLE(sys,theta,omega) adds omega*M1(theta) for a
+            %   frequency-affine system, where omega is required.
+            if phasorSSobject.isFreqAffine
+                if nargin < 3
+                    error('PhasorSS:omegaUndefined', 'evalAngle of a frequency-affine system needs omega: evalAngle(sys,theta,omega).')
+                end
+                [A,B,C,D] = phasorSSobject.atOmega(0).evalAngle(angle);
+                M = {A,B,C,D}; names = {'A1','B1','C1','D1'};
+                for k = 1:4
+                    M1 = phasorSSobject.(names{k});
+                    if ~isempty(M1)
+                        M{k} = M{k} + omega*evalCoeffs(affineCoeffs(M1,phasorSSobject.isReal),angle,phasorSSobject.isReal);
+                    end
+                end
+                [A,B,C,D] = M{:};
+                return
+            end
             A = phasorSSobject.A;
             B = phasorSSobject.B;
             C = phasorSSobject.C;
@@ -2060,6 +2316,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
         end
 
         function stem(phasorSSobject)
+            freqAffineUnsupported(phasorSSobject,'stem');
             T = tiledlayout(2,2);
             stem(phasorSSobject.A,'parent',T)
             title('A')
@@ -2089,6 +2346,9 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             out.B = obj.B.trunc(h);
             out.C = obj.C.trunc(h);
             out.D = obj.D.trunc(h);
+            for name = ["A1","B1","C1","D1"]
+                if ~isempty(obj.(name)), out.(name) = obj.(name).trunc(h); end
+            end
         end
 
         function out = neglect(obj,threshold)
@@ -2113,6 +2373,9 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             if ~isempty(obj.B), out.B = obj.B.neglect(threshold); end
             if ~isempty(obj.C), out.C = obj.C.neglect(threshold); end
             if ~isempty(obj.D), out.D = obj.D.neglect(threshold); end
+            for name = ["A1","B1","C1","D1"]
+                if ~isempty(obj.(name)), out.(name) = obj.(name).neglect(threshold); end
+            end
         end
 
         function plot(obj,linkrow)
@@ -2122,6 +2385,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             if nargin <2
                 linkrow = 'false';
             end
+            freqAffineUnsupported(obj,'plot');
             %Concate the matrices A,B,C,D in a PhasorArray
             superMatrix = [obj.A , obj.B ; obj.C , obj.D];
 
@@ -2198,6 +2462,12 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 'OutputName',{obj.OutputName},...
                 'T',obj.T);
             end
+            if obj.isFreqAffine
+                for name = ["A1","B1","C1","D1"]
+                    if ~isempty(obj.(name)), propList.(name) = obj.(name); end
+                end
+                if obj.isLPV, propList.omega = obj.omega; end
+            end
             propgrp = matlab.mixin.util.PropertyGroup(propList);
         end
 
@@ -2208,6 +2478,14 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 footer = sprintf('Continuous time Linear Parameter-Varying State-Space model with %d states, %d inputs, %d outputs and parameter function p(t)', obj.nx, obj.nu, obj.ny);
             else
                 footer = sprintf('Continuous time Linear Time-Varying State-Space model with %d states, %d inputs, %d outputs and period T=%g\n See <a href="matlab:details(%s)">all properties</a>', obj.nx, obj.nu, obj.ny, obj.T, varName);
+            end
+            if obj.isFreqAffine
+                if obj.isLPV
+                    wDesc = 'omega(t,x,u)';
+                else
+                    wDesc = sprintf('omega = 2*pi/T = %g', 2*pi/obj.T);
+                end
+                footer = sprintf('%s\nAffine in the pulsation: M(theta) = M0(theta) + omega*M1(theta), %s\n', strtrim(footer), wDesc);
             end
         end
         
@@ -2270,6 +2548,12 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                         'Notes', obj.Notes, ...
                         'UserData', obj.UserData, ...
                         'p', obj.p);
+                    result.omega = obj.omega;
+                    result.A1 = obj.A1;
+                    if ~isempty(obj.B1), result.B1 = obj.B1{:,J}; end
+                    if ~isempty(obj.C1), result.C1 = obj.C1{I,:}; end
+                    if ~isempty(obj.D1), result.D1 = obj.D1{I,J}; end
+                    result = result.checkIfReal();
                 else
                     error('Invalid indexing. Use A(I, J) to extract a sub-system.');
                 end
@@ -2478,5 +2762,109 @@ function structout = mergeStruct(struct1,struct2)
         else
             structout.(fn{i}) = struct2.(fn{i});
         end
+    end
+end
+
+function [M0,M1,isCell] = splitAffine(M,name)
+    %SPLITAFFINE Read a matrix argument given as M0 or as {M0, M1}
+    %   A scalar 0 in either slot of the cell stands for a zero matrix of the
+    %   size of the other slot. M1 comes back empty when it is zero.
+    isCell = iscell(M);
+    if ~isCell
+        M0 = M;
+        M1 = [];
+        return
+    end
+    if numel(M) ~= 2
+        error('PhasorSS:constructor:invalidAffineCell', '%s must be a matrix or a 2-cell {%s0, %s1}.', name, name, name)
+    end
+    M0 = M{1};
+    M1 = M{2};
+    if isZeroScalar(M1)
+        M1 = [];
+    end
+    if isZeroScalar(M0) && ~isempty(M1)
+        M0 = zeros(size(M1,1),size(M1,2));
+    end
+end
+
+function tf = isZeroScalar(M)
+    tf = isnumeric(M) && isscalar(M) && M == 0;
+end
+
+function M1 = sizedPart1(M1,M0,name)
+    %SIZEDPART1 Omega-proportional part as a PhasorArray of the size of M0 (empty when zero)
+    if isempty(M1)
+        M1 = [];
+        return
+    end
+    M1 = PhasorArray(M1);
+    if size(M1,1) ~= size(M0,1) || size(M1,2) ~= size(M0,2)
+        error('PhasorSS:constructor:dimensionMismatch', '%s1 (%dx%d) must have the size of %s0 (%dx%d).', ...
+            name, size(M1,1), size(M1,2), name, size(M0,1), size(M0,2))
+    end
+end
+
+function M1 = updatePart1(old,new,isCell,M0,name)
+    %UPDATEPART1 Omega-proportional part after a set method
+    %   A cell argument sets both parts. A plain argument sets M0 and keeps M1,
+    %   which must then still match the size of M0.
+    if isCell
+        M1 = sizedPart1(new,M0,name);
+        return
+    end
+    M1 = old;
+    if ~isempty(old) && (size(old,1) ~= size(M0,1) || size(old,2) ~= size(M0,2))
+        error('PhasorSS:dimensionMismatch', '%s changed size while %s1 is set; give {%s0, %s1} to set both parts.', name, name, name, name)
+    end
+end
+
+function c = affineCoeffs(M,isRealSys)
+    %AFFINECOEFFS Coefficients used in the simulation loop: SinCos form when real
+    if isempty(M)
+        c = [];
+    elseif isRealSys
+        c = M.SinCosForm();
+    else
+        c = M.value;
+    end
+end
+
+function Mt = evalCoeffs(c,angle,isRealSys)
+    %EVALCOEFFS Matrix at one angle from the coefficients of affineCoeffs
+    if isRealSys
+        Mt = sincos2time(c,angle);
+    else
+        Mt = phasor2time(c,angle);
+    end
+    Mt = reshape(Mt,size(c,1),size(c,2));
+end
+
+function M = scaleInputs(M0,M1,G)
+    %SCALEINPUTS Right-multiply both parts of an input matrix by G
+    if isempty(M1)
+        M = M0*G;
+    else
+        M = {M0*G, M1*G};
+    end
+end
+
+function freqAffineUnsupported(sys,fname)
+    if isa(sys,'PhasorSS') && sys.isFreqAffine
+        error('PhasorSS:freqAffineUnsupported', ...
+            '%s does not handle frequency-affine systems; freeze the pulsation with atOmega(omega) first.', fname)
+    end
+end
+
+function interconnectionGuard(sys1,sys2,fname)
+    %INTERCONNECTIONGUARD Refuse interconnections involving frequency-affine systems
+    %   Two affine factors produce omega^2 terms, which PhasorSS does not store.
+    aff = [isa(sys1,'PhasorSS') && sys1.isFreqAffine, isa(sys2,'PhasorSS') && sys2.isFreqAffine];
+    if all(aff)
+        error('PhasorSS:omegaSquared', ...
+            '%s of two frequency-affine systems produces omega^2 terms, which PhasorSS does not represent.', fname)
+    elseif any(aff)
+        error('PhasorSS:freqAffineUnsupported', ...
+            '%s does not handle frequency-affine systems; freeze the pulsation with atOmega(omega) first.', fname)
     end
 end
