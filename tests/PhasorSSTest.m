@@ -260,7 +260,7 @@ classdef PhasorSSTest < matlab.unittest.TestCase
             testCase.verifyEqual(value(P.A1), value(A1));
             testCase.verifyEmpty(P.B1, 'a plain B has no omega part');
 
-            Q = PhasorSS({0,A1},{B,2*B},C,{0,[0.5]},1);
+            Q = PhasorSS({0,A1},{B,2*B},C,{0,0.5},1);
             testCase.verifyEqual(value(Q.A), zeros(2), '{0,A1} must give A0 = 0');
             testCase.verifyEqual(value(Q.B1), 2*value(B));
             testCase.verifyEqual(value(Q.D1), 0.5);

@@ -1216,6 +1216,9 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             %PARAMFCN Scheduling function passed to lsim/step/initial in LPV mode
             %   pf = PARAMFCN(obj) returns obj.p, or @(t,x,u) [p(t,x,u); omega(t,x,u)]
             %   for a frequency-affine system, matching the parameters of toLPVss.
+            arguments
+                obj PhasorSS
+            end
             p = obj.p;
             if ~obj.isFreqAffine
                 pf = p;
@@ -1231,6 +1234,11 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
 
         function p0 = initialParam(obj)
             %INITIALPARAM Initial parameter value used by step, impulse and stepu
+            %   p0 = INITIALPARAM(obj) is 0, or paramFcn(obj) at t = 0, x = 0, u = 0
+            %   for a frequency-affine system.
+            arguments
+                obj PhasorSS
+            end
             if obj.isFreqAffine
                 pf = obj.paramFcn();
                 p0 = pf(0,zeros(obj.nx,1),zeros(obj.nu,1));
@@ -2283,10 +2291,18 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             %EVALANGLE Matrices A, B, C, D at phase angle theta
             %   [A,B,C,D] = EVALANGLE(sys,theta) evaluates the four matrices at theta.
             %   [A,B,C,D] = EVALANGLE(sys,theta,omega) adds omega*M1(theta) for a
-            %   frequency-affine system, where omega is required.
+            %   frequency-affine system, where omega is required and theta scalar.
+            arguments
+                phasorSSobject PhasorSS
+                angle double
+                omega double {mustBeScalarOrEmpty} = []
+            end
             if phasorSSobject.isFreqAffine
-                if nargin < 3
+                if isempty(omega)
                     error('PhasorSS:omegaUndefined', 'evalAngle of a frequency-affine system needs omega: evalAngle(sys,theta,omega).')
+                end
+                if ~isscalar(angle)
+                    error('PhasorSS:evalAngle:scalarAngle', 'evalAngle of a frequency-affine system takes a scalar theta.')
                 end
                 [A,B,C,D] = phasorSSobject.atOmega(0).evalAngle(angle);
                 M = {A,B,C,D}; names = {'A1','B1','C1','D1'};
@@ -2868,14 +2884,12 @@ end
 function interconnectionGuard(sys1,sys2,fname)
     %INTERCONNECTIONGUARD Refuse interconnections involving frequency-affine systems
     %   Two affine factors produce omega^2 terms, which PhasorSS does not store.
-    aff = [isa(sys1,'PhasorSS') && sys1.isFreqAffine, isa(sys2,'PhasorSS') && sys2.isFreqAffine];
-    if all(aff)
+    if isa(sys1,'PhasorSS') && sys1.isFreqAffine && isa(sys2,'PhasorSS') && sys2.isFreqAffine
         error('PhasorSS:omegaSquared', ...
             '%s of two frequency-affine systems produces omega^2 terms, which PhasorSS does not represent.', fname)
-    elseif any(aff)
-        error('PhasorSS:freqAffineUnsupported', ...
-            '%s does not handle frequency-affine systems; freeze the pulsation with atOmega(omega) first.', fname)
     end
+    freqAffineUnsupported(sys1,fname);
+    freqAffineUnsupported(sys2,fname);
 end
 
 function s = stackCoeffs(c)
