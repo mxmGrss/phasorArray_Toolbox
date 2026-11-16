@@ -1034,13 +1034,15 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
             if obj.isFreqAffine
                 obj.paramFcn();   % errors if omega is not defined
                 names = {'A','B','C','D'};
-                M0 = cell(1,4); M1 = cell(1,4);
+                coeffs = cell(1,8);
                 for k = 1:4
-                    M0{k} = affineCoeffs(obj.(names{k}),obj.isReal);
-                    M1{k} = affineCoeffs(obj.([names{k} '1']),obj.isReal);
+                    coeffs{k}   = affineCoeffs(obj.(names{k}),obj.isReal);
+                    coeffs{k+4} = affineCoeffs(obj.([names{k} '1']),obj.isReal);
                 end
+                % all eight matrices in one array: one basis and one product per call
+                stack = stackCoeffs(coeffs);
                 isRealSys = obj.isReal;
-                ltvFun = @(t,p) lpvFunAffine(t,p,M0,M1,isRealSys);
+                ltvFun = @(t,p) lpvFunAffine(t,p,stack,isRealSys);
                 sys = lpvss(["phase","omega"],ltvFun, ...
                     'StateName',obj.StateName,'StateUnit',obj.StateUnit, ...
                     'InputName',obj.InputName,'InputUnit',obj.InputUnit,'InputGroup',obj.InputGroup, ...
@@ -1088,7 +1090,7 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 C=sincos2time(Ccs,p);
                 D=sincos2time(Dcs,p);
             end
-            function [A,B,C,D,E,dx0,x0,u0,y0,Delays] = lpvFunAffine(~,p,M0,M1,isRealSys)
+            function [A,B,C,D,E,dx0,x0,u0,y0,Delays] = lpvFunAffine(~,p,stack,isRealSys)
                 %LPVFUNAFFINE LPV function of a frequency-affine system, p = [phase; omega]
                 E = [];
                 dx0 = [];
@@ -1096,11 +1098,18 @@ classdef PhasorSS < matlab.mixin.indexing.RedefinesParen & matlab.mixin.CustomDi
                 u0 = [];
                 y0 = [];
                 Delays = [];
+                H = stack.h;
+                if isRealSys
+                    basis = [sin((H:-1:1)'*p(1)); cos((0:H)'*p(1))];
+                else
+                    basis = exp(1i*(-H:H)'*p(1));
+                end
+                v = stack.coeffs*basis;
                 M = cell(1,4);
                 for kk = 1:4
-                    M{kk} = evalCoeffs(M0{kk},p(1),isRealSys);
-                    if ~isempty(M1{kk})
-                        M{kk} = M{kk} + p(2)*evalCoeffs(M1{kk},p(1),isRealSys);
+                    M{kk} = reshape(v(stack.rows{kk}),stack.size{kk});
+                    if ~isempty(stack.rows{kk+4})
+                        M{kk} = M{kk} + p(2)*reshape(v(stack.rows{kk+4}),stack.size{kk});
                     end
                 end
                 [A,B,C,D] = M{:};
@@ -2867,4 +2876,31 @@ function interconnectionGuard(sys1,sys2,fname)
         error('PhasorSS:freqAffineUnsupported', ...
             '%s does not handle frequency-affine systems; freeze the pulsation with atOmega(omega) first.', fname)
     end
+end
+
+function s = stackCoeffs(c)
+    %STACKCOEFFS Stack harmonic coefficient arrays for a single evaluation
+    %   c is a cell of [n x m x (2h+1)] arrays (SinCos or exponential form,
+    %   empty for an absent part). Each is padded with zero harmonics up to the
+    %   largest h and reshaped to (n*m) rows, so that coeffs*basis evaluates all
+    %   of them at once; rows{k} and size{k} recover matrix k.
+    H = 0;
+    for k = 1:numel(c)
+        if ~isempty(c{k}), H = max(H,(size(c{k},3)-1)/2); end
+    end
+    rows = cell(1,numel(c)); sz = cell(1,numel(c)); blocks = cell(numel(c),1);
+    offset = 0;
+    for k = 1:numel(c)
+        ck = c{k};
+        sz{k} = [size(ck,1) size(ck,2)];
+        if isempty(ck)
+            blocks{k} = zeros(0,2*H+1);
+            continue
+        end
+        pad = zeros(sz{k}(1),sz{k}(2),H-(size(ck,3)-1)/2);
+        blocks{k} = reshape(cat(3,pad,ck,pad),[],2*H+1);
+        rows{k} = offset + (1:size(blocks{k},1));
+        offset = offset + size(blocks{k},1);
+    end
+    s = struct('h',H,'coeffs',vertcat(blocks{:}),'rows',{rows},'size',{sz});
 end
